@@ -45,13 +45,13 @@ class CCCV_data(Abstract_data):
     @name.setter
     def name(self, name):
         """On replace les espaces par des '_'"""
-        self._name = Resources.space_to_(name)
+        self._name = name
 
 
     @nom_cell.setter
     def nom_cell(self, name):
         """On replace les espaces par des '_'"""
-        self._nom_cell = Resources.space_to_(name)
+        self._nom_cell = name
 
     @figures.setter
     def figures(self, figures):

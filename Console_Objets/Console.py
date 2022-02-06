@@ -37,3 +37,12 @@ class Console:
                     name = name[0:len(name) - 3] + temp
                 self.unique_name(name)
         return name
+
+    """----------------------------------------------------------------------------------"""
+
+    def get_info_data_all(self):
+        for i in range(len(self.datas)):
+            self.datas[i].get_info_data()
+            print("\n----------------------------")
+
+    """----------------------------------------------------------------------------------"""

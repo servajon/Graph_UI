@@ -48,7 +48,7 @@ class Abstract_data(ABC):
 
             fig.canvas.manager.set_window_title(figure.plot_name)
 
-            pplot.suptitle(figure.plot_name)
+            fig.suptitle(figure.plot_name)
 
             if figure.name_axes_x != "":
                 ax1.set_xlabel(figure.name_axes_x, labelpad=20)
@@ -448,6 +448,19 @@ class Abstract_data(ABC):
                 for tick in axe.yaxis.get_major_ticks():
                     tick.label2.set_fontsize(18)
                     tick.label2.set_fontweight('bold')
+
+    """----------------------------------------------------------------------------------"""
+
+    def get_info_data(self):
+        print("info sur les données : " + self.name + "\n")
+        temp = ""
+        for i in range(len(self.data["row_data"])):
+            temp += self.data["row_data"][i] + " | "
+            if i % 5 == 0:
+                temp += "\n"
+        print(Resources.justify(temp))
+
+    """----------------------------------------------------------------------------------"""
 
     @property
     @abstractmethod

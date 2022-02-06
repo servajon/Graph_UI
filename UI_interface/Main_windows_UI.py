@@ -1,10 +1,9 @@
-
 import sys
 import matplotlib
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QThread, pyqtSlot, pyqtSignal
 from PyQt5.QtWidgets import (
-    QApplication, QDialog, QMainWindow, QMessageBox, QFileDialog, QWidget, QLineEdit, QVBoxLayout
+    QApplication, QDialog, QMainWindow, QMessageBox, QFileDialog, QWidget, QLineEdit, QVBoxLayout, QInputDialog
 )
 from matplotlib.backends.backend_qt import NavigationToolbar2QT
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -15,6 +14,7 @@ from Console_Objets.Console import Console
 from Console_Objets.Data_array import Data_array
 from Console_Objets.Figure import Figure
 from Data_type.CCCV_data import CCCV_data
+from Resources import Resources
 from UI_interface import Threads_UI
 
 """----------------------------------------------------------------------------------"""
@@ -24,8 +24,6 @@ from UI_interface import Threads_UI
 
 class Figure_plot(QWidget):
     def __init__(self, abstract_affiche):
-        print(abstract_affiche)
-
         super().__init__()
         self.canvas = None
         self.toolbar = None
@@ -49,24 +47,55 @@ class Figure_plot(QWidget):
         layout = QVBoxLayout()
         self.setLayout(layout)
         self.canvas = FigureCanvas(self.fig)
-        self.toolbar = NavigationToolbar2QT(self.canvas, self)
+        self.toolbar = NavigationToolbar2QT(self.canvas, self, True)
+
+        for artist in self.fig.get_children():
+            if type(artist).__name__ == "Text":
+                artist.set_picker(True)
+
         layout.addWidget(self.canvas)
         layout.addWidget(self.toolbar)
 
         """connections"""
-        self.canvas.mpl_connect('button_press_event', self.mouseDoubleClickEvent)
+        self.canvas.mpl_connect('button_press_event', self.button_press_event)
         self.canvas.mpl_connect('motion_notify_event', self.mouseMoveEvent)
+        self.canvas.mpl_connect('close_event', self.closeEvent)
+        self.canvas.mpl_connect('axes_enter_event', self.axes_enter_event)
+        self.canvas.mpl_connect('axes_leave_event', self.axes_leave_event)
+        self.canvas.mpl_connect('pick_event', self.pick_event)
+
         self.canvas.draw()
+
+    def button_press_event(self, event):
+        if event.dblclick:
+            self.mouseDoubleClickEvent(event)
+        else:
+            pass
 
     def mouseDoubleClickEvent(self, event):
-        black = matplotlib.colors.to_rgba("black")
-        self.ax1.axhline(y=event.ydata, color=black)
-        self.ax1.axvline(x=event.xdata, color=black)
-        self.canvas.draw()
+        """ajouter ces methode à l'ojjet self.abstract_affiche
+        pour que chaque type fasse ses traitements"""
+        if event.inaxes is not None and event.inaxes == self.ax1:
+            black = matplotlib.colors.to_rgba("black")
+            event.inaxes.axhline(y=event.ydata, color=black)
+            event.inaxes.axvline(x=event.xdata, color=black)
+            self.canvas.draw()
 
     def mouseMoveEvent(self, event):
-        print(event.xdata)
-        print(event.ydata)
+        pass
+
+    def closeEvent(self, event):
+        pass
+
+    def axes_enter_event(self, event):
+        pass
+
+    def axes_leave_event(self, event):
+        pass
+
+    def pick_event(self, event):
+        print(event.artist)
+        print(event.guiEvent)
 
 
 class Tab(QWidget):
@@ -80,42 +109,19 @@ class TabWidget(QtWidgets.QTabWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.tabBarDoubleClicked.connect(self.clique_bar)
-        self.__edit = None
-        self.__edited_tab = None
-
-    def mousePressEvent(self, event):
-        if self.__edit is not None:
-            old_name = self.tabText(self.currentIndex())
-            self.setTabText(self.__edited_tab, self.__edit.text())
-            self.__edit.deleteLater()
-            self.__edit = None
-            self.name_changed.emit(old_name)
-
-    def keyReleaseEvent(self, event):
-        if event.key() == QtCore.Qt.Key_Return:
-            if self.__edit is not None:
-                old_name = self.tabText(self.currentIndex())
-                self.setTabText(self.__edited_tab, self.__edit.text())
-                self.__edit.deleteLater()
-                self.__edit = None
-                self.name_changed.emit(old_name)
-
 
     def clique_bar(self):
-        if self.__edit is not None:
-            self.__edit.deleteLater()
-            self.__edit = None
+        name = QInputDialog.getText(self, "Name change", "New name ?", QLineEdit.Normal)
+        if name[1] and name[0] != '':
+            old_name = self.tabText(self.currentIndex())
+            names = []
+            for i in range(0, self.count()):
+                if i != self.currentIndex():
+                    names.append(self.tabText(i))
 
-        self.__edited_tab = self.currentIndex()
-        rect = self.widget(self.__edited_tab).rect()
-
-        self.__edit = QLineEdit(self)
-        self.__edit.move(rect.x(), rect.y())
-
-        self.__edit.show()
-        self.__edit.setText(self.tabText(self.currentIndex()))
-        self.__edit.selectAll()
-        self.__edit.setFocus()
+            new_name = Resources.unique_name(names, name[0])
+            self.setTabText(self.currentIndex(), new_name)
+            self.name_changed.emit(old_name)
 
     def mouseDoubleClickEvent(self, event):
         print("Mouse Double Click Event")
@@ -243,8 +249,8 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def open_cv(self):
         fig = Figure("test", 1)
-        fig.add_data_x_Data(Data_array([1, 2, 3], None, None, None))
-        fig.add_data_y1_Data(Data_array([10, 5, 20], None, None, None))
+        fig.add_data_x_Data(Data_array([1, 2, 3], None, None, "None"))
+        fig.add_data_y1_Data(Data_array([10, 5, 20], None, None, "None"))
 
         obj = Classique_affiche(self.console.current_data, fig)
 
@@ -287,10 +293,8 @@ class Window(QMainWindow, Ui_MainWindow):
                         name_tab = obj_data.name
                         self.creation_tab(name_tab)
 
-
                 self.threads[index][0].terminate()
                 del self.threads[index]
-
             else:
                 index += 1
 
@@ -323,5 +327,3 @@ class Main_interface:
         win = Window()
         win.show()
         sys.exit(app.exec())
-
-

@@ -425,6 +425,30 @@ def get_color_map(name):
 
 """----------------------------------------------------------------------------------"""
 
+
+def unique_name(array, name):
+    """Parcours le nom des datas enregistrées et regarde si le nom donné en paramettre est unique, si il ne
+    l'est pas on renvoie le même nom avec (1), (2) etc, si le nom est unique on renvoie jsute le nom """
+    if array is None or array == []:
+        return name
+
+    for i in array:
+        if i == name:
+            """Si dans name il n'y a pas (*) à la fin, on apelle la fonction unique_name en ajoutant
+            (1)"""
+            if len(name) > 2 and name[len(name) - 3] != '(' and name[len(name) - 1] != ')':
+                name += "(1)"
+            elif len(name) < 3:
+                name += "(1)"
+            else:
+                num = int(name[len(name) - 2]) + 1
+                temp = "(" + str(num) + ")"
+                name = name[0:len(name) - 3] + temp
+            unique_name(array, name)
+    return name
+
+"""----------------------------------------------------------------------------------"""
+
 OK = '\033[92m'  # GREEN
 WORK = '\033[93m'  # YELLOW
 FAIL = '\033[91m'  # RED
