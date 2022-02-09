@@ -294,7 +294,6 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
                                                             "Current plot : None""</span></p></body></html>"))
                 self.update_current_data(self.treeWidget.selectedItems()[0].text(0))
-
             print(self.console.current_data.name)
             try:
                 print(self.console.current_data.current_figure.name)
