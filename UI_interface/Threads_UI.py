@@ -21,7 +21,7 @@ class Open_file_cccv(QObject):
 
     def run(self):
         try:
-            self.__data = Lecteur_thread.open(self.file_path[0], self.__file_path[1])
+            self.__data = Lecteur_thread.open(self.__file_path, "cccv")
         except ValueError:
             self.finished.emit(-1)
             self.__finish = True

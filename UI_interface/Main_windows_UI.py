@@ -3,7 +3,8 @@ import matplotlib
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QThread, pyqtSlot, pyqtSignal
 from PyQt5.QtWidgets import (
-    QApplication, QDialog, QMainWindow, QMessageBox, QFileDialog, QWidget, QLineEdit, QVBoxLayout, QInputDialog
+    QApplication, QDialog, QMainWindow, QMessageBox, QFileDialog, QWidget, QLineEdit, QVBoxLayout, QInputDialog,
+    QTreeWidgetItem
 )
 from matplotlib.backends.backend_qt import NavigationToolbar2QT
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -16,6 +17,7 @@ from Console_Objets.Figure import Figure
 from Data_type.CCCV_data import CCCV_data
 from Resources import Resources
 from UI_interface import Threads_UI
+from UI_interface.Main_window_QT import Ui_MainWindow
 
 """----------------------------------------------------------------------------------"""
 """                                   Main window                                    """
@@ -127,100 +129,23 @@ class TabWidget(QtWidgets.QTabWidget):
         print("Mouse Double Click Event")
 
 
-class Ui_MainWindow(object):
-    def setupUi(self, MainWindow):
-        MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1159, 724)
-        self.centralwidget = QtWidgets.QWidget(MainWindow)
-        self.centralwidget.setObjectName("centralwidget")
-        self.gridLayout = QtWidgets.QGridLayout(self.centralwidget)
-        self.gridLayout.setObjectName("gridLayout")
-
-        self.tabWidget = TabWidget(self.centralwidget)
-        self.tabWidget.setObjectName("tabWidget")
-        self.tabWidget.setTabsClosable(True)
-
-        self.gridLayout.addWidget(self.tabWidget, 0, 0, 1, 1)
-        MainWindow.setCentralWidget(self.centralwidget)
-        self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1159, 21))
-        self.menubar.setObjectName("menubar")
-        self.menuOpen = QtWidgets.QMenu(self.menubar)
-        self.menuOpen.setObjectName("menuOpen")
-        self.menuOpen_2 = QtWidgets.QMenu(self.menuOpen)
-        self.menuOpen_2.setObjectName("menuOpen_2")
-        self.menuModulo_bat = QtWidgets.QMenu(self.menuOpen_2)
-        self.menuModulo_bat.setObjectName("menuModulo_bat")
-        self.menuQuit = QtWidgets.QMenu(self.menubar)
-        self.menuQuit.setObjectName("menuQuit")
-        MainWindow.setMenuBar(self.menubar)
-        self.statusbar = QtWidgets.QStatusBar(MainWindow)
-        self.statusbar.setObjectName("statusbar")
-        MainWindow.setStatusBar(self.statusbar)
-        self.actioncccv = QtWidgets.QAction(MainWindow)
-        self.actioncccv.setObjectName("actioncccv")
-        self.actioncv = QtWidgets.QAction(MainWindow)
-        self.actioncv.setObjectName("actioncv")
-        self.actiondiffraction = QtWidgets.QAction(MainWindow)
-        self.actiondiffraction.setObjectName("actiondiffraction")
-        self.actionimp_dance = QtWidgets.QAction(MainWindow)
-        self.actionimp_dance.setObjectName("actionimp_dance")
-        self.actioncp = QtWidgets.QAction(MainWindow)
-        self.actioncp.setObjectName("actioncp")
-        self.actiongitt = QtWidgets.QAction(MainWindow)
-        self.actiongitt.setObjectName("actiongitt")
-        self.actionvieillissement = QtWidgets.QAction(MainWindow)
-        self.actionvieillissement.setObjectName("actionvieillissement")
-        self.menuModulo_bat.addAction(self.actionvieillissement)
-        self.menuOpen_2.addAction(self.actioncccv)
-        self.menuOpen_2.addAction(self.actioncv)
-        self.menuOpen_2.addAction(self.actiondiffraction)
-        self.menuOpen_2.addAction(self.actionimp_dance)
-        self.menuOpen_2.addAction(self.actioncp)
-        self.menuOpen_2.addAction(self.actiongitt)
-        self.menuOpen_2.addAction(self.menuModulo_bat.menuAction())
-        self.menuOpen.addAction(self.menuOpen_2.menuAction())
-        self.menubar.addAction(self.menuOpen.menuAction())
-        self.menubar.addAction(self.menuQuit.menuAction())
-
-        self.tabs = []
-
-        """self.tab = QtWidgets.QWidget()
-        self.tab.setObjectName("tab")
-        self.tabWidget.addTab(self.tab, "")
-        """
-        self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(0)
-        QtCore.QMetaObject.connectSlotsByName(MainWindow)
-
-    def retranslateUi(self, MainWindow):
-        _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-
-        self.menuOpen.setTitle(_translate("MainWindow", "File"))
-        self.menuOpen_2.setTitle(_translate("MainWindow", "Open"))
-        self.menuModulo_bat.setTitle(_translate("MainWindow", "Modulo bat"))
-        self.menuQuit.setTitle(_translate("MainWindow", "Quit"))
-        self.actioncccv.setText(_translate("MainWindow", "cccv"))
-        self.actioncv.setText(_translate("MainWindow", "cv"))
-        self.actiondiffraction.setText(_translate("MainWindow", "diffraction"))
-        self.actionimp_dance.setText(_translate("MainWindow", "impédance"))
-        self.actioncp.setText(_translate("MainWindow", "cp"))
-        self.actiongitt.setText(_translate("MainWindow", "gitt"))
-        self.actionvieillissement.setText(_translate("MainWindow", "vieillissement"))
-
-
 class Window(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setupUi(self)
 
         self.console = Console()
+        """self.threads est de la forme : [thread, worker]"""
         self.threads = []
         self.connectSignalsSlots()
 
-        self.tabWidget.name_changed.connect(self.name_changed)
-        self.tabWidget.tabCloseRequested.connect(self.close_tab_handler)
+        """self.tabWidget.objectNameChanged.connect(self.name_changed)
+        self.tabWidget.tabCloseRequested.connect(self.close_tab_handler)"""
+
+        self.treeWidget.itemSelectionChanged.connect(self.tree_select_change)
+
+        """objet qui sauvegarde le dernier état de QFileDialog pour la sauvegarde"""
+        self.save_state_dialog = None
 
     def connectSignalsSlots(self):
         self.actioncccv.triggered.connect(self.open_cccv)
@@ -228,24 +153,33 @@ class Window(QMainWindow, Ui_MainWindow):
         self.actiongitt.triggered.connect(self.open_gitt)
 
     def open_cccv(self):
+        """création de l'objet QFileDialog"""
         dialog = QFileDialog()
-        dialog.setWindowTitle('Open File')
+        """si il y a une sauvegarde d'état elle est utilisée"""
+        if self.save_state_dialog is not None:
+            dialog.restoreState(self.save_state_dialog)
+
+        dialog.setWindowTitle('Open cccv File')
         dialog.setNameFilter('EC_lab file (*.mpt *.txt)')
-        dialog.setDirectory(QtCore.QDir.currentPath())
         dialog.setFileMode(QFileDialog.ExistingFile)
+
         if dialog.exec_() == QDialog.Accepted:
             filename = dialog.selectedFiles()[0]
             filename = r"C:\Users\Maxime\Desktop\fichier_test/test.txt"
 
+            """création d'un nouveau thread"""
             t = QThread()
-            worker = Threads_UI.Open_file_cccv([filename, "cccv"])
+            """création du worker"""
+            worker = Threads_UI.Open_file_cccv(filename)
             worker.moveToThread(t)
-
+            """connection"""
             t.started.connect(worker.run)
             worker.finished.connect(self.fin_thread_lecture)
 
             self.threads.append([t, worker])
             t.start()
+
+        self.save_state_dialog = dialog.saveState()
 
     def open_cv(self):
         fig = Figure("test", 1)
@@ -259,6 +193,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def open_gitt(self):
         self.console.get_info_data_all()
+        self.add_data_tree("figure", "test")
 
     def fichier_invalide_error(self):
         msgBox = QMessageBox()
@@ -291,7 +226,7 @@ class Window(QMainWindow, Ui_MainWindow):
                         self.console.add_data(obj_data)
 
                         name_tab = obj_data.name
-                        self.creation_tab(name_tab)
+                        self.add_data_tree("cccv", name_tab)
 
                 self.threads[index][0].terminate()
                 del self.threads[index]
@@ -304,6 +239,25 @@ class Window(QMainWindow, Ui_MainWindow):
         new_tab.setObjectName(name)
         self.tabWidget.addTab(new_tab, "")
         self.tabWidget.setTabText(self.tabWidget.indexOf(new_tab), _translate("MainWindow", name))
+
+    def add_data_tree(self, type, name):
+        if type == "figure":
+            for itm in self.tree_items:
+                for i, child_item in enumerate(itm):
+                    if child_item.isSelected():
+                        child = QTreeWidgetItem([name, type])
+                        child.setSelected(True)
+                        itm[0].insertChild(i, child)
+                        itm.append(child)
+                        break
+        else:
+            item = QTreeWidgetItem([name, type])
+            self.treeWidget.insertTopLevelItem(len(self.tree_items), item)
+            self.tree_items.append([item])
+            for itm in self.tree_items:
+                for child in itm:
+                    child.setSelected(False)
+            item.setSelected(True)
 
     def name_changed(self, signal):
         for data in self.console.datas:
@@ -320,6 +274,42 @@ class Window(QMainWindow, Ui_MainWindow):
                 break
         self.tabWidget.removeTab(index)
 
+    def tree_select_change(self):
+        _translate = QtCore.QCoreApplication.translate
+        if len(self.treeWidget.selectedItems()):
+            if self.treeWidget.selectedItems()[0].text(1) == "figure":
+                self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style="
+                                                              "\" font-size:11pt;\">Current plot : " +
+                                                self.treeWidget.selectedItems()[0].text(0) +
+                                                "</span></p></body></html>"))
+                parent = self.treeWidget.selectedItems()[0].parent()
+                self.label.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                                            "Current data : "
+                                              + parent.text(0) +" </span></p></body></html>"))
+                self.update_current_data(parent.text(0))
+            else:
+                self.label.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                                            "Current data : " + self.treeWidget.selectedItems()[0].text(0) +
+                                              " </span></p></body></html>"))
+                self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                                            "Current plot : None""</span></p></body></html>"))
+                self.update_current_data(self.treeWidget.selectedItems()[0].text(0))
+
+            print(self.console.current_data.name)
+            try:
+                print(self.console.current_data.current_figure.name)
+            except AttributeError:
+                pass
+
+    def update_current_data(self, name):
+        found = False
+        for data in self.console.datas:
+            if data.name == name:
+                self.console.current_data = data
+                found = True
+                break
+        if not found:
+            raise ValueError
 
 class Main_interface:
     def __init__(self):
