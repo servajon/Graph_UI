@@ -1,37 +1,19 @@
-from Console_Objets import Data_array
+from Console_Objets.Axe import Axe
+from Console_Objets.Data_array import Data_array
 
 
 class Figure:
     def __init__(self, name, dirty=None):
-        self._name_axes_x = ""
-        self._name_axes_y1 = ""
-        self._name_axes_y2 = ""
-        self._name_axes_z1 = ""
-        self._plot_name = ""
+        self.x_axe = None
+        self.y1_axe = None
+        self.y2_axe = None
+        self.z1_axe = None
 
-        self._type = None
-        self._extra_type = None
+        self.__plot_name = ""
+        self._type = {}
 
-        self._start_x = None
-        self._end_x = None
-
-        self._start_y1 = None
-        self._end_y1 = None
-
-        self._start_y2 = None
-        self._end_y2 = None
-
-        """[x, 5.2]
-            [y1, 1000]"""
-        self.norm = []
-
-        """les array data_ stock des objet data, possedant un array de data, un nom et une source
-        La source étant le nom du fichier de provenance de la data"""
-        self._data_x = []
-        self._data_y1 = []
-        self._data_y2 = []
-        self._data_z1 = []
-        self._data_z2 = []
+        """pour la normalisation"""
+        self.aspect = None
 
         self._name = name
         self._dirty = dirty
@@ -53,87 +35,11 @@ class Figure:
     """                                                  """
 
     @property
-    def name_axes_x(self):
-        if self._name_axes_x == "":
-            if len(self._data_x) > 0:
-                return self._data_x[0].name
-            else:
-                raise ValueError
-        else:
-            return self._name_axes_x
-
-    @property
-    def name_axes_y1(self):
-        if self._name_axes_y1 == "":
-            if len(self._data_y1) > 0:
-                return self._data_y1[0].name
-            else:
-                raise ValueError
-        else:
-            return self._name_axes_y1
-
-    @property
-    def name_axes_y2(self):
-        if self._name_axes_y2 == "":
-            if len(self._data_y2) > 0:
-                return self._data_y2[0].name
-            else:
-                raise ValueError
-        else:
-            return self._name_axes_y2
-
-    @property
-    def name_axes_z1(self):
-        if self._name_axes_z1 == "":
-            if len(self._data_z1) > 0:
-                return self._data_z1[0].name
-            else:
-                raise ValueError
-        else:
-            return self._name_axes_z1
-
-    @property
     def plot_name(self):
-        if self._plot_name == "":
+        if self.__plot_name == "":
             return self._name
         else:
-            return self._plot_name
-
-    @property
-    def start_x(self):
-        return self._start_x
-
-    @property
-    def end_x(self):
-        return self._end_x
-
-    @property
-    def start_y1(self):
-        return self._start_y1
-
-    @property
-    def end_y1(self):
-        return self._end_y1
-
-    @property
-    def start_y2(self):
-        return self._start_y2
-
-    @property
-    def end_y2(self):
-        return self._end_y2
-
-    @property
-    def data_x(self):
-        return self._data_x
-
-    @property
-    def data_y1(self):
-        return self._data_y1
-
-    @property
-    def data_y2(self):
-        return self._data_y2
+            return self.__plot_name
 
     @property
     def name(self):
@@ -168,18 +74,6 @@ class Figure:
         return self._type
 
     @property
-    def data_z1(self):
-        return self._data_z1
-
-    @property
-    def data_z2(self):
-        return self._data_z2
-
-    @property
-    def extra_type(self):
-        return self._extra_type
-
-    @property
     def created_from(self):
         return self._created_from
 
@@ -187,75 +81,9 @@ class Figure:
     """                      setter                      """
     """                                                  """
 
-    @name_axes_x.setter
-    def name_axes_x(self, name):
-        self._name_axes_x = name
-
-    @name_axes_y1.setter
-    def name_axes_y1(self, name):
-        self._name_axes_y1 = name
-
-    @name_axes_y2.setter
-    def name_axes_y2(self, name):
-        self._name_axes_y2 = name
-
     @plot_name.setter
-    def plot_name(self, name):
-        self._plot_name = name
-
-    @start_x.setter
-    def start_x(self, num):
-        if num is None:
-            self._start_x = num
-        else:
-            self._start_x = float(num)
-
-    @end_x.setter
-    def end_x(self, num):
-        if num is None:
-            self._end_x = num
-        else:
-            self._end_x = float(num)
-
-    @start_y1.setter
-    def start_y1(self, num):
-        if num is None:
-            self._start_y1 = num
-        else:
-            self._start_y1 = float(num)
-
-    @end_y1.setter
-    def end_y1(self, num):
-        if num is None:
-            self._end_y1 = num
-        else:
-            self._end_y1 = float(num)
-
-    @start_y2.setter
-    def start_y2(self, num):
-        if num is None:
-            self._start_y2 = num
-        else:
-            self._start_y2 = float(num)
-
-    @end_y2.setter
-    def end_y2(self, num):
-        if num is None:
-            self._end_y2 = num
-        else:
-            self._end_y2 = float(num)
-
-    @data_x.setter
-    def data_x(self, data):
-        self._data_x = data
-
-    @data_y1.setter
-    def data_y1(self, data):
-        self._data_y1 = data
-
-    @data_y2.setter
-    def data_y2(self, data):
-        self._data_y2 = data
+    def plot_name(self, _plot_name):
+        self.__plot_name = _plot_name
 
     @name.setter
     def name(self, name):
@@ -291,18 +119,6 @@ class Figure:
     def type(self, type):
         self._type = type
 
-    @data_z1.setter
-    def data_z1(self, data_z1):
-        self._data_z1 = data_z1
-
-    @data_z2.setter
-    def data_z2(self, data_z2):
-        self._data_z2 = data_z2
-
-    @extra_type.setter
-    def extra_type(self, extra_type):
-        self._extra_type = extra_type
-
     @created_from.setter
     def created_from(self, created_form):
         self._created_from = created_form
@@ -315,80 +131,112 @@ class Figure:
     """                                                                        """
 
     def add_data_x(self, data_x, name,  source, legende=None):
-        """créer un nouvelle Data_array et l'ajoute à data_x
-        methode utilisable uniquement par le programme, elle ne sera pas déclancher pas un utilisateur"""
+        """créer l'axe x si il n'existe pas encore"""
+        if self.x_axe is None:
+            self.x_axe = Axe("x")
+
+        """créer un objet Data_array et l'ajoute à l'axe"""
         data = Data_array(data_x, name, source, legende)
-        self.data_x.append(data)
+        self.x_axe.append(data)
 
     """----------------------------------------------------------------------------------"""
 
     def add_data_x_Data(self, data):
-        """ajoute un nouvelle Data_array à data_x
-        methode utilisable uniquement par le programme, elle ne sera pas déclancher pas un utilisateur"""
-        self.data_x.append(data)
+        """créer l'axe x si il n'existe pas encore"""
+        if self.x_axe is None:
+            self.x_axe = Axe("x")
+
+        """On ajoute l'objet data_array à l'axe x"""
+        self.x_axe.append(data)
 
     """----------------------------------------------------------------------------------"""
 
     def set_data_x(self, data_x, name,  source, legende=None):
+        """pas d'argument color pour l'axe"""
+
+        """créer l'axe x si il n'existe pas encore"""
+        if self.x_axe is None:
+            self.x_axe = Axe("x")
+
         """clear l'ancien data_x, créer et ajoute un nouvel objet Data_array"""
+        self.x_axe.clear()
+
+        """créer un objet Data_array et l'ajoute à l'axe"""
         data = Data_array(data_x, name, source, legende)
-        self.data_x = [data]
+        self.x_axe.append(data)
 
     """----------------------------------------------------------------------------------"""
 
-    def add_data_y1(self, data_y, name,  source, legende=None, color=None, extra_legende=None):
-        """créer et ajoute un nouvel objet Data_array à data_y1"""
-        data = Data_array(data_y, name, source, legende, color, extra_legende)
-        self.data_y1.append(data)
+    def add_data_y1(self, data_y, name,  source, legende=None, color=None):
+        """créer l'axe y1 si il n'existe pas encore"""
+        if self.y1_axe is None:
+            self.y1_axe = Axe("y1")
+
+        """créer un objet Data_array et l'ajoute à l'axe"""
+        data = Data_array(data_y, name, source, legende, color)
+        self.y1_axe.append(data)
 
     """----------------------------------------------------------------------------------"""
 
     def add_data_y1_Data(self, data):
+        """créer l'axe y1 si il n'existe pas encore"""
+        if self.y1_axe is None:
+            self.y1_axe = Axe("y1")
+
         """ajoute un nouvel objet Data_array à data_y1"""
-        self.data_y1.append(data)
+        self.y1_axe.append(data)
+
+        if self.x_axe is not None and len(self.y1_axe) != len(self.x_axe):
+            self.x_axe.append(self.x_axe[-1])
 
     """----------------------------------------------------------------------------------"""
 
-    def add_data_y2(self, data_y, name,  source, legende=None, color=None, extra_legende=None):
+    def add_data_y2(self, data_y, name,  source, legende=None, color=None):
+        """créer l'axe y2 si il n'existe pas encore"""
+        if self.y2_axe is None:
+            self.y2_axe = Axe("y2")
+
         """créer et ajoute un nouvel objet Data_array à data_y2"""
-        data = Data_array(data_y, name, source, legende, color, extra_legende)
-        self.data_y2.append(data)
+        data = Data_array(data_y, name, source, legende, color)
+        self.y2_axe.append(data)
 
     """----------------------------------------------------------------------------------"""
 
     def add_data_y2_Data(self, data):
+        """créer l'axe y2 si il n'existe pas encore"""
+        if self.y2_axe is None:
+            self.y2_axe = Axe("y2")
+
         """ajoute un nouvel objet Data_array à data_y2"""
-        self.data_y2.append(data)
+        self.y2_axe.append(data)
 
     """----------------------------------------------------------------------------------"""
 
-    def add_data_z1(self, data_y, name,  source, legende=None, color=None, extra_legende=None):
+    def add_data_z1(self, data_y, name,  source, legende=None):
+        """créer l'axe z1 si il n'existe pas encore"""
+        if self.z1_axe is None:
+            self.z1_axe = Axe("z1")
+
         """créer et ajoute un nouvel objet Data_array à data_z1"""
-        data = Data_array(data_y, name, source, legende, color, extra_legende)
-        self.data_z1.append(data)
+        data = Data_array(data_y, name, source, legende)
+        self.z1_axe.append(data)
 
     """----------------------------------------------------------------------------------"""
 
     def add_data_z1_Data(self, data):
+        """créer l'axe z1 si il n'existe pas encore"""
+        if self.z1_axe is None:
+            self.z1_axe = Axe("z1")
+
         """ajoute un nouvel objet Data_array à data_z1"""
-        self.data_z1.append(data)
-
-    """----------------------------------------------------------------------------------"""
-
-    def add_data_z2(self, data_y, name,  source, legende=None, color=None, extra_legende=None):
-        """créer et ajoute un nouvel objet Data_array à data_z2"""
-        data = Data_array(data_y, name, source, legende, color, extra_legende)
-        self.data_z2.append(data)
-
-    """----------------------------------------------------------------------------------"""
-
-    def add_data_z2_Data(self, data):
-        """ajoute un nouvel objet Data_array à data_z2"""
-        self.data_z2.append(data)
+        self.z1_axe.append(data)
 
     """----------------------------------------------------------------------------------"""
 
     def get_info(self):
+        print("a réécrire")
+        return
+
         """affiche les information de la figure, n'affiche rien si la figure est dirty"""
         if self.dirty is not None:
             print("Les données de cette figure ont été modifiées par le programme, elles n'ont pas de sens à être "
@@ -436,8 +284,7 @@ class Figure:
     """----------------------------------------------------------------------------------"""
 
     def is_data_set(self):
-        """return 1 si la figure est correctself.resource.print_color("Figure invalide pour traiter les cycles", "fail") pour être affiché, 0 sinon"""
-        if len(self.data_x) == 0 or len(self.data_y1) == 0:
+        if len(self.x_axe) == 0 or len(self.y1_axe) == 0:
             return 0
         else:
             return 1
@@ -446,7 +293,7 @@ class Figure:
 
     def is_data_set_3d(self):
         """return 1 si la figure est correct pour être affiché, 0 sinon"""
-        if (len(self.data_x) == 0 or len(self.data_y1) == 0 or len(self.data_z1) == 0) or len(self._data_y2) != 0:
+        if (len(self.x_axe) == 0 or len(self.y1_axe) == 0 or len(self.z1_axe) == 0) or len(self.y2_axe) != 0:
             return 0
         else:
             return 1
@@ -455,7 +302,7 @@ class Figure:
 
     def is_data_set_contour(self):
         """return 1 si la figure est correct pour être affiché, 0 sinon"""
-        if len(self.data_x) == 0 or len(self.data_y1) == 0 or len(self.data_z1) == 0:
+        if len(self.x_axe) == 0 or len(self.y1_axe) == 0 or len(self.z1_axe) == 0:
             return 0
         else:
             return 1
@@ -464,10 +311,13 @@ class Figure:
 
     def is_data_set_bar(self):
         """return 1 si la figure est correct pour être affiché, 0 sinon"""
-        if (len(self.data_x) == 0 or len(self.data_y1) == 0) or len(self._data_y2) != 0:
+        if self.x_axe is None and self.y1_axe is None:
             return 0
         else:
-            return 1
+            if len(self.x_axe) == 0 or len(self.y1_axe) == 0 or self.y2_axe is not None:
+                return 0
+            else:
+                return 1
 
     """----------------------------------------------------------------------------------"""
 
@@ -480,3 +330,13 @@ class Figure:
             return 1
 
     """----------------------------------------------------------------------------------"""
+
+    def format_x_axe(self):
+        """on ajoute les data_array manquant à l'axe x
+        si ils sont manquant c'est que la figure a été faire par l'utilisateur"""
+        if self.y2_axe is None:
+            while len(self.x_axe) != len(self.y1_axe):
+                self.x_axe.append(self.x_axe.data[0])
+        else:
+            while len(self.x_axe) != len(self.y1_axe) + len(self.y2_axe):
+                self.x_axe.append(self.x_axe.data[-1])

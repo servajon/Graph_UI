@@ -33,6 +33,7 @@ class Resource_class(object):
 
     """"-----------------------------------------------------"""
 
+
 def justify(s, width=80):
     """Code repris de cerium50, https://openclassrooms.com/forum/sujet/justifier-un-texte-avec-python-44256"""
     """J'ai juste modifier un tout petit truc pour que la dernière ligne ne soit pas justifié, donc absolument rien"""
@@ -446,6 +447,7 @@ def unique_name(array, name):
                 name = name[0:len(name) - 3] + temp
             unique_name(array, name)
     return name
+
 
 """----------------------------------------------------------------------------------"""
 

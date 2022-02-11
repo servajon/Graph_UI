@@ -1,7 +1,3 @@
-import sys
-import os
-
-
 class Console:
     def __init__(self):
         self.datas = []
@@ -37,6 +33,16 @@ class Console:
                     name = name[0:len(name) - 3] + temp
                 self.unique_name(name)
         return name
+
+    """----------------------------------------------------------------------------------"""
+
+    def set_current_data_name(self, name):
+        for data in self.datas:
+            if data.name == name:
+                self.current_data = data
+                return
+
+        raise ValueError
 
     """----------------------------------------------------------------------------------"""
 

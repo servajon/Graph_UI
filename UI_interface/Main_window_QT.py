@@ -9,6 +9,11 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import pyqtSignal, Qt, QMimeData, QPoint, QEvent
+from PyQt5.QtGui import QPixmap, QDrag, QCursor, QRegion
+from PyQt5.QtWidgets import QWidget, QLineEdit, QInputDialog, QMainWindow
+
+from Resources import Resources
 
 
 class Ui_MainWindow(object):
@@ -65,9 +70,7 @@ class Ui_MainWindow(object):
         self.comboBox_5.setMinimumSize(QtCore.QSize(103, 41))
         self.comboBox_5.setMaximumSize(QtCore.QSize(103, 41))
         self.comboBox_5.setObjectName("comboBox_5")
-        self.comboBox_5.addItem("")
-        self.comboBox_5.addItem("")
-        self.comboBox_5.addItem("")
+
         self.horizontalLayout_4.addWidget(self.comboBox_5)
         spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_4.addItem(spacerItem1)
@@ -131,10 +134,12 @@ class Ui_MainWindow(object):
         self.groupBox_3.setObjectName("groupBox_3")
         self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.groupBox_3)
         self.verticalLayout_4.setObjectName("verticalLayout_4")
-        self.tabWidget = QtWidgets.QTabWidget(self.groupBox_3)
+
+        self.tabWidget = TabWidget(self.groupBox_3)
         self.tabWidget.setMinimumSize(QtCore.QSize(457, 455))
         self.tabWidget.setObjectName("tabWidget")
         self.verticalLayout_4.addWidget(self.tabWidget)
+
         self.horizontalLayout.addWidget(self.groupBox_3)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
@@ -209,14 +214,20 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.label.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">Current data : None</span></p></body></html>"))
-        self.label_7.setText(_translate("MainWindow", "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt;\">New plot</span></p></body></html>"))
-        self.comboBox_5.setItemText(0, _translate("MainWindow", "capa"))
+        self.label.setText(_translate("MainWindow",
+                                      "<html><head/><body><p><span style=\" font-size:11pt;\">Current data : None</span></p></body></html>"))
+        self.label_7.setText(_translate("MainWindow",
+                                        "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt;\">New plot</span></p></body></html>"))
+
+        """ self.comboBox_5.setItemText(0, _translate("MainWindow", "capa"))
         self.comboBox_5.setItemText(1, _translate("MainWindow", "potetio"))
-        self.comboBox_5.setItemText(2, _translate("MainWindow", "custom"))
+        self.comboBox_5.setItemText(2, _translate("MainWindow", "custom"))"""
+
         self.pushButton_5.setText(_translate("MainWindow", "Create"))
-        self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">Current plot : None</span></p></body></html>"))
-        self.label_6.setText(_translate("MainWindow", "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt;\">Action</span></p></body></html>"))
+        self.label_5.setText(_translate("MainWindow",
+                                        "<html><head/><body><p><span style=\" font-size:11pt;\">Current plot : None</span></p></body></html>"))
+        self.label_6.setText(_translate("MainWindow",
+                                        "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt;\">Action</span></p></body></html>"))
         self.comboBox_4.setItemText(0, _translate("MainWindow", "Derive"))
         self.pushButton_4.setText(_translate("MainWindow", "Create"))
         self.menuOpen.setTitle(_translate("MainWindow", "Open"))
@@ -237,7 +248,6 @@ class Ui_MainWindow(object):
         self.actionCurrent_Plot.setText(_translate("MainWindow", "Current Plot"))
         self.actionCurrend_Data.setText(_translate("MainWindow", "Currend Data"))
         self.actionAll.setText(_translate("MainWindow", "All"))
-
 
 
 class UI_Create_Figure(object):
@@ -517,15 +527,18 @@ class UI_Create_Figure(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "Create new Figure"))
-        self.label_13.setText(_translate("MainWindow", "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt;\">Name</span></p></body></html>"))
+        self.label_13.setText(_translate("MainWindow",
+                                         "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt;\">Name</span></p></body></html>"))
         self.comboBox_15.setItemText(0, _translate("MainWindow", "time/h"))
         self.comboBox_15.setItemText(1, _translate("MainWindow", "Ecell/V"))
         self.comboBox_15.setItemText(2, _translate("MainWindow", "<i>/mA"))
         self.pushButton_10.setText(_translate("MainWindow", "Add data"))
-        self.label_14.setText(_translate("MainWindow", "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt;\">Unite</span></p></body></html>"))
+        self.label_14.setText(_translate("MainWindow",
+                                         "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt;\">Unite</span></p></body></html>"))
         self.comboBox_16.setItemText(0, _translate("MainWindow", "linear"))
         self.comboBox_16.setItemText(1, _translate("MainWindow", "log"))
-        self.label_15.setText(_translate("MainWindow", "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt;\">Scale</span></p></body></html>"))
+        self.label_15.setText(_translate("MainWindow",
+                                         "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt;\">Scale</span></p></body></html>"))
         self.comboBox_17.setItemText(0, _translate("MainWindow", "test1"))
         self.comboBox_17.setItemText(1, _translate("MainWindow", "test2"))
         self.comboBox_17.setItemText(2, _translate("MainWindow", "test3"))
@@ -534,10 +547,12 @@ class UI_Create_Figure(object):
         self.comboBox_12.setItemText(1, _translate("MainWindow", "Ecell/V"))
         self.comboBox_12.setItemText(2, _translate("MainWindow", "<i>/mA"))
         self.pushButton_9.setText(_translate("MainWindow", "Add data"))
-        self.label_11.setText(_translate("MainWindow", "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt;\">Unite</span></p></body></html>"))
+        self.label_11.setText(_translate("MainWindow",
+                                         "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt;\">Unite</span></p></body></html>"))
         self.comboBox_13.setItemText(0, _translate("MainWindow", "linear"))
         self.comboBox_13.setItemText(1, _translate("MainWindow", "log"))
-        self.label_12.setText(_translate("MainWindow", "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt;\">Scale</span></p></body></html>"))
+        self.label_12.setText(_translate("MainWindow",
+                                         "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt;\">Scale</span></p></body></html>"))
         self.comboBox_14.setItemText(0, _translate("MainWindow", "test1"))
         self.comboBox_14.setItemText(1, _translate("MainWindow", "test2"))
         self.comboBox_14.setItemText(2, _translate("MainWindow", "test3"))
@@ -546,12 +561,205 @@ class UI_Create_Figure(object):
         self.comboBox_18.setItemText(1, _translate("MainWindow", "Ecell/V"))
         self.comboBox_18.setItemText(2, _translate("MainWindow", "<i>/mA"))
         self.pushButton_11.setText(_translate("MainWindow", "Add data"))
-        self.label_16.setText(_translate("MainWindow", "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt;\">Unite</span></p></body></html>"))
+        self.label_16.setText(_translate("MainWindow",
+                                         "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt;\">Unite</span></p></body></html>"))
         self.comboBox_19.setItemText(0, _translate("MainWindow", "linear"))
         self.comboBox_19.setItemText(1, _translate("MainWindow", "log"))
-        self.label_17.setText(_translate("MainWindow", "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt;\">Scale</span></p></body></html>"))
+        self.label_17.setText(_translate("MainWindow",
+                                         "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt;\">Scale</span></p></body></html>"))
         self.comboBox_20.setItemText(0, _translate("MainWindow", "test1"))
         self.comboBox_20.setItemText(1, _translate("MainWindow", "test2"))
         self.comboBox_20.setItemText(2, _translate("MainWindow", "test3"))
         self.tabWidget_3.setTabText(self.tabWidget_3.indexOf(self.RightAxe), _translate("MainWindow", "RightAxe"))
         self.pushButton.setText(_translate("MainWindow", "Create"))
+
+
+class Tab(QWidget):
+    drag_tab = pyqtSignal(int)
+
+    def __init__(self):
+        QWidget.__init__(self)
+
+
+class TabWidget(QtWidgets.QTabWidget):
+    name_changed_tab = pyqtSignal(str)
+    break_tab = pyqtSignal(int)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAcceptDrops(True)
+        self.tabBar = self.tabBar()
+        self.tabBar.setMouseTracking(True)
+        self.setMovable(True)
+        self.setAcceptDrops(True)
+
+        self.tabBarDoubleClicked.connect(self.db_clique_bar)
+        self.tabBar.installEventFilter(self)
+
+        self.start_drag_y = None
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.HoverMove:  # Catch the TouchBegin event.
+            self.hoverMove(event)
+
+        if event.type() == QEvent.MouseButtonPress:  # Catch the TouchBegin event.
+            self.mousePressEvent(event)
+
+        if event.type() == QEvent.MouseButtonRelease:  # Catch the TouchBegin event.
+            self.mouseReleaseEvent(event)
+
+        return super(TabWidget, self).eventFilter(obj, event)
+
+    def db_clique_bar(self, event):
+        name = QInputDialog.getText(self, "Name change", "New name ?", QLineEdit.Normal)
+        if name[1] and name[0] != '':
+            old_name = self.tabText(self.currentIndex())
+            names = []
+            for i in range(0, self.count()):
+                if i != self.currentIndex():
+                    names.append(self.tabText(i))
+
+            new_name = Resources.unique_name(names, name[0])
+            self.setTabText(self.currentIndex(), new_name)
+            self.name_changed_tab.emit(old_name)
+
+    def mousePressEvent(self, event):
+        self.start_drag_y = event.y()
+
+    def mouseReleaseEvent(self, event):
+        self.start_drag_y = None
+
+    def hoverMove(self, event):
+        if self.start_drag_y is None:
+            return
+        sub = event.pos().y() - self.start_drag_y
+        if sub > 50:
+            self.break_tab.emit(self.currentIndex())
+            self.removeTab(self.currentIndex())
+            self.start_drag_y = None
+
+
+class Edit_Axe(QWidget):
+    finish = pyqtSignal(str)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setupUi(self)
+
+    def setupUi(self, Form):
+        Form.setObjectName("Form")
+        Form.resize(312, 238)
+        self.verticalLayout_2 = QtWidgets.QVBoxLayout(Form)
+        self.verticalLayout_2.setObjectName("verticalLayout_2")
+        self.verticalLayout = QtWidgets.QVBoxLayout()
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.label = QtWidgets.QLabel(Form)
+        self.label.setObjectName("label")
+        self.verticalLayout.addWidget(self.label)
+        self.frame_9 = QtWidgets.QFrame(Form)
+        self.frame_9.setObjectName("frame_9")
+        self.horizontalLayout_14 = QtWidgets.QHBoxLayout(self.frame_9)
+        self.horizontalLayout_14.setObjectName("horizontalLayout_14")
+        self.label_14 = QtWidgets.QLabel(self.frame_9)
+        self.label_14.setMinimumSize(QtCore.QSize(111, 41))
+        self.label_14.setMaximumSize(QtCore.QSize(111, 41))
+        self.label_14.setObjectName("label_14")
+        self.horizontalLayout_14.addWidget(self.label_14)
+        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_14.addItem(spacerItem)
+        self.lineEdit_2 = QtWidgets.QLineEdit(self.frame_9)
+        self.lineEdit_2.setMinimumSize(QtCore.QSize(111, 41))
+        self.lineEdit_2.setMaximumSize(QtCore.QSize(111, 41))
+        self.lineEdit_2.setObjectName("lineEdit_2")
+        self.horizontalLayout_14.addWidget(self.lineEdit_2)
+        self.verticalLayout.addWidget(self.frame_9)
+        self.frame_7 = QtWidgets.QFrame(Form)
+        self.frame_7.setObjectName("frame_7")
+        self.horizontalLayout_12 = QtWidgets.QHBoxLayout(self.frame_7)
+        self.horizontalLayout_12.setObjectName("horizontalLayout_12")
+        self.label_16 = QtWidgets.QLabel(self.frame_7)
+        self.label_16.setMinimumSize(QtCore.QSize(111, 41))
+        self.label_16.setMaximumSize(QtCore.QSize(111, 41))
+        self.label_16.setObjectName("label_16")
+        self.horizontalLayout_12.addWidget(self.label_16)
+        spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_12.addItem(spacerItem1)
+        self.comboBox_19 = QtWidgets.QComboBox(self.frame_7)
+        self.comboBox_19.setMinimumSize(QtCore.QSize(111, 41))
+        self.comboBox_19.setMaximumSize(QtCore.QSize(111, 41))
+        self.comboBox_19.setObjectName("comboBox_19")
+        self.comboBox_19.addItem("")
+        self.comboBox_19.addItem("")
+        self.comboBox_19.addItem("")
+        self.horizontalLayout_12.addWidget(self.comboBox_19)
+        self.verticalLayout.addWidget(self.frame_7)
+        self.frame_8 = QtWidgets.QFrame(Form)
+        self.frame_8.setObjectName("frame_8")
+        self.horizontalLayout_13 = QtWidgets.QHBoxLayout(self.frame_8)
+        self.horizontalLayout_13.setObjectName("horizontalLayout_13")
+        self.label_17 = QtWidgets.QLabel(self.frame_8)
+        self.label_17.setMinimumSize(QtCore.QSize(111, 41))
+        self.label_17.setMaximumSize(QtCore.QSize(111, 41))
+        self.label_17.setObjectName("label_17")
+        self.horizontalLayout_13.addWidget(self.label_17)
+        spacerItem2 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_13.addItem(spacerItem2)
+        self.comboBox_18 = QtWidgets.QComboBox(self.frame_8)
+        self.comboBox_18.setMinimumSize(QtCore.QSize(111, 41))
+        self.comboBox_18.setMaximumSize(QtCore.QSize(111, 41))
+        self.comboBox_18.setObjectName("comboBox_18")
+        self.comboBox_18.addItem("")
+        self.comboBox_18.addItem("")
+        self.horizontalLayout_13.addWidget(self.comboBox_18)
+        self.verticalLayout.addWidget(self.frame_8)
+        self.frame_10 = QtWidgets.QFrame(Form)
+        self.frame_10.setObjectName("frame_10")
+        self.horizontalLayout_15 = QtWidgets.QHBoxLayout(self.frame_10)
+        self.horizontalLayout_15.setObjectName("horizontalLayout_15")
+        self.pushButton = QtWidgets.QPushButton(self.frame_10)
+        self.pushButton.setMinimumSize(QtCore.QSize(111, 41))
+        self.pushButton.setMaximumSize(QtCore.QSize(111, 41))
+        self.pushButton.setObjectName("pushButton")
+        self.horizontalLayout_15.addWidget(self.pushButton)
+        spacerItem3 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_15.addItem(spacerItem3)
+        self.pushButton_2 = QtWidgets.QPushButton(self.frame_10)
+        self.pushButton_2.setMinimumSize(QtCore.QSize(111, 41))
+        self.pushButton_2.setMaximumSize(QtCore.QSize(111, 41))
+        self.pushButton_2.setObjectName("pushButton_2")
+        self.horizontalLayout_15.addWidget(self.pushButton_2)
+        self.verticalLayout.addWidget(self.frame_10)
+        self.verticalLayout_2.addLayout(self.verticalLayout)
+        self.verticalLayout_2.addLayout(self.verticalLayout)
+
+        self.retranslateUi(Form)
+        QtCore.QMetaObject.connectSlotsByName(Form)
+
+        self.pushButton.clicked.connect(self.save_presed)
+        self.pushButton_2.clicked.connect(self.save_cancel)
+
+    def retranslateUi(self, Form):
+        _translate = QtCore.QCoreApplication.translate
+        Form.setWindowTitle(_translate("Form", "Edit Axe"))
+        self.label.setText(_translate("Form", "<html><head/><body><p align=\"center\"><span style=\" font-size:14pt;\">Edit Axe :</span></p></body></html>"))
+        self.label_14.setText(_translate("Form", "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt;\">New name</span></p></body></html>"))
+        self.label_16.setText(_translate("Form", "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt;\">Unite</span></p></body></html>"))
+        self.comboBox_19.setItemText(0, _translate("Form", "test1"))
+        self.comboBox_19.setItemText(1, _translate("Form", "test2"))
+        self.comboBox_19.setItemText(2, _translate("Form", "test3"))
+        self.label_17.setText(_translate("Form", "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt;\">Scale</span></p></body></html>"))
+        self.comboBox_18.setItemText(0, _translate("Form", "linear"))
+        self.comboBox_18.setItemText(1, _translate("Form", "log"))
+        self.pushButton.setText(_translate("Form", "Save"))
+        self.pushButton_2.setText(_translate("Form", "Cancel"))
+
+    def closeEvent(self, event):
+        self.finish.emit("closed")
+
+    def save_presed(self):
+        self.finish.emit("save")
+
+    def save_cancel(self):
+        self.finish.emit("cancel")
+
+

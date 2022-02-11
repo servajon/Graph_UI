@@ -198,6 +198,7 @@ class Classique_affiche(Abstract_objet_affiche):
         if self.pplot_fig is not None:
             return True
         else:
+            print(self.figure.type)
             if self.figure.type is not None and "3d" in self.figure.type:
                 if self.figure.is_data_set_3d() == 1:
                     try:
