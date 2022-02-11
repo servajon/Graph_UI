@@ -139,7 +139,7 @@ class Figure_plot(QWidget):
         pass
 
     def pick_event(self, event):
-        """de la merde, mais pas moyen de trouver comment faire mieux......"""
+        """de la merde, mais pas moyen de trouver comment faire mieux....."""
         if event.mouseevent.button == 1 and event.mouseevent.dblclick:
             """on prends le centre de la figure, si le click est plus loi que le centre c'est l'axe de
             droite, gauche sinon"""
