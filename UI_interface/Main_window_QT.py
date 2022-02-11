@@ -584,6 +584,7 @@ class Tab(QWidget):
 class TabWidget(QtWidgets.QTabWidget):
     name_changed_tab = pyqtSignal(str)
     break_tab = pyqtSignal(int)
+    change_current = pyqtSignal(int)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -594,6 +595,7 @@ class TabWidget(QtWidgets.QTabWidget):
         self.setAcceptDrops(True)
 
         self.tabBarDoubleClicked.connect(self.db_clique_bar)
+        self.currentChanged.connect(self.onChange)
         self.tabBar.installEventFilter(self)
 
         self.start_drag_y = None
@@ -637,6 +639,9 @@ class TabWidget(QtWidgets.QTabWidget):
             self.break_tab.emit(self.currentIndex())
             self.removeTab(self.currentIndex())
             self.start_drag_y = None
+
+    def onChange(self, event):
+        self.change_current.emit(event)
 
 
 class Edit_Axe(QWidget):

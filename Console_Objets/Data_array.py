@@ -14,9 +14,9 @@ class Data_array:
         self._source = source
 
         if (legende is None or legende == "") and name != "LIGNE0":
-            self._legende = name
+            self._legend = name
         else:
-            self._legende = legende
+            self._legend = legende
 
         self._color = color
         self._unite = None
@@ -52,7 +52,7 @@ class Data_array:
 
     @property
     def legend(self):
-        return self._legende
+        return self._legend
 
     @property
     def color(self):
@@ -95,8 +95,8 @@ class Data_array:
         self._source = source
 
     @legend.setter
-    def legende(self, legende):
-        self._legende = legende
+    def legend(self, legende):
+        self._legend = legende
 
     @color.setter
     def color(self, color):

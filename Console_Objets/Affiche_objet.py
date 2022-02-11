@@ -19,6 +19,7 @@ class Abstract_objet_affiche(ABC):
         self.open = False
         self.save = None
         self.mpl_connect = []
+        self.interactive = False
 
     @abstractmethod
     def create_figure(self):
@@ -49,7 +50,7 @@ class Abstract_objet_affiche(ABC):
         pass
 
     @abstractmethod
-    def connect_all(self, array):
+    def connect_all(self):
         pass
 
     @abstractmethod
@@ -180,7 +181,8 @@ class Classique_affiche(Abstract_objet_affiche):
         self.ax2 = None
         self.value = None
         self.freq = None
-        self.leg = None
+        self.leg1 = None
+        self.leg2 = None
 
         self.resource = Resources.Resource_class()
 
@@ -203,13 +205,13 @@ class Classique_affiche(Abstract_objet_affiche):
                 if self.figure.is_data_set_3d() == 1:
                     try:
                         if self.save is not None:
-                            self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg = \
+                            self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
                                 self.data.load_graph_3d(self.figure, self.save)
                             pplot.close(self.pplot_fig)
                             self.finish = True
                             self.pplot_fig = None
                         else:
-                            self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg = \
+                            self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
                                 self.data.load_graph_3d(self.figure)
                             self.pplot_fig.tight_layout()
                     except ValueError as err:
@@ -224,13 +226,13 @@ class Classique_affiche(Abstract_objet_affiche):
                 if self.figure.is_data_set_bar() == 1:
                     try:
                         if self.save is not None:
-                            self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg = \
+                            self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
                                 self.data.load_graph_bar(self.figure, self.save)
                             pplot.close(self.pplot_fig)
                             self.finish = True
                             self.pplot_fig = None
                         else:
-                            self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg = \
+                            self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
                                 self.data.load_graph_bar(self.figure)
                             self.pplot_fig.tight_layout()
                     except ValueError as err:
@@ -243,13 +245,13 @@ class Classique_affiche(Abstract_objet_affiche):
             elif self.figure.type is not None and "contour" in self.figure.type:
                 if self.figure.is_data_set_contour() == 1:
                     if self.save is not None:
-                        self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg = \
+                        self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
                             self.data.load_graph_contour(self.figure, self.norm, self.save)
                         pplot.close(self.pplot_fig)
                         self.finish = True
                         self.pplot_fig = None
                     else:
-                        self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg = \
+                        self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
                             self.data.load_graph_contour(self.figure, self.norm)
                         self.pplot_fig.tight_layout()
                 else:
@@ -295,14 +297,14 @@ class Classique_affiche(Abstract_objet_affiche):
                 if self.figure.is_data_set() == 1:
                     try:
                         if self.save is not None:
-                            self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg = \
+                            self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
                                 self.data.load_graph(self.figure, self.save)
                             pplot.close(self.pplot_fig)
                             self.finish = True
                             self.pplot_fig = None
                         else:
-                            self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg = \
-                                self.data.load_graph(self.figure)
+                            self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2\
+                                = self.data.load_graph(self.figure)
                             self.pplot_fig.tight_layout()
                     except ValueError as err:
                         print(err)
@@ -322,6 +324,7 @@ class Classique_affiche(Abstract_objet_affiche):
         if self.pos_x is not None:
             if self.index is None:
                 index_x, index_y = Resources.index_array(self.figure, [self.pos_x, self.pos_y])
+
                 self.index = [index_x, index_y]
                 count = 0
                 for ax in pplot.gcf().axes:
@@ -362,19 +365,19 @@ class Classique_affiche(Abstract_objet_affiche):
                         break
 
                 res = Resources.coord_to_point([[self.pos_x, self.pos_y]],
-                                              self.figure.data_x[self.index[0][1]],
-                                              self.figure.data_y1[self.index[1][1]])
+                                              self.figure.x_axe.data[self.index[0][1]],
+                                              self.figure.y1_axe.data[self.index[1][1]])
                 if res != -1:
-                    text_legend_pointed = self.figure.data_y1[self.index[1][1]].legende
+                    text_legend_pointed = self.figure.y1_axe.data[self.index[1][1]].legend
 
                     self.value.legend([test, test, test], [
                         'courbe : ' + str(text_legend_pointed),
-                        'x : ' + str(self.figure.data_x[self.index[0][1]].data[res])[0:len_x],
-                        'y : ' + str(self.figure.data_y1[self.index[1][1]].data[res])[0:len_y]],
+                        'x : ' + str(self.figure.x_axe.data[self.index[0][1]].data[res])[0:len_x],
+                        'y : ' + str(self.figure.y1_axe.data[self.index[1][1]].data[res])[0:len_y]],
                                       markerscale=0, borderaxespad=0, fontsize=14, loc="center right")
 
-                    self.ligne1 = self.ax1.axhline(y=self.figure.data_y1[self.index[1][1]].data[res], color=black)
-                    self.ligne2 = self.ax1.axvline(x=self.figure.data_x[self.index[0][1]].data[res], color=black)
+                    self.ligne1 = self.ax1.axhline(y=self.figure.y1_axe.data[self.index[1][1]].data[res], color=black)
+                    self.ligne2 = self.ax1.axvline(x=self.figure.x_axe.data[self.index[0][1]].data[res], color=black)
 
                     if self.freq is not None:
                         self.freq.legend([test], [
@@ -382,7 +385,7 @@ class Classique_affiche(Abstract_objet_affiche):
                                          markerscale=0, borderaxespad=0, fontsize=14, loc="lower right")
 
                 else:
-                    text_legend_pointed = self.figure.data_y1[self.index[1][1]].legende
+                    text_legend_pointed = self.figure.y1_axe.data[self.index[1][1]].legend
                     self.value.legend([test, test, test], ['courbe : ' + str(text_legend_pointed),
                                                            'x : none', 'y : none'],
                                       markerscale=0, borderaxespad=0, fontsize=14, loc="center right")
@@ -391,18 +394,18 @@ class Classique_affiche(Abstract_objet_affiche):
                         self.freq.legend([test], ['freq : none'],
                                          markerscale=0, borderaxespad=0, fontsize=14, loc="lower right")
             else:
-                text_legend_pointed = self.figure.data_y1[self.index[1][1]].legende
+                text_legend_pointed = self.figure.y1_axe.data[self.index[1][1]].legend
                 self.value.legend([test, test, test], ['courbe : ' + str(text_legend_pointed), 'x : none', 'y : none'],
                                   markerscale=0, borderaxespad=0, fontsize=14, loc="center right")
                 if self.freq is not None:
                     self.freq.legend([test], ['freq : none'],
                                      markerscale=0, borderaxespad=0, fontsize=14, loc="lower right")
 
+            self.pplot_fig.canvas.draw()
+
     """----------------------------------------------------------------------------------"""
 
     def update_pplot_fig(self):
-        self.pplot_fig.canvas.draw()
-        self.pplot_fig.canvas.flush_events()
         if self.ligne1 is not None:
             try:
                 self.ax1.lines.remove(self.ligne1)
@@ -415,6 +418,7 @@ class Classique_affiche(Abstract_objet_affiche):
             except ValueError:
                 pass
             self.ligne2 = None
+        self.interact()
 
     """----------------------------------------------------------------------------------"""
 
@@ -424,11 +428,8 @@ class Classique_affiche(Abstract_objet_affiche):
 
     """----------------------------------------------------------------------------------"""
 
-    def connect_all(self, array):
+    def connect_all(self):
         self.mpl_connect.append(self.pplot_fig.canvas.mpl_connect('motion_notify_event', self.on_move))
-        for type, func in array:
-            if self.pplot_fig is not None:
-                self.mpl_connect.append(self.pplot_fig.canvas.mpl_connect(type, func))
 
     """----------------------------------------------------------------------------------"""
 
@@ -440,8 +441,6 @@ class Classique_affiche(Abstract_objet_affiche):
 
     def set_atteractive(self):
         if self.figure.is_interact() == 0:
-            self.resource.print_color("\nLa figure " + self.figure.name +
-                                      " ne peux être intéractive\n", "work")
             return False
         else:
             return True
@@ -458,7 +457,7 @@ class Classique_affiche(Abstract_objet_affiche):
                         color = color[0:7]
                         line.set_color(color)
 
-        texts = self.leg.get_legend().get_texts()
+        texts = self.leg1.get_legend().get_texts()
         for text in texts:
             text.set_c("black")
 
@@ -468,11 +467,20 @@ class Classique_affiche(Abstract_objet_affiche):
         self.pos_x = event.xdata
         self.pos_y = event.ydata
 
+        """On retire les lignes si elles sont déjà tracés et execute self.interact"""
+        self.update_pplot_fig()
+
+        self.pplot_fig.canvas.draw()
+
     """----------------------------------------------------------------------------------"""
 
     def focus_off(self):
+        self.interactive = False
         self.index = None
+        self.pos_x = None
+        self.pos_y = None
         self.value.set_visible(False)
+
         if self.freq is not None:
             self.freq.set_visible(False)
 
@@ -482,6 +490,7 @@ class Classique_affiche(Abstract_objet_affiche):
             except ValueError:
                 pass
             self.ligne1 = None
+
         if self.ligne2 is not None:
             try:
                 self.ax1.lines.remove(self.ligne2)
@@ -489,26 +498,34 @@ class Classique_affiche(Abstract_objet_affiche):
                 pass
             self.ligne2 = None
 
-        self.pplot_fig.canvas.draw()
-        self.pplot_fig.canvas.flush_events()
         self.reset_color()
+        self.disconnect_all()
+        self.pplot_fig.canvas.draw()
+        print("interact off")
 
     """----------------------------------------------------------------------------------"""
 
     def focus_on(self):
+        if self.figure.is_interact() == 0:
+            return
+        else:
+            self.interactive = True
+
         self.value.set_visible(True)
         if self.freq is not None:
             self.freq.set_visible(True)
 
-    """----------------------------------------------------------------------------------"""
+        self.connect_all()
+        self.interact()
 
-    def on_click(self, event, focus):
-        return focus
+        print("interact on")
 
     """----------------------------------------------------------------------------------"""
 
     def on_close(self, event):
-        pass
+        print("close affiche obj")
+        self.disconnect_all()
+        pplot.close(self.pplot_fig)
 
     """----------------------------------------------------------------------------------"""
 
@@ -516,6 +533,49 @@ class Classique_affiche(Abstract_objet_affiche):
         pass
 
     """----------------------------------------------------------------------------------"""
+
+    def on_click(self, event, focus):
+        pass
+
+    """----------------------------------------------------------------------------------"""
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class Gitt_affiche(Abstract_objet_affiche):
     def __init__(self, data, figure):
@@ -590,9 +650,6 @@ class Gitt_affiche(Abstract_objet_affiche):
     """----------------------------------------------------------------------------------"""
 
     def update_pplot_fig(self):
-        self.pplot_fig.canvas.draw()
-        self.pplot_fig.canvas.flush_events()
-
         if self.ligne1 is not None:
             try:
                 self.ax1.lines.remove(self.ligne1)
@@ -645,8 +702,8 @@ class Gitt_affiche(Abstract_objet_affiche):
     def focus_off(self):
         """On remet la touche s, oupas, a regarder comment faire"""
         self.coords = [[None, None], [None, None], [None, None]]
+        self.disconnect_all()
         self.pplot_fig.canvas.draw()
-        self.pplot_fig.canvas.flush_events()
 
     """----------------------------------------------------------------------------------"""
 
@@ -2487,7 +2544,7 @@ class Saxs_selection(Abstract_objet_affiche):
                                               self.figure.data_x[self.index[0][1]],
                                               self.figure.data_y1[self.index[1][1]])
                 if res != -1:
-                    text_legend_pointed = self.figure.data_y1[self.index[1][1]].legende
+                    text_legend_pointed = self.figure.data_y1[self.index[1][1]].legend
 
                     self.value.legend([test, test, test], [
                         'courbe : ' + str(text_legend_pointed),
@@ -2499,22 +2556,19 @@ class Saxs_selection(Abstract_objet_affiche):
                     self.ligne2 = self.ax1.axvline(x=self.figure.data_x[self.index[0][1]].data[res], color=black)
 
                 else:
-                    text_legend_pointed = self.figure.data_y1[self.index[1][1]].legende
+                    text_legend_pointed = self.figure.data_y1[self.index[1][1]].legend
                     self.value.legend([test, test, test], ['courbe : ' + str(text_legend_pointed),
                                                            'x : none', 'y : none'],
                                       markerscale=0, borderaxespad=0, fontsize=14, loc="center right")
 
             else:
-                text_legend_pointed = self.figure.data_y1[self.index[1][1]].legende
+                text_legend_pointed = self.figure.data_y1[self.index[1][1]].legend
                 self.value.legend([test, test, test], ['courbe : ' + str(text_legend_pointed), 'x : none', 'y : none'],
                                   markerscale=0, borderaxespad=0, fontsize=14, loc="center right")
 
     """----------------------------------------------------------------------------------"""
 
     def update_pplot_fig(self):
-        self.pplot_fig.canvas.draw()
-        self.pplot_fig.canvas.flush_events()
-
         if self.ligne1 is not None:
             try:
                 self.ax1.lines.remove(self.ligne1)
@@ -2527,17 +2581,6 @@ class Saxs_selection(Abstract_objet_affiche):
             except ValueError:
                 pass
             self.ligne2 = None
-
-    """----------------------------------------------------------------------------------"""
-
-    def set_open(self):
-        if self.pplot_fig is not None:
-            self.open = True
-
-    """----------------------------------------------------------------------------------"""
-
-    def set_atteractive(self):
-        return True
 
     """----------------------------------------------------------------------------------"""
 
@@ -2586,16 +2629,6 @@ class Saxs_selection(Abstract_objet_affiche):
         """On supprime la touche s"""
         if 's' in pplot.rcParams['keymap.save']:
             pplot.rcParams['keymap.save'].remove('s')
-
-    """----------------------------------------------------------------------------------"""
-
-    def on_click(self, event, focus):
-        return focus
-
-    """----------------------------------------------------------------------------------"""
-
-    def on_close(self, event):
-        pass
 
     """----------------------------------------------------------------------------------"""
 

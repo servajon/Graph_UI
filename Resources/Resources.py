@@ -282,67 +282,25 @@ def coord_to_point(coords, data_x, data_y):
 def index_array(figure, coords):
     x = coords[0]
     y = coords[1]
-    if len(figure.data_x) == 1:
-        res = coord_to_point([[x, y]], figure.data_x[0], figure.data_y1[0])
-        index_x = res
 
-        min = abs(y - figure.data_y1[0].data[index_x])
-        index = ["y1", 0]
-        for i in range(len(figure.data_y1)):
-            if abs(y - figure.data_y1[i].data[index_x]) < min:
-                min = abs(y - figure.data_y1[i].data[index_x])
-                index = ["y1", i]
-        for i in range(len(figure.data_y2)):
-            if abs(y - figure.data_y2[i].data[index_x]) < min:
-                min = abs(y - figure.data_y2[i].data[index_x])
-                index = ["y2", i]
-        return ["x", 0], index
-
-    elif len(figure.data_x) != len(figure.data_y1) + len(figure.data_y2):
-        index_x = []
-        for i in range(len(figure.data_x)):
-            res = coord_to_point([[x, y]], figure.data_x[0], figure.data_y1[0])
+    index_x = []
+    for i in range(len(figure.y1_axe.data)):
+        if figure.x_axe.data[i].name != "LIGNE0":
+            res = coord_to_point([[x, y]], figure.x_axe.data[i], figure.y1_axe.data[i])
             index_x.append(res)
 
-        index_data_x = 0
-        min = abs(y - figure.data_y1[0].data[index_x[index_data_x]])
-        index_x = ["x", index_data_x]
-        index_y = ["y1", 0]
-        for i in range(len(figure.data_y1)):
-            if figure.data_y1[i].name == "LIGNE0":
-                continue
-            if figure.name != figure.data_y1[i].source:
-                index_data_x += 1
-            if abs(y - figure.data_y1[i].data[index_x[index_data_x]]) < min:
-                min = abs(y - figure.data_y1[i].data[index_x[index_data_x]])
-                index_x = ["x", index_data_x]
-                index_y = ["y1", i]
+    min = None
+    index_x_return = ["x", 0]
+    index_y_return = ["y1", 0]
 
-        for i in range(len(figure.data_y2)):
-            if figure.name != figure.data_y2[i].source:
-                index_data_x += 1
-            if abs(y - figure.data_y2[i].data[index_x[index_data_x]]) < min:
-                min = abs(y - figure.data_y2[i].data[index_x[index_data_x]])
-                index_x = ["x", index_data_x]
-                index_y = ["y1", i]
-        return index_x, index_y
-    else:
-        index_x = []
-        for i in range(len(figure.data_y1)):
-            if figure.data_x[i].name != "LIGNE0":
-                res = coord_to_point([[x, y]], figure.data_x[i], figure.data_y1[i])
-                index_x.append(res)
-        min = None
-        index_x_return = ["x", 0]
-        index_y_return = ["y1", 0]
-        for i in range(len(index_x)):
-            if figure.data_x[i].name != "LIGNE0":
-                if min is None or abs(y - figure.data_y1[i].data[index_x[i]]) < min:
-                    min = abs(y - figure.data_y1[i].data[index_x[i]])
-                    index_x_return = ["x", i]
-                    index_y_return = ["y1", i]
+    for i in range(len(index_x)):
+        if figure.x_axe.data[i].name != "LIGNE0":
+            if min is None or abs(y - figure.y1_axe.data[i].data[index_x[i]]) < min:
+                min = abs(y - figure.y1_axe.data[i].data[index_x[i]])
+                index_x_return = ["x", i]
+                index_y_return = ["y1", i]
 
-        return index_x_return, index_y_return
+    return index_x_return, index_y_return
 
 
 """----------------------------------------------------------------------------------"""

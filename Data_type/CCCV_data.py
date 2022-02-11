@@ -3,6 +3,7 @@ import copy
 from Console_Objets.Figure import Figure
 from Data_type.Abstract_data import Abstract_data
 from Resources import Resources
+from Data_type.Traitement_cycle import Traitements_cycle_outils, Traitement_cycle_cccv
 
 
 class CCCV_data(Abstract_data):
@@ -255,6 +256,44 @@ class CCCV_data(Abstract_data):
         figure_decharge_pc.y1_axe.last_val = 110
 
         return [figure, figure_charge_pc, figure_decharge_pc, figure_charge, figure_decharge]
+
+    """----------------------------------------------------------------------------------"""
+
+    def potentio(self, cycle=None, color=None):
+        if self.data.get("mode") is None:
+            #self.resource.print_color("ImpossibLe de tracer le graphique potentio pour ce fichier", "work")
+            return
+
+        if cycle is not None and len(cycle) == 3 and cycle[1] == "to":
+            name = str(cycle[0]) + "_to_" + str(cycle[2])
+            cycle = Traitements_cycle_outils.create_cycle_to(cycle[0], cycle[2])
+        else:
+            name = None
+
+        """if self.return_create_cycle(cycle) is False:
+            return"""
+
+        temp = "time/" + self.get_format_time()
+        if color is None:
+            if self.current_figure is not None:
+                for i in range(len(self.current_figure.data_y1)):
+                    if self.current_figure.data_y1[i].color is not None:
+                        color = self.current_figure.data_y1[i].color
+                        break
+
+        new_figure = Traitement_cycle_cccv.potentio(self.data.get("loop_data"),
+                                                    self.data.get(temp), self.data.get(self.resource.I),
+                                                    self.data.get(self.resource.mode), self.get_format_time(), cycle
+                                                    , color)
+
+        """On modifie le nom de la figure pour être sûr qu'il soit unique"""
+
+        if name is None:
+            new_figure.name = self.unique_name(self.nom_cell + "_" + new_figure.name)
+        else:
+            new_figure.name = self.unique_name(self.nom_cell + "_cycle_" + name)
+
+        return new_figure
 
     """----------------------------------------------------------------------------------"""
 

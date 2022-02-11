@@ -27,8 +27,14 @@ from UI_interface.Main_window_QT import Ui_MainWindow, Edit_Axe
 
 
 class Figure_plot(QWidget):
+    """utilier quand le nom de la figure est changé"""
     name_changed = pyqtSignal(str)
+
+    """utiliser qunad le plit est sous la forme d'une fenêtre et qu'il est fermé"""
     closed = pyqtSignal(str)
+
+    """utilisé quand le plot est sous la forme d'une fenêtre et qu'il est en focus"""
+    focus_in = pyqtSignal(str)
 
     def __init__(self, abstract_affiche):
         super().__init__()
@@ -37,8 +43,12 @@ class Figure_plot(QWidget):
         self.edit_w = None
         self.axe_edited = None
 
+        self.setFocusPolicy(QtCore.Qt.TabFocus)
+        self.setFocus()
+
         """abstract_affiche"""
         self.abstract_affiche = abstract_affiche
+
         """création du canvas + widget matplotlib"""
         self.create_plot()
 
@@ -49,6 +59,14 @@ class Figure_plot(QWidget):
         self.setLayout(layout)
         self.canvas = FigureCanvas(self.abstract_affiche.pplot_fig)
         self.toolbar = NavigationToolbar2QT(self.canvas, self, True)
+
+        if self.abstract_affiche.leg1 is not None:
+            for artist in self.abstract_affiche.leg1.get_legend().get_texts():
+                artist.set_picker(True)
+
+        if self.abstract_affiche.leg2 is not None:
+            for artist in self.abstract_affiche.leg2.get_legend().get_texts():
+                artist.set_picker(True)
 
         for artist in self.abstract_affiche.pplot_fig.get_children():
             if type(artist).__name__ == "Text":
@@ -95,10 +113,12 @@ class Figure_plot(QWidget):
         pour que chaque type fasse ses traitements"""
         if event.inaxes is not None and (event.inaxes == self.abstract_affiche.ax1 or
                                          event.inaxes == self.abstract_affiche.ax2):
-            black = matplotlib.colors.to_rgba("black")
-            event.inaxes.axhline(y=event.ydata, color=black)
-            event.inaxes.axvline(x=event.xdata, color=black)
-            self.canvas.draw()
+            if self.abstract_affiche.interactive:
+                self.abstract_affiche.focus_off()
+
+            else:
+                self.abstract_affiche.focus_on()
+
 
     def mouseMoveEvent(self, event):
         pass
@@ -107,7 +127,10 @@ class Figure_plot(QWidget):
         pass
 
     def closeEvent(self, event):
-        self.closed.emit(self.abstract_affiche.figure.name)
+        """on check QtGui.QCloseEvent car on va close le graph ensuite ce qui va apeller la methode une nouvelle
+        fois, on evite d'emit 2 fois, unf foispar qtevent par qt et une seconde CloseEvent de matplotlib"""
+        if type(event).__name__ == "QCloseEvent":
+            self.closed.emit(self.abstract_affiche.figure.name)
 
     def axes_enter_event(self, event):
         pass
@@ -117,7 +140,6 @@ class Figure_plot(QWidget):
 
     def pick_event(self, event):
         """de la merde, mais pas moyen de trouver comment faire mieux......"""
-
         if event.mouseevent.button == 1 and event.mouseevent.dblclick:
             """on prends le centre de la figure, si le click est plus loi que le centre c'est l'axe de
             droite, gauche sinon"""
@@ -156,13 +178,61 @@ class Figure_plot(QWidget):
                 self.edit_y2_axe()
 
             else:
-                if event.mouseevent.dblclick:
-                    name = QInputDialog.getText(self, "Name change", "New name ?", QLineEdit.Normal)
-                    if name[1]:
+                old_name = event.artist.get_text()
+                name = QInputDialog.getText(self, "Name change", "New name ?", QLineEdit.Normal, old_name)
+                if name[1]:
+                    if self.abstract_affiche.figure.plot_name == old_name:
                         event.artist.set_text(name[0])
                         self.abstract_affiche.figure.plot_name = name[0]
                         self.name_changed.emit(name[0])
                         self.canvas.draw()
+                    else:
+                        for i, text in enumerate(self.abstract_affiche.leg1.get_legend().get_texts()):
+                            if text == event.artist:
+                                legend_index = i
+                                modulo_y1 = []
+                                nb_y1 = 0
+                                for data in self.abstract_affiche.figure.y1_axe.data:
+                                    if data.legend is not None:
+                                        nb_y1 += 1
+                                if nb_y1 > self.abstract_affiche.figure.nb_legende:
+                                    for j in range(self.abstract_affiche.figure.nb_legende):
+                                        temp = int(nb_y1 / self.abstract_affiche.figure.nb_legende * j)
+                                        if temp not in modulo_y1:
+                                            modulo_y1.append(temp)
+                                    print(modulo_y1)
+                                    self.canvas.draw()
+                                    return
+                                else:
+                                    self.abstract_affiche.figure.y1_axe.data[legend_index].legend = name[0]
+                                    event.artist.set_text(name[0])
+                                    event.artist.set_picker(True)
+                                    self.canvas.draw()
+                                    return
+
+                        for i, text in enumerate(self.abstract_affiche.leg2.get_legend().get_texts()):
+                            print(text)
+                            if text == event.artist:
+                                legend_index = i
+                                modulo_y2 = []
+                                nb_y2 = 0
+                                for data in self.abstract_affiche.figure.y2_axe.data:
+                                    if data.legend is not None:
+                                        nb_y2 += 1
+                                if nb_y2 > self.abstract_affiche.figure.nb_legende:
+                                    for j in range(self.abstract_affiche.figure.nb_legende):
+                                        temp = int(nb_y2 / self.abstract_affiche.figure.nb_legende * j)
+                                        if temp not in modulo_y2:
+                                            modulo_y2.append(temp)
+                                    print(modulo_y2)
+                                    self.canvas.draw()
+                                    return
+                                else:
+                                    self.abstract_affiche.figure.y2_axe.data[legend_index].legend = name[0]
+                                    event.artist.set_text(name[0])
+                                    event.artist.set_picker(True)
+                                    self.canvas.draw()
+                                    return
 
     def edit_x_axe(self):
         if self.edit_w is None:
@@ -256,11 +326,25 @@ class Figure_plot(QWidget):
         self.edit_w = None
         self.axe_edited = None
 
+    def on_top(self):
+        self.activateWindow()
+
+    def on_back(self):
+        self.lower()
+
+    def is_on_top(self):
+        return self.isActiveWindow()
+
+    def focusInEvent(self, event):
+        self.focus_in.emit(self.abstract_affiche.figure.name)
+
 
 class Window(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setupUi(self)
+
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
 
         self.console = Console()
         """self.threads est de la forme : [thread, worker]"""
@@ -270,6 +354,8 @@ class Window(QMainWindow, Ui_MainWindow):
 
         """objet qui sauvegarde le dernier état de QFileDialog pour la sauvegarde"""
         self.save_state_dialog = None
+
+        """on connect un peu tout"""
         self.connectSignalsSlots()
 
     def connectSignalsSlots(self):
@@ -282,6 +368,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.tabWidget.tabCloseRequested.connect(self.close_tab_handler)
         self.tabWidget.name_changed_tab.connect(self.name_changed_tab)
         self.tabWidget.break_tab.connect(self.break_tab)
+        self.tabWidget.change_current.connect(self.tab_changed)
         self.treeWidget.itemSelectionChanged.connect(self.tree_select_change)
 
     """----------------------------------------------------------------------------------"""
@@ -328,18 +415,30 @@ class Window(QMainWindow, Ui_MainWindow):
         self.figure_plot.show()
 
     def open_gitt(self):
-        self.console.get_info_data_all()
-        self.add_data_tree("figure", "test")
+        """self.console.get_info_data_all()
+        self.add_data_tree("figure", "test")"""
+
+        print("current data : " + self.console.current_data.name)
+        print("current figure : " + self.console.current_data.current_figure.name)
 
     def create_current_data(self):
         if self.console.current_data is None:
             self.current_data_None()
         else:
             if self.comboBox_5.currentText() == "capa":
+                """plusieurs figure retournée ici"""
                 figures_res = self.console.current_data.capa()
                 for figure in reversed(figures_res):
                     self.add_data_tree('figure', figure.name)
                     self.console.current_data.figures.append(figure)
+
+
+            elif self.comboBox_5.currentText() == "potentio":
+                """une seule figure retouné ici"""
+                figures_res = self.console.current_data.potentio()
+
+                self.add_data_tree('figure', figures_res.name)
+                self.console.current_data.figures.append(figures_res)
 
     def create_current_figure(self):
         if self.console.current_data is None or self.console.current_data.current_figure is None:
@@ -355,7 +454,14 @@ class Window(QMainWindow, Ui_MainWindow):
                     for i in range(self.tabWidget.count()):
                         if self.tabWidget.tabText(i) == figure.name:
                             self.tabWidget.setCurrentIndex(i)
+                            self.lower_plot_w()
                             return
+
+                    """check si la figure est ouverte en fenêtre"""
+                    if not self.on_top_plot_w(figure.name):
+                        self.lower_plot_w()
+                    else:
+                        return
 
                     obj = Classique_affiche(self.console.current_data, figure)
                     new_tab = Figure_plot(obj)
@@ -446,10 +552,6 @@ class Window(QMainWindow, Ui_MainWindow):
         _translate = QtCore.QCoreApplication.translate
         if len(self.treeWidget.selectedItems()):
             if self.treeWidget.selectedItems()[0].text(1) == "figure":
-                self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style="
-                                                              "\" font-size:11pt;\">Current plot : " +
-                                                self.treeWidget.selectedItems()[0].text(0) +
-                                                "</span></p></body></html>"))
                 parent = self.treeWidget.selectedItems()[0].parent()
                 self.label.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
                                                             "Current data : "
@@ -495,20 +597,112 @@ class Window(QMainWindow, Ui_MainWindow):
     def break_tab(self, event):
         obj = Classique_affiche(self.console.current_data, self.console.current_data.current_figure)
         new_w = Figure_plot(obj)
-        new_w.closed.connect(self.plot_w_closed)
+
+        """connection avec la nouvelle fenêtre"""
+        new_w.closed.connect(self.close_w_plot)
+        new_w.focus_in.connect(self.focus_in_w_plot)
+
+        """on ajoute la nouvelle fene^tre à un vecteur pour en garder une ref"""
         self.figure_w.append(new_w)
+
+        """on affiche la fenêtre"""
         new_w.show()
 
-    def plot_w_closed(self, event):
+    def close_w_plot(self, event):
+        """la fenêtre du plot a été fermé, on recréer une tab avec la figure qui était préssente sur la
+        fenêtre"""
+        print(len(self.figure_w))
         for i, affiche_obj in enumerate(self.figure_w):
             if affiche_obj.abstract_affiche.figure.name == event:
+                """création d'un nouvel objet Classique_affiche"""
                 obj = Classique_affiche(self.console.current_data, affiche_obj.abstract_affiche.figure)
+
+                """création d'une tab"""
                 new_tab = Figure_plot(obj)
                 new_tab.setObjectName(event)
+
+                """connection de la nouvelle tab"""
                 new_tab.name_changed.connect(self.name_changed_plot)
+
+                """on ajoute cette nouvelle tab au widget"""
                 self.tabWidget.addTab(new_tab, event)
+
+                """on ferme le graph de la fenêtre"""
+                pplot.close(self.figure_w[i].abstract_affiche.pplot_fig)
+
+                """on supprime l'ancienne fenêtre du vecteur"""
                 del self.figure_w[i]
                 break
+
+    def lower_plot_w(self):
+        for figure in self.figure_w:
+            figure.on_back()
+
+    def on_top_plot_w(self, name):
+        """
+            Si la figure pourtant le nom name est ouverte comme fenêtre, on la place comme focus
+            return true si la figure a été mise on top, false sinon
+        """
+
+        for figure in self.figure_w:
+            if figure.abstract_affiche.figure.name == name:
+                """si on trouve la figure comme étant une fenêtre on la place on top"""
+                figure.on_top()
+
+                """on update la figure courrante"""
+                self.console.current_data.set_current_figure_name(name)
+
+                """on update l'affichage de current plot"""
+                _translate = QtCore.QCoreApplication.translate
+                self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                                              "Current plot : "
+                                                + name + " </span></p></body></html>"))
+                return True
+
+        return False
+
+    def tab_changed(self, event):
+        """
+            si la current tab est changée il faut changer l'affichage de current plot et changer
+            la figure courrante de la console
+        """
+
+        """check si le changement de tab est dû à drag, dans ce cas il ne faut pas update
+        current plot avec le chngement de tab"""
+        for figure in self.figure_w:
+            if figure.is_on_top():
+                return
+
+        _translate = QtCore.QCoreApplication.translate
+
+        """on update current plot"""
+        self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                                    "Current plot : "
+                                        + self.tabWidget.tabText(event) + " </span></p></body></html>"))
+
+        """on update current figure"""
+        self.console.current_data.set_current_figure_name(self.tabWidget.tabText(event))
+
+    def focus_in_w_plot(self, event):
+        _translate = QtCore.QCoreApplication.translate
+        self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                                      "Current plot : "
+                                        + event + " </span></p></body></html>"))
+        self.console.current_data.set_current_figure_name(event)
+
+    def focusInEvent(self, event):
+        """si la main fenêtre passe en focus, on update current plot"""
+
+        """si current figure n'est pas pas setup on return"""
+        if self.console.current_data is None or self.console.current_data.current_figure is None:
+            return
+        _translate = QtCore.QCoreApplication.translate
+        self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                                      "Current plot : "
+                                        + self.tabWidget.tabText(self.tabWidget.currentIndex()) +
+                                        " </span></p></body></html>"))
+        self.console.current_data.set_current_figure_name(self.tabWidget.tabText(self.tabWidget.currentIndex()))
+
 
 class Main_interface:
     def __init__(self):
