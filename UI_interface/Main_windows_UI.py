@@ -27,13 +27,19 @@ from UI_interface.Main_window_QT import Ui_MainWindow, Edit_Axe
 
 
 class Figure_plot(QWidget):
-    """utilier quand le nom de la figure est changé"""
+    """
+    class qui gére les graphiqes matplotlib, soit en widget soit en fenêtre indépendante
+    elle gére les interactions de la class Affiche objet, les interactions avec l'édition
+    des axes et legendes
+
+    """
+    # utilier quand le nom de la figure est changé
     name_changed = pyqtSignal(list)
 
-    """utiliser qunad le plit est sous la forme d'une fenêtre et qu'il est fermé"""
+    # utiliser qunad le plit est sous la forme d'une fenêtre et qu'il est fermé
     closed = pyqtSignal(str)
 
-    """utilisé quand le plot est sous la forme d'une fenêtre et qu'il est en focus"""
+    # utilisé quand le plot est sous la forme d'une fenêtre et qu'il est en focus
     focus_in = pyqtSignal(str)
 
     def __init__(self, abstract_affiche):
@@ -43,60 +49,91 @@ class Figure_plot(QWidget):
         self.edit_w = None
         self.axe_edited = None
 
+        # focus policy
         self.setFocusPolicy(QtCore.Qt.TabFocus)
         self.setFocus()
 
-        """abstract_affiche"""
+        # abstract_affiche
         self.abstract_affiche = abstract_affiche
 
-        """création du canvas + widget matplotlib"""
-
+        # setup
         self.create_plot()
 
+    """---------------------------------------------------------------------------------"""
+
     def create_plot(self):
+        """
+        On setup tout
+
+        Le layout
+        La figure matplotlib
+        Le canvas
+        La toolbar
+        On passe tous les piker des artistes qui nous interesse à True
+            le nom du plot
+            les axes
+            les labels des axes
+            les legendes
+
+        On connect les events matplotlib
+
+        :return: None
+        """
+        # on créer la figure matplotlib associé à self.abstract_affiche et sa figure
         self.abstract_affiche.create_figure()
 
         layout = QVBoxLayout()
         self.setLayout(layout)
 
+        # création du canvas
         self.canvas = FigureCanvas(self.abstract_affiche.pplot_fig)
 
+        # on récupére la toolbar de matplotlib
         self.toolbar = NavigationToolbar2QT(self.canvas, self, True)
 
+        # on passe les picker des artistes qui nous servirons à True
+
+        # leg1
         if self.abstract_affiche.leg1 is not None:
             for artist in self.abstract_affiche.leg1.get_legend().get_texts():
                 artist.set_picker(True)
 
+        # leg2
         if self.abstract_affiche.leg2 is not None:
             for artist in self.abstract_affiche.leg2.get_legend().get_texts():
                 artist.set_picker(True)
 
+        # plot name
         for artist in self.abstract_affiche.pplot_fig.get_children():
             if type(artist).__name__ == "Text":
                 artist.set_picker(True)
 
+        # label ax1
         if self.abstract_affiche.ax1 is not None:
             self.abstract_affiche.ax1.xaxis.get_label().set_picker(True)
             self.abstract_affiche.ax1.yaxis.get_label().set_picker(True)
         else:
             self.abstract_affiche.ax2.xaxis.get_label().set_picker(True)
 
+        # label ax2
         if self.abstract_affiche.ax2 is not None:
             self.abstract_affiche.ax2.yaxis.get_label().set_picker(True)
 
+        # ax1
         if self.abstract_affiche.ax1 is not None:
             self.abstract_affiche.ax1.xaxis.set_picker(True)
             self.abstract_affiche.ax1.yaxis.set_picker(True)
         else:
             self.abstract_affiche.ax2.xaxis.set_picker(True)
 
+        # ax2
         if self.abstract_affiche.ax2 is not None:
             self.abstract_affiche.ax2.xaxis.set_picker(True)
 
         layout.addWidget(self.canvas)
         layout.addWidget(self.toolbar)
 
-        """connections"""
+        # connections pour events matplotlib effectués sur le canvas
         self.canvas.mpl_connect('button_press_event', self.button_press_event)
         self.canvas.mpl_connect('motion_notify_event', self.mouseMoveEvent)
         self.canvas.mpl_connect('close_event', self.closeEvent)
@@ -105,15 +142,32 @@ class Figure_plot(QWidget):
         self.canvas.mpl_connect('pick_event', self.pick_event)
         self.canvas.draw()
 
+    """---------------------------------------------------------------------------------"""
+
     def button_press_event(self, event):
+        """
+        Déclenché par un clique sur self.canvas, pour un db clique on apelle self.mouseDoubleClickEvent
+
+        :param event: button_press_event
+        :return: None
+        """
         if event.dblclick:
             self.mouseDoubleClickEvent(event)
         else:
             pass
 
+    """---------------------------------------------------------------------------------"""
+
     def mouseDoubleClickEvent(self, event):
-        """ajouter ces methode à l'ojjet self.abstract_affiche
-        pour que chaque type fasse ses traitements"""
+        """
+        Appellé par button_press_event lors d'un double clique, si le clique est fait sur
+        le plot, on passe la figure de self.abstract_affiche en focus si elle ne l'est pas
+        et la retire si elle l'est
+
+        :param event: button_press_event (matplotlib)
+        :return: None
+        """
+
         if event.inaxes is not None and (event.inaxes == self.abstract_affiche.ax1 or
                                          event.inaxes == self.abstract_affiche.ax2):
             if self.abstract_affiche.interactive:
@@ -122,25 +176,56 @@ class Figure_plot(QWidget):
             else:
                 self.abstract_affiche.focus_on()
 
+    """---------------------------------------------------------------------------------"""
+
     def mouseMoveEvent(self, event):
         pass
+
+    """---------------------------------------------------------------------------------"""
 
     def mousePressEvent(self, event):
         pass
 
+    """---------------------------------------------------------------------------------"""
+
     def closeEvent(self, event):
-        """on check QtGui.QCloseEvent car on va close le graph ensuite ce qui va apeller la methode une nouvelle
-        fois, on evite d'emit 2 fois, unf foispar qtevent par qt et une seconde CloseEvent de matplotlib"""
+        """
+        Déclenché quand abstract_affiche.pplot_fig est fermé (pplot.close(abstract_affiche.pplot_fig))
+
+        Déclenché quand la fenêtre contenant le plot est fermé pour le cas ou le widget est dans une
+        fenêtre indépandante
+
+        On check QtGui.QCloseEvent car on va close le graph ensuite ce qui va apeller la methode une nouvelle
+        fois, on evite d'emit 2 fois, une fois par qtevent par qt et une seconde par CloseEvent de matplotlib
+
+        :param event: QCloseEvent / CloseEvent
+        :return: None
+        """
+
         if type(event).__name__ == "QCloseEvent":
             self.closed.emit(self.abstract_affiche.figure.name)
+
+    """---------------------------------------------------------------------------------"""
 
     def axes_enter_event(self, event):
         pass
 
+    """---------------------------------------------------------------------------------"""
+
     def axes_leave_event(self, event):
         pass
 
+    """---------------------------------------------------------------------------------"""
+
     def pick_event(self, event):
+        """
+        Déclenché par pick_event de matplotlib
+        en fonction du type d'event et de l'artiste qui a déclanché cette event, différentes
+        fonctions de la classe seront appellée
+
+        :param event: pick_event matplotlib
+        :return: None
+        """
         """de la merde, mais pas moyen de trouver comment faire mieux....."""
         if event.mouseevent.button == 1 and event.mouseevent.dblclick:
             """on prends le centre de la figure, si le click est plus loi que le centre c'est l'axe de
@@ -248,6 +333,8 @@ class Figure_plot(QWidget):
                                     self.canvas.draw()
                                     return
 
+    """---------------------------------------------------------------------------------"""
+
     def edit_x_axe(self):
         if self.edit_w is None:
             self.axe_edited = "x"
@@ -265,6 +352,8 @@ class Figure_plot(QWidget):
 
             self.edit_w.finish.connect(self.edit_finishded)
             self.edit_w.show()
+
+    """---------------------------------------------------------------------------------"""
 
     def edit_y1_axe(self, ):
         if self.edit_w is None:
@@ -284,6 +373,8 @@ class Figure_plot(QWidget):
             self.edit_w.finish.connect(self.edit_finishded)
             self.edit_w.show()
 
+    """---------------------------------------------------------------------------------"""
+
     def edit_y2_axe(self, ):
         if self.edit_w is None:
             self.axe_edited = "y2"
@@ -302,9 +393,13 @@ class Figure_plot(QWidget):
             self.edit_w.finish.connect(self.edit_finishded)
             self.edit_w.show()
 
+    """---------------------------------------------------------------------------------"""
+
     def update_title_plot(self, name):
         self.abstract_affiche.pplot_fig.suptitle(name).set_picker(True)
         self.canvas.draw()
+
+    """---------------------------------------------------------------------------------"""
 
     def edit_finishded(self, event):
         if event == "save":
@@ -340,14 +435,22 @@ class Figure_plot(QWidget):
         self.edit_w = None
         self.axe_edited = None
 
+    """---------------------------------------------------------------------------------"""
+
     def on_top(self):
         self.activateWindow()
+
+    """---------------------------------------------------------------------------------"""
 
     def on_back(self):
         self.lower()
 
+    """---------------------------------------------------------------------------------"""
+
     def is_on_top(self):
         return self.isActiveWindow()
+
+    """---------------------------------------------------------------------------------"""
 
     def focusInEvent(self, event):
         self.focus_in.emit(self.abstract_affiche.figure.name)
@@ -358,23 +461,33 @@ class Window(QMainWindow, Ui_MainWindow):
         super().__init__(parent)
         self.setupUi(self)
 
+        # focus policy
         self.setFocusPolicy(QtCore.Qt.StrongFocus)
 
+        # création de la console
         self.console = Console()
-        """self.threads est de la forme : [thread, worker]"""
+
+        # self.threads est de la forme : [thread, worker]
         self.threads = []
-        """array contenant les figure ouvertes dans des fenêtre à part"""
+
+        # array contenant les figure ouvertes dans des fenêtre à part
         self.figure_w = []
 
-        """objet qui sauvegarde le dernier état de QFileDialog pour la sauvegarde"""
+        # objet qui sauvegarde le dernier état de QFileDialog pour la sauvegarde
         self.save_state_dialog = None
 
-        """on connect un peu tout"""
+        # on connect un peu tout
         self.connectSignalsSlots()
 
     """---------------------------------------------------------------------------------"""
 
     def connectSignalsSlots(self):
+        """
+        Connection des widget de la fenêtre principale
+
+        :return: None
+        """
+
         self.actioncccv.triggered.connect(self.open_cccv)
         self.actioncv.triggered.connect(self.open_cv)
         self.actiongitt.triggered.connect(self.open_gitt)
@@ -389,9 +502,17 @@ class Window(QMainWindow, Ui_MainWindow):
     """---------------------------------------------------------------------------------"""
 
     def open_cccv(self):
-        """création de l'objet QFileDialog"""
+        """
+        Gestion de l'ouverture d'une expérience de cccv
+        Un thread est créée pour faire la lecture du fichier
+
+        :return: None
+        """
+
+        # création de l'objet QFileDialog
         dialog = QFileDialog()
-        """si il y a une sauvegarde d'état elle est utilisée"""
+
+        # si il y a une sauvegarde d'état elle est utilisée
         if self.save_state_dialog is not None:
             dialog.restoreState(self.save_state_dialog)
 
@@ -403,23 +524,32 @@ class Window(QMainWindow, Ui_MainWindow):
             filename = dialog.selectedFiles()[0]
             filename = r"C:\Users\Maxime\Desktop\fichier_test/test.txt"
 
-            """création d'un nouveau thread"""
+            # création d'un nouveau thread
             t = QThread()
-            """création du worker"""
+
+            # création du worker
             worker = Threads_UI.Open_file_cccv(filename)
             worker.moveToThread(t)
-            """connection"""
+
+            # connection
             t.started.connect(worker.run)
             worker.finished.connect(self.fin_thread_lecture)
 
             self.threads.append([t, worker])
             t.start()
 
-        self.save_state_dialog = dialog.saveState()
+            # on sauvegarde l'état de la fenêtre d'ouverture de fichiers
+            self.save_state_dialog = dialog.saveState()
 
     """---------------------------------------------------------------------------------"""
 
     def open_cv(self):
+        """
+        je m'en sers comme affichage test pour le moment
+
+        :return: None
+        """
+
         fig = Figure("test", 1)
         fig.add_data_x_Data(Data_array([1, 2, 3], None, None, "None"))
         fig.add_data_y1_Data(Data_array([10, 5, 20], None, None, "None"))
@@ -432,8 +562,11 @@ class Window(QMainWindow, Ui_MainWindow):
     """---------------------------------------------------------------------------------"""
 
     def open_gitt(self):
-        """self.console.get_info_data_all()
-        self.add_data_tree("figure", "test")"""
+        """
+        je m'en sers comme affichage test pour le moment
+
+        :return: None
+        """
 
         print("current data : " + self.console.current_data.name)
         print("current figure : " + self.console.current_data.current_figure.name)
@@ -442,25 +575,36 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def create_current_data(self):
         """
+        Methode appellé par le button create de current data (new plot)
+        on fonction du type d'expérience les item de comboBox_5 seront
+        différent. L'applle de la création des figures se fait ici, on
+        récupére les figures dans un vecteur
 
 
         :return: None
         """
         if self.console.current_data is None:
+            # si current_data is None on affiche un fenêtre d'erreur
             self.current_data_None()
         else:
+            # capa
             if self.comboBox_5.currentText() == "capa":
-                """plusieurs figure retournée ici"""
+                # on apelle la fonction pour créer les figures et les récupére, c'est un vecteur
                 figures_res = self.console.current_data.capa()
+
+                # on parcours le vecteur, update tree widget ave le nom des figure créées
+                # on ajoute les figure a current_data
                 for figure in reversed(figures_res):
                     self.add_data_tree('figure', figure.name)
                     self.console.current_data.figures.append(figure)
 
-
+            # potentio
             elif self.comboBox_5.currentText() == "potentio":
-                """une seule figure retouné ici"""
+                # on apelle la fonction pour créer les figures et les récupére, c'est une figure seul
                 figures_res = self.console.current_data.potentio()
 
+                # on update le tree widget
+                # on ajoute la figure a current_data
                 self.add_data_tree('figure', figures_res.name)
                 self.console.current_data.figures.append(figures_res)
 
@@ -484,7 +628,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def tree_click(self):
         """
-        Déclanché quand item l'utilisateur clique sur un item du tree widget
+        Déclenché quand item l'utilisateur clique sur un item du tree widget
 
         Ici on ne change que current_data et la current tab en accords avec
         le clique sur le tree widget, le reste se fait sur la détection du changement
@@ -501,7 +645,6 @@ class Window(QMainWindow, Ui_MainWindow):
         :return: None
         """
         _translate = QtCore.QCoreApplication.translate
-
 
         if self.treeWidget.currentItem().text(1) == "figure":
             # on update current_data de la console on fonction du parent de l'item sélectionné
@@ -591,7 +734,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def fin_thread_lecture(self):
         """
-        Déclanchée à la suite de la fin de l'execution d'un thread de lecture
+        Déclenché à la suite de la fin de l'execution d'un thread de lecture
         On créer un nouvelle objet data associée au data récupérées par le thread
 
         :return: None
@@ -675,7 +818,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def name_changed_tab(self, signal):
         """
-        Déclanché quand le nom d'une tab est changée
+        Déclenchée quand le nom d'une tab est changée
         On update le nom de la figure associée dans la console
         On update le titre du plot
         On update le label current plot
@@ -727,7 +870,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def name_changed_plot(self, signal):
         """
-        Déclanchée quand le nom du plot est changé, on update le nom
+        Déclenchée quand le nom du plot est changé, on update le nom
         de current_figure de la console
         On update le nom de la tab associée avec le nouveau nom
         On update tree widget on conséquence
@@ -833,7 +976,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def focus_in_w_plot(self, signal):
         """
-        Déclanché si une fenêtre plot passe en focus
+        Déclenché si une fenêtre plot passe en focus
         On update les informations de la fenêtre principal pour la cohérence
         On update la figure courrante de la console
         On update l'élément focus dans le tree widget
@@ -861,7 +1004,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def name_changed_w_plot(self, signal):
         """
-        Déclanché quand le nom du plot est modifiée sur une
+        Déclenché quand le nom du plot est modifiée sur une
         fenêtre
         Update des infommations de la fenêtre principal pour la cohérence
         Update de la console
@@ -971,7 +1114,6 @@ class Window(QMainWindow, Ui_MainWindow):
             for action in self.console.current_data.get_operation_available():
                 self.comboBox_5.addItem(action)
 
-
         # on update current data avec le nom du parant
         self.label.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
                                                     "Current data : "
@@ -992,7 +1134,7 @@ class Window(QMainWindow, Ui_MainWindow):
         Si la fenêtre princial repasse en focus, on update les informations
         pour quelles soit cohérente
 
-        Si aucune tab n'est présente lors du focus aucune erreur est déclanchée, le nom
+        Si aucune tab n'est présente lors du focus aucune erreur est déclenchée, le nom
         sera juste ""
 
         :param signal: inutile ici
