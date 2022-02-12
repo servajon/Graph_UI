@@ -6,9 +6,13 @@ from Resources import Resources
 from Data_type.Traitement_cycle import Traitements_cycle_outils, Traitement_cycle_cccv
 
 
+
+
 class CCCV_data(Abstract_data):
     def __init__(self):
         super().__init__()
+
+        self.__name__ = "cccv"
 
     """----------------------------------------------------------------------------------"""
 

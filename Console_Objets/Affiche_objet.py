@@ -471,8 +471,6 @@ class Classique_affiche(Abstract_objet_affiche):
         """On retire les lignes si elles sont déjà tracés et execute self.interact"""
         self.update_pplot_fig()
 
-        self.pplot_fig.canvas.draw()
-
     """----------------------------------------------------------------------------------"""
 
     def focus_off(self):
@@ -539,9 +537,6 @@ class Classique_affiche(Abstract_objet_affiche):
         pass
 
     """----------------------------------------------------------------------------------"""
-
-
-
 
 
 

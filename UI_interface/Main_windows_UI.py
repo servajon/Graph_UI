@@ -28,7 +28,7 @@ from UI_interface.Main_window_QT import Ui_MainWindow, Edit_Axe
 
 class Figure_plot(QWidget):
     """utilier quand le nom de la figure est changé"""
-    name_changed = pyqtSignal(str)
+    name_changed = pyqtSignal(list)
 
     """utiliser qunad le plit est sous la forme d'une fenêtre et qu'il est fermé"""
     closed = pyqtSignal(str)
@@ -55,7 +55,6 @@ class Figure_plot(QWidget):
 
     def create_plot(self):
         self.abstract_affiche.create_figure()
-
 
         layout = QVBoxLayout()
         self.setLayout(layout)
@@ -123,7 +122,6 @@ class Figure_plot(QWidget):
             else:
                 self.abstract_affiche.focus_on()
 
-
     def mouseMoveEvent(self, event):
         pass
 
@@ -186,10 +184,15 @@ class Figure_plot(QWidget):
                 name = QInputDialog.getText(self, "Name change", "New name ?", QLineEdit.Normal, old_name)
                 if name[1]:
                     if self.abstract_affiche.figure.plot_name == old_name:
-                        event.artist.set_text(name[0])
-                        self.abstract_affiche.figure.plot_name = name[0]
-                        self.name_changed.emit(name[0])
+
+                        console_temp = Console()
+                        new_name = console_temp.current_data.unique_name(name[0])
+                        event.artist.set_text(new_name)
+
+                        self.name_changed.emit([old_name, new_name])
                         self.canvas.draw()
+
+                        del console_temp
                     else:
                         for i, text in enumerate(self.abstract_affiche.leg1.get_legend().get_texts()):
                             if text == event.artist:
@@ -263,7 +266,7 @@ class Figure_plot(QWidget):
             self.edit_w.finish.connect(self.edit_finishded)
             self.edit_w.show()
 
-    def edit_y1_axe(self,):
+    def edit_y1_axe(self, ):
         if self.edit_w is None:
             self.axe_edited = "y1"
             self.edit_w = Edit_Axe()
@@ -281,7 +284,7 @@ class Figure_plot(QWidget):
             self.edit_w.finish.connect(self.edit_finishded)
             self.edit_w.show()
 
-    def edit_y2_axe(self,):
+    def edit_y2_axe(self, ):
         if self.edit_w is None:
             self.axe_edited = "y2"
             self.edit_w = Edit_Axe()
@@ -369,6 +372,8 @@ class Window(QMainWindow, Ui_MainWindow):
         """on connect un peu tout"""
         self.connectSignalsSlots()
 
+    """---------------------------------------------------------------------------------"""
+
     def connectSignalsSlots(self):
         self.actioncccv.triggered.connect(self.open_cccv)
         self.actioncv.triggered.connect(self.open_cv)
@@ -380,11 +385,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.tabWidget.name_changed_tab.connect(self.name_changed_tab)
         self.tabWidget.break_tab.connect(self.break_tab)
         self.tabWidget.change_current.connect(self.tab_changed)
-        self.treeWidget.itemSelectionChanged.connect(self.tree_select_change)
 
-    """----------------------------------------------------------------------------------"""
-    """                                     Signals                                      """
-    """----------------------------------------------------------------------------------"""
+    """---------------------------------------------------------------------------------"""
 
     def open_cccv(self):
         """création de l'objet QFileDialog"""
@@ -415,6 +417,8 @@ class Window(QMainWindow, Ui_MainWindow):
 
         self.save_state_dialog = dialog.saveState()
 
+    """---------------------------------------------------------------------------------"""
+
     def open_cv(self):
         fig = Figure("test", 1)
         fig.add_data_x_Data(Data_array([1, 2, 3], None, None, "None"))
@@ -425,6 +429,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.figure_plot = Figure_plot(obj)
         self.figure_plot.show()
 
+    """---------------------------------------------------------------------------------"""
+
     def open_gitt(self):
         """self.console.get_info_data_all()
         self.add_data_tree("figure", "test")"""
@@ -432,7 +438,14 @@ class Window(QMainWindow, Ui_MainWindow):
         print("current data : " + self.console.current_data.name)
         print("current figure : " + self.console.current_data.current_figure.name)
 
+    """---------------------------------------------------------------------------------"""
+
     def create_current_data(self):
+        """
+
+
+        :return: None
+        """
         if self.console.current_data is None:
             self.current_data_None()
         else:
@@ -451,96 +464,195 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.add_data_tree('figure', figures_res.name)
                 self.console.current_data.figures.append(figures_res)
 
+    """---------------------------------------------------------------------------------"""
+
     def create_current_figure(self):
+        """
+        Methode appellé par le button create de current plot (action)
+        Si current_figure is None, on affiche une fenêtre avec un message
+
+        Pour le reste, à faire
+
+        :return: None
+        """
         if self.console.current_data is None or self.console.current_data.current_figure is None:
             self.current_figure_None()
         else:
             pass
 
+    """---------------------------------------------------------------------------------"""
+
     def tree_click(self):
+        """
+        Déclanché quand item l'utilisateur clique sur un item du tree widget
+
+        Ici on ne change que current_data et la current tab en accords avec
+        le clique sur le tree widget, le reste se fait sur la détection du changement
+        de tab
+
+        pour le moment l'update de current_data se fait 2 fois, je dois le faire ici
+        pour check si la tab associé à l'item du tree widget est déjà ouvert et il se
+        refait sur le changement de tab, ce n'est pas grand chose, à voir si j'arrive
+        à corriger cela, mais pour le moment je ne vois pas
+
+        Si une tab contenant la figure sélectionnée elle est passé en current tab
+        Si un fenêtre plot contient la figure, elle est passé en focus
+
+        :return: None
+        """
+        _translate = QtCore.QCoreApplication.translate
+
+
         if self.treeWidget.currentItem().text(1) == "figure":
+            # on update current_data de la console on fonction du parent de l'item sélectionné
+            self.console.set_current_data_name(self.treeWidget.selectedItems()[0].parent().text(0))
+
+            # maintenant que current data est update, on parcours les figures de current_data de la console
             for figure in self.console.current_data.figures:
+
+                # quand on a touvé la figure
                 if figure.name == self.treeWidget.currentItem().text(0):
-                    """check si la tab est déja ouverte"""
+
+                    # check si la tab est déja ouverte
                     for i in range(self.tabWidget.count()):
+
+                        # si elle est ouverte dans une tab
                         if self.tabWidget.tabText(i) == figure.name:
-                            self.tabWidget.setCurrentIndex(i)
+
+                            # on récupére le current index de tab pour regarder si il sera effectivemeent modifié
+                            # si oui l'update de current_figure et des label se fera dans le changement de tab
+                            # sinon on le fait là
+
+                            current_index = self.tabWidget.currentIndex()
+
+                            if i == current_index:
+                                # on update current data avec self.console.current_data,info update plus haut
+                                self.label.setText(
+                                    _translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                                             "Current data : "
+                                               + self.console.current_data.name + " </span></p></body></html>"))
+
+                                figure_name = self.tabWidget.tabText(current_index)
+
+                                # on update current figure
+                                self.console.current_data.set_current_figure_name(figure_name)
+
+                                # on update le label current plot
+                                self.label_5.setText(
+                                    _translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                                             "Current plot : "
+                                               + figure_name + " </span></p></body></html>"))
+
+                            else:
+                                # update de current tab
+                                self.tabWidget.setCurrentIndex(i)
+
+                            # on passe les fenêtre plot en lower
                             self.lower_plot_w()
                             return
 
-                    """check si la figure est ouverte en fenêtre"""
+                    # check si la figure est ouverte en fenêtre
                     if not self.on_top_plot_w(figure.name):
+                        # si elle est pas ouverte comme fenêtre, toutes les fenêtre plots sont passé en lower
                         self.lower_plot_w()
                     else:
                         return
 
+                    # à ce point de la fonction, le plot n'existe pas, il faut le créer
                     obj = Classique_affiche(self.console.current_data, figure)
                     new_tab = Figure_plot(obj)
                     new_tab.setObjectName(figure.name)
                     new_tab.name_changed.connect(self.name_changed_plot)
+
+                    # on ajoute la tab
                     self.tabWidget.addTab(new_tab, figure.name)
 
+                    # on place la new tab en current
                     self.tabWidget.setCurrentIndex(self.tabWidget.count() - 1)
                     self.tabWidget.setTabsClosable(True)
 
-    def fichier_invalide_error(self):
-        msgBox = QMessageBox()
-        msgBox.setIcon(QMessageBox.Warning)
-        msgBox.setText("File type invalid")
-        msgBox.setWindowTitle("Error")
-        msgBox.setStandardButtons(QMessageBox.Ok)
-        msgBox.exec()
+        else:
+            # pas encore sûr de quoi faire ici
 
-    def current_data_None(self):
-        msgBox = QMessageBox()
-        msgBox.setIcon(QMessageBox.Warning)
-        msgBox.setText("No file open")
-        msgBox.setWindowTitle("Error")
-        msgBox.setStandardButtons(QMessageBox.Ok)
-        msgBox.exec()
+            # si l'item sélectoionnée n'est pas une figure
+            self.label.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                                        "Current data : " +
+                                          self.treeWidget.selectedItems()[0].text(0) +
+                                          " </span></p></body></html>"))
 
-    def current_figure_None(self):
-        msgBox = QMessageBox()
-        msgBox.setIcon(QMessageBox.Warning)
-        msgBox.setText("No plot selected")
-        msgBox.setWindowTitle("Error")
-        msgBox.setStandardButtons(QMessageBox.Ok)
-        msgBox.exec()
+            # on passe le label currrent plot à None
+            self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                                          "Current plot : None""</span></p></body></html>"))
 
-    def fait(self):
-        msgBox = QMessageBox()
-        msgBox.setIcon(QMessageBox.Ok)
-        msgBox.setText("Done")
-        msgBox.setWindowTitle("Done")
-        msgBox.setStandardButtons(QMessageBox.Ok)
-        msgBox.exec()
+            # on update current_data de la console
+            self.console.set_current_data_name(self.treeWidget.selectedItems()[0].text(0))
+
+    """---------------------------------------------------------------------------------"""
 
     def fin_thread_lecture(self):
+        """
+        Déclanchée à la suite de la fin de l'execution d'un thread de lecture
+        On créer un nouvelle objet data associée au data récupérées par le thread
+
+        :return: None
+        """
         index = 0
+        # on parcours les threads de lecture en cours
         while index < len(self.threads):
+
+            # si le thread à fini
             if self.threads[index][1].finish:
+
+                # si le thread n'a aucune data, le type de fichier est invalide
+                # on affiche un pop_up
                 if self.threads[index][1].data is None:
                     self.fichier_invalide_error()
                 else:
+
+                    # si le type de fichier lu est cccv
                     if type(self.threads[index][1]).__name__ == "Open_file_cccv":
+                        # on créer un objet data cccv
                         obj_data = CCCV_data()
+
+                        # on lui ajoute les data lu par le thread
                         obj_data.data = self.threads[index][1].data
+
+                        # créer son nom
                         obj_data.name = obj_data.data["name"]
 
+                        # on ajoute l'objet data à la console
                         self.console.add_data(obj_data)
 
+                        # on update le tree widget
                         name_tab = obj_data.name
                         self.add_data_tree("cccv", name_tab)
 
-                        for action in self.console.current_data.get_operation_available():
-                            self.comboBox_5.addItem(action)
+                    # on récupére les actions disponibles pour ce type de fichier pour update
+                    # current data comboBox_5
+                    for action in self.console.current_data.get_operation_available():
+                        self.comboBox_5.addItem(action)
 
+                # on termine le thread
                 self.threads[index][0].terminate()
+
+                # on le suprime de la liste
                 del self.threads[index]
             else:
                 index += 1
 
+    """---------------------------------------------------------------------------------"""
+
     def add_data_tree(self, type, name, parent=None):
+        """
+        fonction à refaire, ne fonctionne pas
+        créer un objet qui garde trace le l'architecture des données, ne sais pas
+
+        :param type: str de la colonne type a afficher (figure / type exp)
+        :param name: str de la colonne name a afficher
+        :param parent:
+        :return: None
+        """
+
         if type == "figure":
             for itm in self.tree_items:
                 for i, child_item in enumerate(itm):
@@ -559,115 +671,255 @@ class Window(QMainWindow, Ui_MainWindow):
                     child.setSelected(False)
             item.setSelected(True)
 
-    def tree_select_change(self):
-        _translate = QtCore.QCoreApplication.translate
-        if len(self.treeWidget.selectedItems()):
-            if self.treeWidget.selectedItems()[0].text(1) == "figure":
-                parent = self.treeWidget.selectedItems()[0].parent()
-                self.label.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
-                                                            "Current data : "
-                                              + parent.text(0) + " </span></p></body></html>"))
-                self.console.set_current_data_name(parent.text(0))
-                self.console.current_data.set_current_figure_name(self.treeWidget.selectedItems()[0].text(0))
-            else:
-                self.label.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
-                                                            "Current data : " +
-                                              self.treeWidget.selectedItems()[0].text(0) +
-                                              " </span></p></body></html>"))
-                self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
-                                                              "Current plot : None""</span></p></body></html>"))
-                self.console.set_current_data_name(self.treeWidget.selectedItems()[0].text(0))
+    """---------------------------------------------------------------------------------"""
 
     def name_changed_tab(self, signal):
+        """
+        Déclanché quand le nom d'une tab est changée
+        On update le nom de la figure associée dans la console
+        On update le titre du plot
+        On update le label current plot
+
+        :param signal: ancien nom de la tab qui vient d'être modifié
+        :return: None
+        """
+
+        # on cherche la figure portant l'ancien nom
         for figure in self.console.current_data.figures:
             if figure.name == signal:
+
+                # le nouveau nom est celui de la tab
                 name = self.tabWidget.tabText(self.tabWidget.currentIndex())
+
+                # on update le nom de la figure dans la console
                 figure.name = name
+
+                # on update le nom de l'item de tree widget
                 for i in range(self.treeWidget.topLevelItem(0).childCount()):
                     if self.treeWidget.topLevelItem(0).child(i).text(0) == signal:
                         self.treeWidget.topLevelItem(0).child(i).setText(0, name)
+                        break
+
+                # on update le nom du plot associé à la tab
                 self.tabWidget.currentWidget().update_title_plot(name)
+
+                # on update current plot
+                _translate = QtCore.QCoreApplication.translate
+                self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                                              "Current plot : "
+                                                + name + " </span></p></body></html>"))
                 break
+
+    """---------------------------------------------------------------------------------"""
 
     def close_tab_handler(self, index):
-        name = self.tabWidget.tabText(index)
-        for i, data in enumerate(self.console.datas):
-            if data.name == name:
-                del self.console.datas[i]
-                break
+        """
+        Permet de fermet une tab quand la croix de d'une est cliqué
+
+        :param index: index de la tab qui a déchanché cette demande de fermeture
+        :return: None
+        """
+
+        # la tab à l'index est remove
         self.tabWidget.removeTab(index)
 
+    """---------------------------------------------------------------------------------"""
+
     def name_changed_plot(self, signal):
-        self.console.current_data.current_figure.name = signal
-        old_name = self.tabWidget.tabText(self.tabWidget.currentIndex())
-        self.tabWidget.setTabText(self.tabWidget.currentIndex(), signal)
+        """
+        Déclanchée quand le nom du plot est changé, on update le nom
+        de current_figure de la console
+        On update le nom de la tab associée avec le nouveau nom
+        On update tree widget on conséquence
+        On update le label current plot
+
+        :param signal: [old_name, new_name]
+        :return: None
+
+        """
+        old_name = signal[0]
+        new_name = signal[1]
+
+        # update du nom de current_figure
+        self.console.current_data.current_figure.name = new_name
+
+        # update du nom de la tab associé
+        self.tabWidget.setTabText(self.tabWidget.currentIndex(), new_name)
+
+        # update du nom de l'item associé dans tree widget
         for i in range(self.treeWidget.topLevelItem(0).childCount()):
             if self.treeWidget.topLevelItem(0).child(i).text(0) == old_name:
-                self.treeWidget.topLevelItem(0).child(i).setText(0, signal)
+                self.treeWidget.topLevelItem(0).child(i).setText(0, new_name)
+                break
 
-    def break_tab(self, event):
-        self.tabWidget.widget(event).abstract_affiche.focus_off()
-        print("focus_off break_tab")
+        # on update le label current plot
+        _translate = QtCore.QCoreApplication.translate
+        self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                                      "Current plot : "
+                                        + new_name + " </span></p></body></html>"))
 
-        new_w = Figure_plot(self.tabWidget.widget(event).abstract_affiche)
+    """---------------------------------------------------------------------------------"""
 
-        """connection avec la nouvelle fenêtre"""
+    def break_tab(self, signal):
+        """
+        Gére le fait de détacher une tab et de créer une nouvelle fenêtre
+        avec le plot correspondant à la tab détachée
+
+        Cette nouvelle fenêtre aura 3 connections :
+            close_w_plot : déclenché quand la fenêtre sera fermée
+
+            focus_in_w_plot : déclenché quand la fenêtre passera en focus
+
+            name_changed_w_plot : déclenché qunad le nom du plot de la fenêtre sera modifié, pour garder
+            la cohérence de l'affichage global
+
+        :param signal: index de la tab détachée
+        :return: None
+        """
+        # le focus du plot de la tab détachée est passé à off pour reset les couleurs, lignes etc
+        self.tabWidget.widget(signal).abstract_affiche.focus_off()
+
+        # une nouvelle fenêtre est créée avec comme paramétre abstract_affiche du plot de la tab détachée
+        # on garde donc les éventuels résultats et calculs effectuées sur ce plot
+        new_w = Figure_plot(self.tabWidget.widget(signal).abstract_affiche)
+
+        # connection avec la nouvelle fenêtre
         new_w.closed.connect(self.close_w_plot)
         new_w.focus_in.connect(self.focus_in_w_plot)
+        new_w.name_changed.connect(self.name_changed_w_plot)
 
-        """on ajoute la nouvelle fene^tre à un vecteur pour en garder une ref"""
+        # on ajoute la nouvelle fene^tre à un vecteur pour en garder une ref
         self.figure_w.append(new_w)
 
-        """on affiche la fenêtre"""
+        # on affiche la fenêtre
         new_w.show()
 
-    def close_w_plot(self, event):
-        """la fenêtre du plot a été fermé, on recréer une tab avec la figure qui était préssente sur la
-        fenêtre"""
+    """---------------------------------------------------------------------------------"""
 
+    def close_w_plot(self, signal):
+        """"
+        La fenêtre du plot a été fermé, on recréer une tab avec la figure qui était présente sur la
+        fenêtre
+
+        :param signal: nom de la fenêtre fermée
+        :return: None
+        """
+
+        # on cherche dans le vecteur de fenêtre plot la figure qui vient d'être fermée
         for i, affiche_obj in enumerate(self.figure_w):
-            if affiche_obj.abstract_affiche.figure.name == event:
-                """création d'un nouvel objet Classique_affiche"""
-                #obj = Classique_affiche(self.console.current_data, affiche_obj.abstract_affiche.figure)
-                print("focus_off close_w_plot")
+            if affiche_obj.abstract_affiche.figure.name == signal:
+                # on passe la figure en focus off pour reset les couleurs, les lignes etc
                 affiche_obj.abstract_affiche.focus_off()
 
-                """création d'une tab"""
+                # création d'une tab avec abstract_affiche de la fenêtre fermée pour garder
+                # les résultats et calcules obtenus
                 new_tab = Figure_plot(affiche_obj.abstract_affiche)
-                new_tab.setObjectName(event)
+                new_tab.setObjectName(signal)
 
-                """connection de la nouvelle tab"""
+                # connection de la nouvelle tab
                 new_tab.name_changed.connect(self.name_changed_plot)
 
-                """on ajoute cette nouvelle tab au widget"""
-                self.tabWidget.addTab(new_tab, event)
+                # on ajoute cette nouvelle tab au widget
+                self.tabWidget.addTab(new_tab, signal)
 
-                """on ferme le graph de la fenêtre"""
+                # on ferme le graph de la fenêtre
                 pplot.close(self.figure_w[i].abstract_affiche.pplot_fig)
 
-                """on supprime l'ancienne fenêtre du vecteur"""
+                # on supprime l'ancienne fenêtre du vecteur
                 del self.figure_w[i]
                 break
 
+    """---------------------------------------------------------------------------------"""
+
+    def focus_in_w_plot(self, signal):
+        """
+        Déclanché si une fenêtre plot passe en focus
+        On update les informations de la fenêtre principal pour la cohérence
+        On update la figure courrante de la console
+        On update l'élément focus dans le tree widget
+
+
+        :param signal: nom de la fenêtre qui vient d'être passée en focus
+        :return: None
+        """
+        _translate = QtCore.QCoreApplication.translate
+        # update du label affichant la figure courrante
+        self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                                      "Current plot : "
+                                        + signal + " </span></p></body></html>"))
+
+        # update de la figure courrante de la console
+        self.console.current_data.set_current_figure_name(signal)
+
+        # update du focus du tree widget
+        for i in range(self.treeWidget.topLevelItem(0).childCount()):
+            if self.treeWidget.topLevelItem(0).child(i).text(0) == signal:
+                self.treeWidget.setCurrentItem(self.treeWidget.topLevelItem(0).child(i))
+                break
+
+    """---------------------------------------------------------------------------------"""
+
+    def name_changed_w_plot(self, signal):
+        """
+        Déclanché quand le nom du plot est modifiée sur une
+        fenêtre
+        Update des infommations de la fenêtre principal pour la cohérence
+        Update de la console
+
+        :param signal: [old_name, new_name]
+        :return: None
+        """
+
+        old_name = signal[0]
+        new_name = signal[1]
+
+        # update du nom du current_figure de la console
+        self.console.current_data.current_figure.name = new_name
+
+        # update du nom du tree widget associé
+        for i in range(self.treeWidget.topLevelItem(0).childCount()):
+            if self.treeWidget.topLevelItem(0).child(i).text(0) == old_name:
+                self.treeWidget.topLevelItem(0).child(i).setText(0, new_name)
+                break
+
+        # on update le label current plot
+        _translate = QtCore.QCoreApplication.translate
+        self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                                      "Current plot : "
+                                        + new_name + " </span></p></body></html>"))
+
+    """---------------------------------------------------------------------------------"""
+
     def lower_plot_w(self):
+        """
+        Passe toutes les fenêtre plot en arrière plan
+
+        :return: None
+        """
         for figure in self.figure_w:
             figure.on_back()
 
+    """---------------------------------------------------------------------------------"""
+
     def on_top_plot_w(self, name):
         """
-            Si la figure pourtant le nom name est ouverte comme fenêtre, on la place comme focus
-            return true si la figure a été mise on top, false sinon
+        Si la figure pourtant le nom name est ouverte comme fenêtre, on la place comme focus
+        return true si la figure a été mise on top, false sinon
+
+        :param name: nom de la figure dont la fenêtre doit être passé au premier plan
+        :return: True / False
         """
 
+        # on parcours les fenêtre plit ouverte pour trouver celle portant le nom name
         for figure in self.figure_w:
             if figure.abstract_affiche.figure.name == name:
-                """si on trouve la figure comme étant une fenêtre on la place on top"""
+                # si on trouve la figure comme étant une fenêtre on la place on top
                 figure.on_top()
 
-                """on update la figure courrante"""
+                # on update la figure courrante
                 self.console.current_data.set_current_figure_name(name)
 
-                """on update l'affichage de current plot"""
+                # on update l'affichage de current plot
                 _translate = QtCore.QCoreApplication.translate
                 self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
                                                               "Current plot : "
@@ -676,47 +928,164 @@ class Window(QMainWindow, Ui_MainWindow):
 
         return False
 
-    def tab_changed(self, event):
+    """---------------------------------------------------------------------------------"""
+
+    def tab_changed(self, signal):
         """
-            si la current tab est changée il faut changer l'affichage de current plot et changer
-            la figure courrante de la console
+        si la current tab est changée il faut changer l'affichage de current plot et changer
+        la figure courrante de la console
+
+        :param signal: index de la tab qui vient d'être passe en tab courrante
+        :return: None
         """
 
-        """check si le changement de tab est dû à drag, dans ce cas il ne faut pas update
-        current plot avec le chngement de tab"""
+        # check si le changement de tab est dû à drag, dans ce cas il ne faut pas update
+        # current plot avec le changement de tab
         for figure in self.figure_w:
             if figure.is_on_top():
                 return
 
         _translate = QtCore.QCoreApplication.translate
 
-        """on update current plot"""
-        self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
-                                                    "Current plot : "
-                                        + self.tabWidget.tabText(event) + " </span></p></body></html>"))
+        new_name = self.tabWidget.tabText(signal)
 
-        """on update current figure"""
-        self.console.current_data.set_current_figure_name(self.tabWidget.tabText(event))
+        parent = None
+        # on update l'élément focus par le tree widget
+        for i in range(self.treeWidget.topLevelItem(0).childCount()):
+            if self.treeWidget.topLevelItem(0).child(i).text(0) == new_name:
+                self.treeWidget.setCurrentItem(self.treeWidget.topLevelItem(0).child(i))
 
-    def focus_in_w_plot(self, event):
-        _translate = QtCore.QCoreApplication.translate
+                # on récupére le parent
+                parent = self.treeWidget.topLevelItem(0).child(i).parent()
+                break
+
+        # on check que l'on a bien récupéré le parent
+        if parent is None:
+            raise ValueError
+
+        # on update current data de la console en premier
+        self.console.set_current_data_name(parent.text(0))
+
+        # si le type de fichier a changé, il faut update les actions disponibles
+        if parent.text(1) != self.console.current_data.__name__:
+            for action in self.console.current_data.get_operation_available():
+                self.comboBox_5.addItem(action)
+
+
+        # on update current data avec le nom du parant
+        self.label.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                                    "Current data : "
+                                      + parent.text(0) + " </span></p></body></html>"))
+
+        # on update current figure
+        self.console.current_data.set_current_figure_name(new_name)
+
+        # on update le label current plot
         self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
                                                       "Current plot : "
-                                        + event + " </span></p></body></html>"))
-        self.console.current_data.set_current_figure_name(event)
+                                        + new_name + " </span></p></body></html>"))
 
-    def focusInEvent(self, event):
-        """si la main fenêtre passe en focus, on update current plot"""
+    """---------------------------------------------------------------------------------"""
 
-        """si current figure n'est pas pas setup on return"""
+    def focusInEvent(self, signal):
+        """
+        Si la fenêtre princial repasse en focus, on update les informations
+        pour quelles soit cohérente
+
+        Si aucune tab n'est présente lors du focus aucune erreur est déclanchée, le nom
+        sera juste ""
+
+        :param signal: inutile ici
+        :return: None
+        """
+
+        # si current figure n'est pas pas setup on return
+        # pour ne pas déclancer des erreurs à la création de la fenêtre
         if self.console.current_data is None or self.console.current_data.current_figure is None:
             return
+
         _translate = QtCore.QCoreApplication.translate
+
+        # le nom de la figure courrante est donc celui de la tab courrante
+        new_name = self.tabWidget.tabText(self.tabWidget.currentIndex())
+
+        # on update le label current plot
         self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
                                                       "Current plot : "
-                                        + self.tabWidget.tabText(self.tabWidget.currentIndex()) +
+                                        + new_name +
                                         " </span></p></body></html>"))
-        self.console.current_data.set_current_figure_name(self.tabWidget.tabText(self.tabWidget.currentIndex()))
+
+        # on update la figure courrante de la console
+        self.console.current_data.set_current_figure_name(new_name)
+
+        # on update l'imte focus par tree widget
+        for i in range(self.treeWidget.topLevelItem(0).childCount()):
+            if self.treeWidget.topLevelItem(0).child(i).text(0) == new_name:
+                self.treeWidget.setCurrentItem(self.treeWidget.topLevelItem(0).child(i))
+                break
+
+    """---------------------------------------------------------------------------------"""
+
+    def fichier_invalide_error(self):
+        """
+        QMessageBox indiquand que le type de fichier sélectionné est invalide
+
+        :return: None
+        """
+        msgBox = QMessageBox()
+        msgBox.setIcon(QMessageBox.Warning)
+        msgBox.setText("File type invalid")
+        msgBox.setWindowTitle("Error")
+        msgBox.setStandardButtons(QMessageBox.Ok)
+        msgBox.exec()
+
+    """---------------------------------------------------------------------------------"""
+
+    def current_data_None(self):
+        """
+        QMessageBox indiquand qu'une action sur un plot ou une data
+        a été demandé dans que des datas est été chargé
+
+        :return: None
+        """
+        msgBox = QMessageBox()
+        msgBox.setIcon(QMessageBox.Warning)
+        msgBox.setText("No file open")
+        msgBox.setWindowTitle("Error")
+        msgBox.setStandardButtons(QMessageBox.Ok)
+        msgBox.exec()
+
+    """---------------------------------------------------------------------------------"""
+
+    def current_figure_None(self):
+        """
+        QMessageBox indiquand qu'une action sur un plot a été demandé et
+        qu'aucun plot n'est en figure courrante
+
+        :return:
+        """
+        msgBox = QMessageBox()
+        msgBox.setIcon(QMessageBox.Warning)
+        msgBox.setText("No plot selected")
+        msgBox.setWindowTitle("Error")
+        msgBox.setStandardButtons(QMessageBox.Ok)
+        msgBox.exec()
+
+    """---------------------------------------------------------------------------------"""
+
+    def fait(self):
+        """
+        QMessageBox indiquand qu'une action a été effectuée
+        je ne m'en sert pas pour le moment, et peut-être jamais
+
+        :return: None
+        """
+        msgBox = QMessageBox()
+        msgBox.setIcon(QMessageBox.Ok)
+        msgBox.setText("Done")
+        msgBox.setWindowTitle("Done")
+        msgBox.setStandardButtons(QMessageBox.Ok)
+        msgBox.exec()
 
 
 class Main_interface:

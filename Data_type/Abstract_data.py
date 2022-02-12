@@ -147,7 +147,7 @@ class Abstract_data(ABC):
                         name = name[0:len(name) - 3] + temp
                     except ValueError:
                         name += "(1)"
-                self.unique_name(name)
+                return self.unique_name(name)
         return name
 
     """----------------------------------------------------------------------------------"""

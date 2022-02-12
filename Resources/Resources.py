@@ -403,7 +403,7 @@ def unique_name(array, name):
                 num = int(name[len(name) - 2]) + 1
                 temp = "(" + str(num) + ")"
                 name = name[0:len(name) - 3] + temp
-            unique_name(array, name)
+            return unique_name(array, name)
     return name
 
 
