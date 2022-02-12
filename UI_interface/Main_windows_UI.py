@@ -50,14 +50,18 @@ class Figure_plot(QWidget):
         self.abstract_affiche = abstract_affiche
 
         """création du canvas + widget matplotlib"""
+
         self.create_plot()
 
     def create_plot(self):
         self.abstract_affiche.create_figure()
 
+
         layout = QVBoxLayout()
         self.setLayout(layout)
+
         self.canvas = FigureCanvas(self.abstract_affiche.pplot_fig)
+
         self.toolbar = NavigationToolbar2QT(self.canvas, self, True)
 
         if self.abstract_affiche.leg1 is not None:
@@ -200,7 +204,11 @@ class Figure_plot(QWidget):
                                         temp = int(nb_y1 / self.abstract_affiche.figure.nb_legende * j)
                                         if temp not in modulo_y1:
                                             modulo_y1.append(temp)
-                                    print(modulo_y1)
+
+                                    self.abstract_affiche.figure.y1_axe.data[modulo_y1[i]].legend = name[0]
+
+                                    event.artist.set_text(name[0])
+                                    event.artist.set_picker(True)
                                     self.canvas.draw()
                                     return
                                 else:
@@ -211,7 +219,6 @@ class Figure_plot(QWidget):
                                     return
 
                         for i, text in enumerate(self.abstract_affiche.leg2.get_legend().get_texts()):
-                            print(text)
                             if text == event.artist:
                                 legend_index = i
                                 modulo_y2 = []
@@ -224,7 +231,11 @@ class Figure_plot(QWidget):
                                         temp = int(nb_y2 / self.abstract_affiche.figure.nb_legende * j)
                                         if temp not in modulo_y2:
                                             modulo_y2.append(temp)
-                                    print(modulo_y2)
+
+                                    self.abstract_affiche.figure.y1_axe.data[modulo_y2[i]].legend = name[0]
+
+                                    event.artist.set_text(name[0])
+                                    event.artist.set_picker(True)
                                     self.canvas.draw()
                                     return
                                 else:
@@ -595,8 +606,10 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.treeWidget.topLevelItem(0).child(i).setText(0, signal)
 
     def break_tab(self, event):
-        obj = Classique_affiche(self.console.current_data, self.console.current_data.current_figure)
-        new_w = Figure_plot(obj)
+        self.tabWidget.widget(event).abstract_affiche.focus_off()
+        print("focus_off break_tab")
+
+        new_w = Figure_plot(self.tabWidget.widget(event).abstract_affiche)
 
         """connection avec la nouvelle fenêtre"""
         new_w.closed.connect(self.close_w_plot)
@@ -611,14 +624,16 @@ class Window(QMainWindow, Ui_MainWindow):
     def close_w_plot(self, event):
         """la fenêtre du plot a été fermé, on recréer une tab avec la figure qui était préssente sur la
         fenêtre"""
-        print(len(self.figure_w))
+
         for i, affiche_obj in enumerate(self.figure_w):
             if affiche_obj.abstract_affiche.figure.name == event:
                 """création d'un nouvel objet Classique_affiche"""
-                obj = Classique_affiche(self.console.current_data, affiche_obj.abstract_affiche.figure)
+                #obj = Classique_affiche(self.console.current_data, affiche_obj.abstract_affiche.figure)
+                print("focus_off close_w_plot")
+                affiche_obj.abstract_affiche.focus_off()
 
                 """création d'une tab"""
-                new_tab = Figure_plot(obj)
+                new_tab = Figure_plot(affiche_obj.abstract_affiche)
                 new_tab.setObjectName(event)
 
                 """connection de la nouvelle tab"""

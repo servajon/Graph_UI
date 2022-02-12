@@ -274,12 +274,6 @@ class CCCV_data(Abstract_data):
             return"""
 
         temp = "time/" + self.get_format_time()
-        if color is None:
-            if self.current_figure is not None:
-                for i in range(len(self.current_figure.data_y1)):
-                    if self.current_figure.data_y1[i].color is not None:
-                        color = self.current_figure.data_y1[i].color
-                        break
 
         new_figure = Traitement_cycle_cccv.potentio(self.data.get("loop_data"),
                                                     self.data.get(temp), self.data.get(self.resource.I),

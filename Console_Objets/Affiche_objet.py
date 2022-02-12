@@ -197,123 +197,124 @@ class Classique_affiche(Abstract_objet_affiche):
     """----------------------------------------------------------------------------------"""
 
     def create_figure(self):
+        """la figure est recréée à chaque fois contrairement à la version console"""
         if self.pplot_fig is not None:
-            return True
-        else:
-            print(self.figure.type)
-            if self.figure.type is not None and "3d" in self.figure.type:
-                if self.figure.is_data_set_3d() == 1:
-                    try:
-                        if self.save is not None:
-                            self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
-                                self.data.load_graph_3d(self.figure, self.save)
-                            pplot.close(self.pplot_fig)
-                            self.finish = True
-                            self.pplot_fig = None
-                        else:
-                            self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
-                                self.data.load_graph_3d(self.figure)
-                            self.pplot_fig.tight_layout()
-                    except ValueError as err:
-                        print(err)
-                        self.finish = True
-                        return False
-                else:
-                    self.finish = True
-                    return False
+            pplot.close(self.pplot_fig)
+            print("le plot n'est pas nouveau")
 
-            elif self.figure.type is not None and "bar" in self.figure.type:
-                if self.figure.is_data_set_bar() == 1:
-                    try:
-                        if self.save is not None:
-                            self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
-                                self.data.load_graph_bar(self.figure, self.save)
-                            pplot.close(self.pplot_fig)
-                            self.finish = True
-                            self.pplot_fig = None
-                        else:
-                            self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
-                                self.data.load_graph_bar(self.figure)
-                            self.pplot_fig.tight_layout()
-                    except ValueError as err:
-                        print(err)
-                        self.finish = True
-                        return False
-                else:
-                    self.finish = True
-                    return False
-            elif self.figure.type is not None and "contour" in self.figure.type:
-                if self.figure.is_data_set_contour() == 1:
+        if self.figure.type is not None and "3d" in self.figure.type:
+            if self.figure.is_data_set_3d() == 1:
+                try:
                     if self.save is not None:
                         self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
-                            self.data.load_graph_contour(self.figure, self.norm, self.save)
+                            self.data.load_graph_3d(self.figure, self.save)
                         pplot.close(self.pplot_fig)
                         self.finish = True
                         self.pplot_fig = None
                     else:
                         self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
-                            self.data.load_graph_contour(self.figure, self.norm)
+                            self.data.load_graph_3d(self.figure)
                         self.pplot_fig.tight_layout()
-                else:
-                    self.finish = True
-                    return False
-            elif self.figure.type is not None and "res_diffraction" in self.figure.type:
-                if self.figure.is_data_set() == 1:
-                    if self.save is not None:
-                        self.pplot_fig = self.data.load_graph_affichage(self.figure, self.save)
-                        pplot.close(self.pplot_fig)
-                        self.finish = True
-                        self.pplot_fig = None
-                    else:
-                        self.pplot_fig = self.data.load_graph_affichage(self.figure)
-                else:
-                    self.finish = True
-                    return False
-            elif self.figure.type is not None and "res_waxs" in self.figure.type:
-                if self.figure.is_data_set() == 1:
-                    if self.save is not None:
-                        self.pplot_fig = self.data.load_graph_affichage(self.figure, self.save)
-                        pplot.close(self.pplot_fig)
-                        self.finish = True
-                        self.pplot_fig = None
-                    else:
-                        self.pplot_fig = self.data.load_graph_affichage(self.figure)
-                else:
-                    self.finish = True
-                    return False
-            elif self.figure.type is not None and "res_saxs" in self.figure.type:
-                if self.figure.is_data_set() == 1:
-                    if self.save is not None:
-                        self.pplot_fig = self.data.load_graph_affichage(self.figure, self.save)
-                        pplot.close(self.pplot_fig)
-                        self.finish = True
-                        self.pplot_fig = None
-                    else:
-                        self.pplot_fig = self.data.load_graph_affichage(self.figure)
-                else:
+                except ValueError as err:
+                    print(err)
                     self.finish = True
                     return False
             else:
-                if self.figure.is_data_set() == 1:
-                    try:
-                        if self.save is not None:
-                            self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
-                                self.data.load_graph(self.figure, self.save)
-                            pplot.close(self.pplot_fig)
-                            self.finish = True
-                            self.pplot_fig = None
-                        else:
-                            self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2\
-                                = self.data.load_graph(self.figure)
-                            self.pplot_fig.tight_layout()
-                    except ValueError as err:
-                        print(err)
+                self.finish = True
+                return False
+
+        elif self.figure.type is not None and "bar" in self.figure.type:
+            if self.figure.is_data_set_bar() == 1:
+                try:
+                    if self.save is not None:
+                        self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
+                            self.data.load_graph_bar(self.figure, self.save)
+                        pplot.close(self.pplot_fig)
                         self.finish = True
-                        return False
-                else:
+                        self.pplot_fig = None
+                    else:
+                        self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
+                            self.data.load_graph_bar(self.figure)
+                        self.pplot_fig.tight_layout()
+                except ValueError as err:
+                    print(err)
                     self.finish = True
                     return False
-            return True
+            else:
+                self.finish = True
+                return False
+        elif self.figure.type is not None and "contour" in self.figure.type:
+            if self.figure.is_data_set_contour() == 1:
+                if self.save is not None:
+                    self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
+                        self.data.load_graph_contour(self.figure, self.norm, self.save)
+                    pplot.close(self.pplot_fig)
+                    self.finish = True
+                    self.pplot_fig = None
+                else:
+                    self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
+                        self.data.load_graph_contour(self.figure, self.norm)
+                    self.pplot_fig.tight_layout()
+            else:
+                self.finish = True
+                return False
+        elif self.figure.type is not None and "res_diffraction" in self.figure.type:
+            if self.figure.is_data_set() == 1:
+                if self.save is not None:
+                    self.pplot_fig = self.data.load_graph_affichage(self.figure, self.save)
+                    pplot.close(self.pplot_fig)
+                    self.finish = True
+                    self.pplot_fig = None
+                else:
+                    self.pplot_fig = self.data.load_graph_affichage(self.figure)
+            else:
+                self.finish = True
+                return False
+        elif self.figure.type is not None and "res_waxs" in self.figure.type:
+            if self.figure.is_data_set() == 1:
+                if self.save is not None:
+                    self.pplot_fig = self.data.load_graph_affichage(self.figure, self.save)
+                    pplot.close(self.pplot_fig)
+                    self.finish = True
+                    self.pplot_fig = None
+                else:
+                    self.pplot_fig = self.data.load_graph_affichage(self.figure)
+            else:
+                self.finish = True
+                return False
+        elif self.figure.type is not None and "res_saxs" in self.figure.type:
+            if self.figure.is_data_set() == 1:
+                if self.save is not None:
+                    self.pplot_fig = self.data.load_graph_affichage(self.figure, self.save)
+                    pplot.close(self.pplot_fig)
+                    self.finish = True
+                    self.pplot_fig = None
+                else:
+                    self.pplot_fig = self.data.load_graph_affichage(self.figure)
+            else:
+                self.finish = True
+                return False
+        else:
+            if self.figure.is_data_set() == 1:
+                try:
+                    if self.save is not None:
+                        self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
+                            self.data.load_graph(self.figure, self.save)
+                        pplot.close(self.pplot_fig)
+                        self.finish = True
+                        self.pplot_fig = None
+                    else:
+                        self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2\
+                            = self.data.load_graph(self.figure)
+                        self.pplot_fig.tight_layout()
+                except ValueError as err:
+                    print(err)
+                    self.finish = True
+                    return False
+            else:
+                self.finish = True
+                return False
+        return True
 
     """----------------------------------------------------------------------------------"""
 
@@ -327,7 +328,7 @@ class Classique_affiche(Abstract_objet_affiche):
 
                 self.index = [index_x, index_y]
                 count = 0
-                for ax in pplot.gcf().axes:
+                for ax in self.pplot_fig.axes:
                     for line in ax.lines:
                         if "#" in line.get_color():
                             if count != self.index[0][1]:
@@ -622,6 +623,7 @@ class Gitt_affiche(Abstract_objet_affiche):
         if self.pplot_fig is not None:
             return True
         else:
+            print("create")
             if self.figure.is_data_set() == 1:
                 try:
                     self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, a = self.data.load_graph(self.figure)
@@ -2503,7 +2505,7 @@ class Saxs_selection(Abstract_objet_affiche):
                 index_x, index_y = Resources.index_array(self.figure, [self.pos_x, self.pos_y])
                 self.index = [index_x, index_y]
                 count = 0
-                for ax in pplot.gcf().axes:
+                for ax in self.pplot_fig.axes:
                     for line in ax.lines:
                         if "#" in line.get_color():
                             if count != self.index[0][1]:

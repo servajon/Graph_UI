@@ -12,7 +12,6 @@ def potentio(loop_data, time_data, i_data, mode_data, format_time, cycle, color_
     if cycle is None:
         cycle_start = None
         cycle = create_array_cycle_all_array(loop_data)
-        print(cycle)
     else:
         for i in range(len(cycle)):
             cycle[i] = cycle[i] - 1
