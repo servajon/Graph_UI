@@ -919,6 +919,7 @@ class Window(QMainWindow, Ui_MainWindow):
         :param signal: index de la tab détachée
         :return: None
         """
+
         # le focus du plot de la tab détachée est passé à off pour reset les couleurs, lignes etc
         self.tabWidget.widget(signal).abstract_affiche.focus_off()
 
