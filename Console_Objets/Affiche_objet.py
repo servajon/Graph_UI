@@ -18,6 +18,7 @@ class Abstract_objet_affiche(ABC):
         self._finish = False
         self.open = False
         self.save = None
+        """de la forme : [int, str]"""
         self.mpl_connect = []
         self.interactive = False
 
@@ -54,6 +55,10 @@ class Abstract_objet_affiche(ABC):
         pass
 
     @abstractmethod
+    def disconnect_name(self, name):
+        pass
+
+    @abstractmethod
     def focus_off(self):
         pass
 
@@ -62,7 +67,7 @@ class Abstract_objet_affiche(ABC):
         pass
 
     @abstractmethod
-    def on_click(self, event, focus):
+    def on_click(self, event):
         pass
 
     @abstractmethod
@@ -424,13 +429,24 @@ class Classique_affiche(Abstract_objet_affiche):
     """----------------------------------------------------------------------------------"""
 
     def disconnect_all(self):
-        for i in self.mpl_connect:
-            self.pplot_fig.canvas.mpl_disconnect(i)
+        while len(self.mpl_connect) != 0:
+            self.pplot_fig.canvas.mpl_disconnect(self.mpl_connect[0][0])
+            del self.mpl_connect[0]
+
+    """----------------------------------------------------------------------------------"""
+
+    def disconnect_name(self, name):
+        for i in range(len(self.mpl_connect)):
+            if self.mpl_connect[i][1] == name:
+                self.pplot_fig.canvas.mpl_disconnect(self.mpl_connect[i][0])
+                del self.mpl_connect[i]
+                return
 
     """----------------------------------------------------------------------------------"""
 
     def connect_all(self):
-        self.mpl_connect.append(self.pplot_fig.canvas.mpl_connect('motion_notify_event', self.on_move))
+        self.mpl_connect.append([self.pplot_fig.canvas.mpl_connect('button_press_event', self.on_click),
+                                 "button_press_event"])
 
     """----------------------------------------------------------------------------------"""
 
@@ -478,6 +494,9 @@ class Classique_affiche(Abstract_objet_affiche):
         self.index = None
         self.pos_x = None
         self.pos_y = None
+
+        self.disconnect_name("motion_notify_event")
+
         self.value.set_visible(False)
 
         if self.freq is not None:
@@ -498,9 +517,7 @@ class Classique_affiche(Abstract_objet_affiche):
             self.ligne2 = None
 
         self.reset_color()
-        self.disconnect_all()
         self.pplot_fig.canvas.draw()
-        print("interact off")
 
     """----------------------------------------------------------------------------------"""
 
@@ -510,19 +527,18 @@ class Classique_affiche(Abstract_objet_affiche):
         else:
             self.interactive = True
 
+        self.mpl_connect.append([self.pplot_fig.canvas.mpl_connect('motion_notify_event', self.on_move),
+                                 "motion_notify_event"])
+
         self.value.set_visible(True)
         if self.freq is not None:
             self.freq.set_visible(True)
 
-        self.connect_all()
         self.interact()
-
-        print("interact on")
 
     """----------------------------------------------------------------------------------"""
 
     def on_close(self, event):
-        print("close affiche obj")
         self.disconnect_all()
         pplot.close(self.pplot_fig)
 
@@ -533,8 +549,14 @@ class Classique_affiche(Abstract_objet_affiche):
 
     """----------------------------------------------------------------------------------"""
 
-    def on_click(self, event, focus):
-        pass
+    def on_click(self, event):
+        if event.dblclick and event.inaxes is not None and event.button == MouseButton.LEFT and \
+                (event.inaxes == self.ax1 or event.inaxes == self.ax2):
+            if self.interactive:
+                self.focus_off()
+
+            else:
+                self.focus_on()
 
     """----------------------------------------------------------------------------------"""
 
@@ -618,7 +640,6 @@ class Gitt_affiche(Abstract_objet_affiche):
         if self.pplot_fig is not None:
             return True
         else:
-            print("create")
             if self.figure.is_data_set() == 1:
                 try:
                     self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, a = self.data.load_graph(self.figure)

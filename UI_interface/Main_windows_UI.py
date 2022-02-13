@@ -1,17 +1,19 @@
 import copy
+import os
 import sys
 
 import matplotlib
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import QThread, pyqtSlot, pyqtSignal
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtWidgets import (
-    QApplication, QDialog, QMainWindow, QMessageBox, QFileDialog, QWidget, QLineEdit, QVBoxLayout, QInputDialog,
-    QTreeWidgetItem
+    QApplication, QDialog, QMainWindow, QMessageBox, QFileDialog, QWidget, QLineEdit, QVBoxLayout, QInputDialog
 )
-from matplotlib.backends.backend_qt import NavigationToolbar2QT
+from matplotlib.axis import XAxis
+from matplotlib.backend_bases import NavigationToolbar2, MouseButton
+
+from matplotlib.backends.backend_qt import NavigationToolbar2QT, SubplotToolQt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as pplot
-
 from Console_Objets.Affiche_objet import Classique_affiche
 from Console_Objets.Console import Console
 from Console_Objets.Data_array import Data_array
@@ -88,93 +90,83 @@ class Figure_plot(QWidget):
         # création du canvas
         self.canvas = FigureCanvas(self.abstract_affiche.pplot_fig)
 
+        self.abstract_affiche.ax1.set_picker(True)
+        # self.abstract_affiche.ax2.set_picker(True)
+
         # on récupére la toolbar de matplotlib
         self.toolbar = NavigationToolbar2QT(self.canvas, self, True)
-
-        # on passe les picker des artistes qui nous servirons à True
-
-        # leg1
-        if self.abstract_affiche.leg1 is not None:
-            for artist in self.abstract_affiche.leg1.get_legend().get_texts():
-                artist.set_picker(True)
-
-        # leg2
-        if self.abstract_affiche.leg2 is not None:
-            for artist in self.abstract_affiche.leg2.get_legend().get_texts():
-                artist.set_picker(True)
-
-        # plot name
-        for artist in self.abstract_affiche.pplot_fig.get_children():
-            if type(artist).__name__ == "Text":
-                artist.set_picker(True)
-
-        # label ax1
-        if self.abstract_affiche.ax1 is not None:
-            self.abstract_affiche.ax1.xaxis.get_label().set_picker(True)
-            self.abstract_affiche.ax1.yaxis.get_label().set_picker(True)
-        else:
-            self.abstract_affiche.ax2.xaxis.get_label().set_picker(True)
-
-        # label ax2
-        if self.abstract_affiche.ax2 is not None:
-            self.abstract_affiche.ax2.yaxis.get_label().set_picker(True)
-
-        # ax1
-        if self.abstract_affiche.ax1 is not None:
-            self.abstract_affiche.ax1.xaxis.set_picker(True)
-            self.abstract_affiche.ax1.yaxis.set_picker(True)
-        else:
-            self.abstract_affiche.ax2.xaxis.set_picker(True)
-
-        # ax2
-        if self.abstract_affiche.ax2 is not None:
-            self.abstract_affiche.ax2.xaxis.set_picker(True)
 
         layout.addWidget(self.canvas)
         layout.addWidget(self.toolbar)
 
         # connections pour events matplotlib effectués sur le canvas
         self.canvas.mpl_connect('button_press_event', self.button_press_event)
-        self.canvas.mpl_connect('motion_notify_event', self.mouseMoveEvent)
+        # self.canvas.mpl_connect('motion_notify_event', self.mouseMoveEvent)
         self.canvas.mpl_connect('close_event', self.closeEvent)
         self.canvas.mpl_connect('axes_enter_event', self.axes_enter_event)
         self.canvas.mpl_connect('axes_leave_event', self.axes_leave_event)
-        self.canvas.mpl_connect('pick_event', self.pick_event)
+
+        # on connect abstract_affiche
+        self.abstract_affiche.connect_all()
+
         self.canvas.draw()
 
     """---------------------------------------------------------------------------------"""
 
     def button_press_event(self, event):
         """
-        Déclenché par un clique sur self.canvas, pour un db clique on apelle self.mouseDoubleClickEvent
+        Déclenché par un clique sur self.canvas
+        Ne gére que les cliques en dehors des axes, les cliques dans les axes sont
+        géré par Affiche_obj
 
         :param event: button_press_event
         :return: None
         """
-        if event.dblclick:
-            self.mouseDoubleClickEvent(event)
-        else:
-            pass
+        if event.dblclick and event.inaxes is None and event.button == MouseButton.LEFT \
+                and not self.abstract_affiche.interactive:
+            self.edit_plot(event)
 
     """---------------------------------------------------------------------------------"""
 
-    def mouseDoubleClickEvent(self, event):
-        """
-        Appellé par button_press_event lors d'un double clique, si le clique est fait sur
-        le plot, on passe la figure de self.abstract_affiche en focus si elle ne l'est pas
-        et la retire si elle l'est
+    def edit_plot(self, event):
+        if self.abstract_affiche.ax1.xaxis.contains(event)[0] or \
+                self.abstract_affiche.ax1.xaxis.get_label().contains(event)[0]:
+            self.edit_x_axe()
 
-        :param event: button_press_event (matplotlib)
-        :return: None
-        """
+        elif self.abstract_affiche.ax1.yaxis.contains(event)[0] or \
+                self.abstract_affiche.ax1.yaxis.get_label().contains(event)[0]:
+            self.edit_y1_axe()
 
-        if event.inaxes is not None and (event.inaxes == self.abstract_affiche.ax1 or
-                                         event.inaxes == self.abstract_affiche.ax2):
-            if self.abstract_affiche.interactive:
-                self.abstract_affiche.focus_off()
+        elif self.abstract_affiche.ax2 is not None and \
+                (self.abstract_affiche.ax2.yaxis.contains(event)[0] or
+                 self.abstract_affiche.ax2.yaxis.get_label().contains(event)[0]):
+            self.edit_y2_axe()
 
-            else:
-                self.abstract_affiche.focus_on()
+        elif self.abstract_affiche.pplot_fig._suptitle.contains(event)[0]:
+            self.edit_suptitle()
+
+        else:
+            if self.abstract_affiche.leg1 is not None:
+                for i, artist in enumerate(self.abstract_affiche.leg1.get_legend().get_lines()):
+                    if artist.contains(event)[0]:
+                        self.edit_legend_1(i)
+                        return
+
+                for i, artist in enumerate(self.abstract_affiche.leg1.get_legend().get_texts()):
+                    if artist.contains(event)[0]:
+                        self.edit_legend_1(i)
+                        return
+
+            if self.abstract_affiche.leg2 is not None:
+                for i, artist in enumerate(self.abstract_affiche.leg2.get_legend().get_lines()):
+                    if artist.contains(event)[0]:
+                        self.edit_legend_2(i)
+                        return
+
+                for i, artist in enumerate(self.abstract_affiche.leg2.get_legend().get_texts()):
+                    if artist.contains(event)[0]:
+                        self.edit_legend_2(i)
+                        return
 
     """---------------------------------------------------------------------------------"""
 
@@ -217,124 +209,6 @@ class Figure_plot(QWidget):
 
     """---------------------------------------------------------------------------------"""
 
-    def pick_event(self, event):
-        """
-        Déclenché par pick_event de matplotlib
-        en fonction du type d'event et de l'artiste qui a déclanché cette event, différentes
-        fonctions de la classe seront appellée
-
-        :param event: pick_event matplotlib
-        :return: None
-        """
-        """de la merde, mais pas moyen de trouver comment faire mieux....."""
-        if event.mouseevent.button == 1 and event.mouseevent.dblclick:
-            """on prends le centre de la figure, si le click est plus loi que le centre c'est l'axe de
-            droite, gauche sinon"""
-            center = (self.canvas.figure.get_size_inches()[0] * 96) * 0.9 / 2
-
-            if type(event.artist).__name__ == "XAxis" and self.abstract_affiche.ax1 is not None and \
-                    event.artist == self.abstract_affiche.ax1.xaxis:
-                self.edit_x_axe()
-
-            elif type(event.artist).__name__ == "Text" and self.abstract_affiche.ax1 is not None and \
-                    event.artist == self.abstract_affiche.ax1.xaxis.get_label():
-                self.edit_x_axe()
-
-            elif type(event.artist).__name__ == "XAxis" and self.abstract_affiche.ax2 is not None and \
-                    event.artist == self.abstract_affiche.ax2.xaxis:
-                self.edit_x_axe()
-
-            elif type(event.artist).__name__ == "Text" and self.abstract_affiche.ax2 is not None and \
-                    event.artist == self.abstract_affiche.ax2.xaxis.get_label():
-                self.edit_x_axe()
-
-            elif type(event.artist).__name__ == "YAxis" and self.abstract_affiche.ax1 is not None and \
-                    event.mouseevent.x < center:
-                self.edit_y1_axe()
-
-            elif type(event.artist).__name__ == "Text" and self.abstract_affiche.ax1 is not None and \
-                    event.artist == self.abstract_affiche.ax1.yaxis.get_label():
-                self.edit_y1_axe()
-
-            elif type(event.artist).__name__ == "YAxis" and self.abstract_affiche.ax2 is not None and \
-                    event.mouseevent.x >= center:
-                self.edit_y2_axe()
-
-            elif type(event.artist).__name__ == "Text" and self.abstract_affiche.ax2 is not None and \
-                    event.artist == self.abstract_affiche.ax2.yaxis.get_label():
-                self.edit_y2_axe()
-
-            else:
-                old_name = event.artist.get_text()
-                name = QInputDialog.getText(self, "Name change", "New name ?", QLineEdit.Normal, old_name)
-                if name[1]:
-                    if self.abstract_affiche.figure.plot_name == old_name:
-
-                        console_temp = Console()
-                        new_name = console_temp.current_data.unique_name(name[0])
-                        event.artist.set_text(new_name)
-
-                        self.name_changed.emit([old_name, new_name])
-                        self.canvas.draw()
-
-                        del console_temp
-                    else:
-                        for i, text in enumerate(self.abstract_affiche.leg1.get_legend().get_texts()):
-                            if text == event.artist:
-                                legend_index = i
-                                modulo_y1 = []
-                                nb_y1 = 0
-                                for data in self.abstract_affiche.figure.y1_axe.data:
-                                    if data.legend is not None:
-                                        nb_y1 += 1
-                                if nb_y1 > self.abstract_affiche.figure.nb_legende:
-                                    for j in range(self.abstract_affiche.figure.nb_legende):
-                                        temp = int(nb_y1 / self.abstract_affiche.figure.nb_legende * j)
-                                        if temp not in modulo_y1:
-                                            modulo_y1.append(temp)
-
-                                    self.abstract_affiche.figure.y1_axe.data[modulo_y1[i]].legend = name[0]
-
-                                    event.artist.set_text(name[0])
-                                    event.artist.set_picker(True)
-                                    self.canvas.draw()
-                                    return
-                                else:
-                                    self.abstract_affiche.figure.y1_axe.data[legend_index].legend = name[0]
-                                    event.artist.set_text(name[0])
-                                    event.artist.set_picker(True)
-                                    self.canvas.draw()
-                                    return
-
-                        for i, text in enumerate(self.abstract_affiche.leg2.get_legend().get_texts()):
-                            if text == event.artist:
-                                legend_index = i
-                                modulo_y2 = []
-                                nb_y2 = 0
-                                for data in self.abstract_affiche.figure.y2_axe.data:
-                                    if data.legend is not None:
-                                        nb_y2 += 1
-                                if nb_y2 > self.abstract_affiche.figure.nb_legende:
-                                    for j in range(self.abstract_affiche.figure.nb_legende):
-                                        temp = int(nb_y2 / self.abstract_affiche.figure.nb_legende * j)
-                                        if temp not in modulo_y2:
-                                            modulo_y2.append(temp)
-
-                                    self.abstract_affiche.figure.y1_axe.data[modulo_y2[i]].legend = name[0]
-
-                                    event.artist.set_text(name[0])
-                                    event.artist.set_picker(True)
-                                    self.canvas.draw()
-                                    return
-                                else:
-                                    self.abstract_affiche.figure.y2_axe.data[legend_index].legend = name[0]
-                                    event.artist.set_text(name[0])
-                                    event.artist.set_picker(True)
-                                    self.canvas.draw()
-                                    return
-
-    """---------------------------------------------------------------------------------"""
-
     def edit_x_axe(self):
         if self.edit_w is None:
             self.axe_edited = "x"
@@ -355,7 +229,7 @@ class Figure_plot(QWidget):
 
     """---------------------------------------------------------------------------------"""
 
-    def edit_y1_axe(self, ):
+    def edit_y1_axe(self):
         if self.edit_w is None:
             self.axe_edited = "y1"
             self.edit_w = Edit_Axe()
@@ -375,7 +249,7 @@ class Figure_plot(QWidget):
 
     """---------------------------------------------------------------------------------"""
 
-    def edit_y2_axe(self, ):
+    def edit_y2_axe(self):
         if self.edit_w is None:
             self.axe_edited = "y2"
             self.edit_w = Edit_Axe()
@@ -392,6 +266,69 @@ class Figure_plot(QWidget):
 
             self.edit_w.finish.connect(self.edit_finishded)
             self.edit_w.show()
+
+    """---------------------------------------------------------------------------------"""
+
+    def edit_suptitle(self):
+        old_name = self.abstract_affiche.pplot_fig._suptitle.get_text()
+        name = QInputDialog.getText(self, "Name change", "New name ?", QLineEdit.Normal, old_name)
+        if name[1] and name[0] != "":
+            self.abstract_affiche.pplot_fig._suptitle.set_text(name[0])
+            self.abstract_affiche.figure.name = name[0]
+            self.name_changed.emit([old_name, name[0]])
+            self.canvas.draw()
+
+    """---------------------------------------------------------------------------------"""
+
+    def edit_legend_1(self, index):
+        old_name = self.abstract_affiche.leg1.get_legend().get_texts()[index].get_text()
+        name = QInputDialog.getText(self, "Name change", "New name ?", QLineEdit.Normal, old_name)
+        if name[1] and name[0] != "":
+            modulo_y1 = []
+            nb_y1 = 0
+            for data in self.abstract_affiche.figure.y1_axe.data:
+                if data.legend is not None:
+                    nb_y1 += 1
+            if nb_y1 > self.abstract_affiche.figure.nb_legende:
+                for j in range(self.abstract_affiche.figure.nb_legende):
+                    temp = int(nb_y1 / self.abstract_affiche.figure.nb_legende * j)
+                    if temp not in modulo_y1:
+                        modulo_y1.append(temp)
+
+                self.abstract_affiche.figure.y1_axe.data[modulo_y1[index]].legend = name[0]
+                self.abstract_affiche.leg1.get_legend().get_texts()[index].set_text(name[0])
+
+            else:
+                self.abstract_affiche.figure.y1_axe.data[index].legend = name[0]
+                self.abstract_affiche.leg1.get_legend().get_texts()[index].set_text(name[0])
+
+            self.canvas.draw()
+
+    """---------------------------------------------------------------------------------"""
+
+    def edit_legend_2(self, index):
+        old_name = self.abstract_affiche.leg2.get_legend().get_texts()[index].get_text()
+        name = QInputDialog.getText(self, "Name change", "New name ?", QLineEdit.Normal, old_name)
+        if name[1] and name[0] != "":
+            modulo_y2 = []
+            nb_y2 = 0
+            for data in self.abstract_affiche.figure.y1_axe.data:
+                if data.legend is not None:
+                    nb_y2 += 1
+            if nb_y2 > self.abstract_affiche.figure.nb_legende:
+                for j in range(self.abstract_affiche.figure.nb_legende):
+                    temp = int(nb_y2 / self.abstract_affiche.figure.nb_legende * j)
+                    if temp not in modulo_y2:
+                        modulo_y2.append(temp)
+
+                self.abstract_affiche.figure.y2_axe.data[modulo_y2[index]].legend = name[0]
+                self.abstract_affiche.leg2.get_legend().get_texts()[index].set_text(name[0])
+
+            else:
+                self.abstract_affiche.figure.y2_axe.data[index].legend = name[0]
+                self.abstract_affiche.leg2.get_legend().get_texts()[index].set_text(name[0])
+
+            self.canvas.draw()
 
     """---------------------------------------------------------------------------------"""
 
@@ -429,6 +366,45 @@ class Figure_plot(QWidget):
                 self.abstract_affiche.ax2.set_yscale(new_scale)
                 self.abstract_affiche.ax2.yaxis.set_picker(True)
 
+            new_start = self.edit_w.lineEdit_3.text()
+            new_end = self.edit_w.lineEdit_4.text()
+
+            if new_start != "":
+                try:
+                    new_start = float(new_start)
+                    if self.axe_edited == "x":
+                        self.abstract_affiche.figure.x_axe.first_val = new_start
+                        self.abstract_affiche.ax1.set_xlim(new_start, self.abstract_affiche.ax1.get_xlim()[1])
+                        self.abstract_affiche.ax1.xaxis.set_picker(True)
+                    elif self.axe_edited == "y1":
+                        self.abstract_affiche.figure.y1_axe.first_val = new_start
+                        self.abstract_affiche.ax1.set_ylim(new_start, self.abstract_affiche.ax1.get_ylim()[1])
+                        self.abstract_affiche.ax1.yaxis.set_picker(True)
+                    elif self.axe_edited == "y2":
+                        self.abstract_affiche.figure.y2_axe.first_val = new_start
+                        self.abstract_affiche.ax2.set_ylim(new_start, self.abstract_affiche.ax2.get_ylim()[1])
+                        self.abstract_affiche.ax2.yaxis.set_picker(True)
+                except ValueError:
+                    print("valeur invalide pour new_start")
+
+            if new_end != "":
+                try:
+                    new_end = float(new_end)
+                    if self.axe_edited == "x":
+                        self.abstract_affiche.figure.x_axe.last_val = new_end
+                        self.abstract_affiche.ax1.set_xlim(self.abstract_affiche.ax1.get_xlim()[0], new_end)
+                        self.abstract_affiche.ax1.xaxis.set_picker(True)
+                    elif self.axe_edited == "y1":
+                        self.abstract_affiche.figure.y1_axe.last_val = new_end
+                        self.abstract_affiche.ax1.set_ylim(self.abstract_affiche.ax1.get_ylim()[0], new_end)
+                        self.abstract_affiche.ax1.yaxis.set_picker(True)
+                    elif self.axe_edited == "y2":
+                        self.abstract_affiche.figure.y2_axe.last_val = new_end
+                        self.abstract_affiche.ax2.set_ylim(self.abstract_affiche.ax2.get_ylim()[0], new_end)
+                        self.abstract_affiche.ax2.yaxis.set_picker(True)
+                except ValueError:
+                    pass
+
             self.canvas.draw()
 
         self.edit_w.deleteLater()
@@ -454,6 +430,8 @@ class Figure_plot(QWidget):
 
     def focusInEvent(self, event):
         self.focus_in.emit(self.abstract_affiche.figure.name)
+
+    """---------------------------------------------------------------------------------"""
 
 
 class Window(QMainWindow, Ui_MainWindow):
@@ -568,8 +546,71 @@ class Window(QMainWindow, Ui_MainWindow):
         :return: None
         """
 
-        print("current data : " + self.console.current_data.name)
-        print("current figure : " + self.console.current_data.current_figure.name)
+        """print("current data : " + self.console.current_data.name)
+        print("current figure : " + self.console.current_data.current_figure.name)"""
+
+        f1 = Figure("f1")
+        f2 = Figure("f2")
+        f3 = Figure("f3")
+        f4 = Figure("f4")
+        f5 = Figure("f5")
+        f6 = Figure("f6")
+        f7 = Figure("f7")
+        f8 = Figure("f8")
+        f9 = Figure("f9")
+
+        f2.created_from = f1
+        f3.created_from = f2
+        f4.created_from = f3
+        f5.created_from = f4
+
+        f8.created_from = f2
+
+        self.treeWidget.add_data("cccv", "cccv1")
+
+        self.treeWidget.add_figure(f1, "cccv1")
+        print("-----------------")
+        self.treeWidget.info()
+        print("-----------------")
+
+        self.treeWidget.add_figure(f2, "cccv1")
+        print("-----------------")
+        self.treeWidget.info()
+        print("-----------------")
+
+        self.treeWidget.add_figure(f3, "cccv1")
+        print("-----------------")
+        self.treeWidget.info()
+        print("-----------------")
+
+        self.treeWidget.add_figure(f4, "cccv1")
+        print("-----------------")
+        self.treeWidget.info()
+        print("-----------------")
+
+        self.treeWidget.add_figure(f5, "cccv1")
+        print("-----------------")
+        self.treeWidget.info()
+        print("-----------------")
+        self.treeWidget.add_figure(f6, "cccv1")
+        print("-----------------")
+        self.treeWidget.info()
+        print("-----------------")
+
+        self.treeWidget.add_figure(f7, "cccv1")
+        print("-----------------")
+        self.treeWidget.info()
+        print("-----------------")
+
+        self.treeWidget.add_figure(f8, "cccv1")
+        print("-----------------")
+        self.treeWidget.info()
+        print("-----------------")
+
+        self.treeWidget.add_figure(f9, "cccv1")
+        print("-----------------")
+        self.treeWidget.info()
+        print("-----------------")
 
     """---------------------------------------------------------------------------------"""
 
@@ -595,7 +636,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 # on parcours le vecteur, update tree widget ave le nom des figure créées
                 # on ajoute les figure a current_data
                 for figure in reversed(figures_res):
-                    self.add_data_tree('figure', figure.name)
+                    self.treeWidget.add_figure(figure, self.console.current_data.name)
                     self.console.current_data.figures.append(figure)
 
             # potentio
@@ -605,7 +646,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
                 # on update le tree widget
                 # on ajoute la figure a current_data
-                self.add_data_tree('figure', figures_res.name)
+                self.treeWidget.add_figure(figures_res, self.console.current_data.name)
                 self.console.current_data.figures.append(figures_res)
 
     """---------------------------------------------------------------------------------"""
@@ -767,8 +808,7 @@ class Window(QMainWindow, Ui_MainWindow):
                         self.console.add_data(obj_data)
 
                         # on update le tree widget
-                        name_tab = obj_data.name
-                        self.add_data_tree("cccv", name_tab)
+                        self.treeWidget.add_data("cccv", obj_data.name)
 
                     # on récupére les actions disponibles pour ce type de fichier pour update
                     # current data comboBox_5
@@ -782,37 +822,6 @@ class Window(QMainWindow, Ui_MainWindow):
                 del self.threads[index]
             else:
                 index += 1
-
-    """---------------------------------------------------------------------------------"""
-
-    def add_data_tree(self, type, name, parent=None):
-        """
-        fonction à refaire, ne fonctionne pas
-        créer un objet qui garde trace le l'architecture des données, ne sais pas
-
-        :param type: str de la colonne type a afficher (figure / type exp)
-        :param name: str de la colonne name a afficher
-        :param parent:
-        :return: None
-        """
-
-        if type == "figure":
-            for itm in self.tree_items:
-                for i, child_item in enumerate(itm):
-                    if child_item.isSelected():
-                        child = QTreeWidgetItem([name, type])
-                        child.setSelected(True)
-                        itm[0].insertChild(i, child)
-                        itm.append([child])
-                        break
-        else:
-            item = QTreeWidgetItem([name, type])
-            self.treeWidget.insertTopLevelItem(len(self.tree_items), item)
-            self.tree_items.append([item])
-            for itm in self.tree_items:
-                for child in itm:
-                    child.setSelected(False)
-            item.setSelected(True)
 
     """---------------------------------------------------------------------------------"""
 
@@ -1103,9 +1112,8 @@ class Window(QMainWindow, Ui_MainWindow):
                 parent = self.treeWidget.topLevelItem(0).child(i).parent()
                 break
 
-        # on check que l'on a bien récupéré le parent
         if parent is None:
-            raise ValueError
+            return
 
         # on update current data de la console en premier
         self.console.set_current_data_name(parent.text(0))

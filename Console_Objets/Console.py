@@ -45,11 +45,11 @@ class Console:
     """----------------------------------------------------------------------------------"""
 
     def set_current_data_name(self, name):
+        print(name)
         for data in self.datas:
             if data.name == name:
                 self.current_data = data
                 return
-
         raise ValueError
 
     """----------------------------------------------------------------------------------"""
