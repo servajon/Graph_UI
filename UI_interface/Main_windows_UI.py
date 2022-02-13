@@ -8,7 +8,6 @@ from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtWidgets import (
     QApplication, QDialog, QMainWindow, QMessageBox, QFileDialog, QWidget, QLineEdit, QVBoxLayout, QInputDialog
 )
-from matplotlib.axis import XAxis
 from matplotlib.backend_bases import NavigationToolbar2, MouseButton
 
 from matplotlib.backends.backend_qt import NavigationToolbar2QT, SubplotToolQt
