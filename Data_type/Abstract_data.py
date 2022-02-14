@@ -191,7 +191,7 @@ class Abstract_data(ABC):
 
             nb_y1 = 0
             for i in range(len(data_y1)):
-                if data_y1[i].legend is not None:
+                if data_y1[i].legend is not None and data_y1[i].visible:
                     nb_y1 += 1
             index_modulo_y1 = 0
             if nb_y1 > figure.nb_legende:
@@ -210,16 +210,17 @@ class Abstract_data(ABC):
                     if data_y1[i].color is not None:
                         ax1.plot(data_x[i].data, data_y1[i].data, format_line_y1, markersize=figure.marker_size,
                                  label=data_y1[i].legend,
-                                 color=data_y1[i].color)
+                                 color=data_y1[i].color, visible=data_y1[i].visible)
                     else:
                         ax1.plot(data_x[i].data, data_y1[i].data, format_line_y1, markersize=figure.marker_size,
-                                 label=data_y1[i].legend)
+                                 label=data_y1[i].legend, visible=data_y1[i].visible)
                 else:
                     if data_y1[i].color is not None:
                         ax1.plot(data_x[i].data, data_y1[i].data, format_line_y1, markersize=figure.marker_size,
-                                 color=data_y1[i].color)
+                                 color=data_y1[i].color, visible=data_y1[i].visible)
                     else:
-                        ax1.plot(data_x[i].data, data_y1[i].data, format_line_y1, markersize=figure.marker_size)
+                        ax1.plot(data_x[i].data, data_y1[i].data, format_line_y1, markersize=figure.marker_size,
+                                 visible=data_y1[i].visible)
 
             h, l = ax1.get_legend_handles_labels()
             leg1.legend(h, l, borderaxespad=0, loc="upper right")
@@ -254,7 +255,7 @@ class Abstract_data(ABC):
 
             nb_y2 = 0
             for i in range(len(data_y2)):
-                if data_y2[i].legend is not None:
+                if data_y2[i].legend is not None and data_y2[i].visible:
                     nb_y2 += 1
             index_modulo_y2 = 0
             if nb_y2 > figure.nb_legende:
@@ -276,17 +277,17 @@ class Abstract_data(ABC):
                     if data_y2[i].color is not None:
                         ax2.plot(data_x[i + len_y1].data, data_y2[i].data, format_line_y2, markersize=figure.marker_size,
                                  label=data_y2[i].legend,
-                                 color=data_y2[i].color)
+                                 color=data_y2[i].color, visible=data_y2[i].visible)
                     else:
                         ax2.plot(data_x[i+ len_y1].data, data_y2[i].data, format_line_y2, markersize=figure.marker_size,
-                                 color=couleur[index_color], label=data_y2[i].legend)
+                                 color=couleur[index_color], label=data_y2[i].legend, visible=data_y2[i].visible)
                 else:
                     if data_y2[i].color is not None:
                         ax2.plot(data_x[i + len_y1].data, data_y2[i].data, format_line_y2, markersize=figure.marker_size,
-                                 color=data_y2[i].color)
+                                 color=data_y2[i].color, visible=data_y2[i].visible)
                     else:
                         ax2.plot(data_x[i+ len_y1].data, data_y2[i].data, format_line_y2, markersize=figure.marker_size,
-                                 color=couleur[index_color])
+                                 color=couleur[index_color], visible=data_y2[i].visible)
 
             h, l = ax2.get_legend_handles_labels()
             leg2.legend(h, l, borderaxespad=0, loc="lower right")

@@ -341,3 +341,32 @@ class Figure:
         else:
             while len(self.x_axe) != len(self.y1_axe) + len(self.y2_axe):
                 self.x_axe.append(self.x_axe.data[-1])
+
+    def get_data_yaxe_i(self, index):
+        if index >= len(self.y1_axe):
+            return self.y2_axe.data[index - len(self.y1_axe.data)]
+        else:
+            return self.y1_axe.data[index]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

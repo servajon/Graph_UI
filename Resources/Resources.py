@@ -294,7 +294,7 @@ def index_array(figure, coords):
     index_y_return = ["y1", 0]
 
     for i in range(len(index_x)):
-        if figure.x_axe.data[i].name != "LIGNE0":
+        if figure.x_axe.data[i].name != "LIGNE0" and figure.x_axe.data[i].visible:
             if min is None or abs(y - figure.y1_axe.data[i].data[index_x[i]]) < min:
                 min = abs(y - figure.y1_axe.data[i].data[index_x[i]])
                 index_x_return = ["x", i]

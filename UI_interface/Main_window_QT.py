@@ -10,48 +10,44 @@ from abc import abstractmethod, ABC
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import pyqtSignal, Qt, QMimeData, QPoint, QEvent
-from PyQt5.QtGui import QPixmap, QDrag, QCursor, QRegion
-from PyQt5.QtWidgets import QWidget, QLineEdit, QInputDialog, QMainWindow, QTreeWidgetItem
+from PyQt5.QtGui import QPixmap, QDrag, QCursor, QRegion, QColor
+from PyQt5.QtWidgets import QWidget, QLineEdit, QInputDialog, QMainWindow, QTreeWidgetItem, QAbstractButton
 
+from Console_Objets.Figure import Figure
 from Resources import Resources
 
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(972, 735)
+        MainWindow.resize(938, 710)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.horizontalLayout = QtWidgets.QHBoxLayout(self.centralwidget)
         self.horizontalLayout.setObjectName("horizontalLayout")
-        self.groupBox_2 = QtWidgets.QGroupBox(self.centralwidget)
-        self.groupBox_2.setMaximumSize(QtCore.QSize(471, 16777215))
-        self.groupBox_2.setTitle("")
-        self.groupBox_2.setObjectName("groupBox_2")
-        self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.groupBox_2)
-        self.verticalLayout_2.setObjectName("verticalLayout_2")
-        self.groupBox_4 = QtWidgets.QGroupBox(self.groupBox_2)
-        self.groupBox_4.setMinimumSize(QtCore.QSize(451, 211))
-        self.groupBox_4.setMaximumSize(QtCore.QSize(496, 346))
-        self.groupBox_4.setTitle("")
-        self.groupBox_4.setObjectName("groupBox_4")
-        self.verticalLayout_7 = QtWidgets.QVBoxLayout(self.groupBox_4)
-        self.verticalLayout_7.setObjectName("verticalLayout_7")
+        self.splitter = QtWidgets.QSplitter(self.centralwidget)
+        self.splitter.setMinimumSize(QtCore.QSize(391, 531))
+        self.splitter.setOrientation(QtCore.Qt.Vertical)
+        self.splitter.setObjectName("splitter")
 
-        self.treeWidget = Tree_widget(self.groupBox_4)
-        self.treeWidget.setMaximumSize(QtCore.QSize(16777215, 324))
+        self.treeWidget = Tree_widget(self.splitter)
+        self.treeWidget.setMinimumSize(QtCore.QSize(425, 217))
+        self.treeWidget.setMaximumSize(QtCore.QSize(16777215, 16777215))
         self.treeWidget.setHeaderLabels(["Name", "Type"])
         self.treeWidget.setObjectName("treeWidget")
-        self.verticalLayout_7.addWidget(self.treeWidget)
 
-        self.verticalLayout_3 = QtWidgets.QVBoxLayout()
+
+        self.layoutWidget = QtWidgets.QWidget(self.splitter)
+        self.layoutWidget.setObjectName("layoutWidget")
+        self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.layoutWidget)
+        self.verticalLayout_3.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
-        self.label = QtWidgets.QLabel(self.groupBox_4)
+        self.label = QtWidgets.QLabel(self.layoutWidget)
         self.label.setMinimumSize(QtCore.QSize(0, 18))
         self.label.setMaximumSize(QtCore.QSize(651, 18))
         self.label.setObjectName("label")
         self.verticalLayout_3.addWidget(self.label)
-        self.line = QtWidgets.QFrame(self.groupBox_4)
+        self.line = QtWidgets.QFrame(self.layoutWidget)
         self.line.setFrameShape(QtWidgets.QFrame.HLine)
         self.line.setFrameShadow(QtWidgets.QFrame.Sunken)
         self.line.setObjectName("line")
@@ -59,35 +55,35 @@ class Ui_MainWindow(object):
         self.horizontalLayout_4 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_4.setSizeConstraint(QtWidgets.QLayout.SetDefaultConstraint)
         self.horizontalLayout_4.setObjectName("horizontalLayout_4")
-        self.label_7 = QtWidgets.QLabel(self.groupBox_4)
+        self.label_7 = QtWidgets.QLabel(self.layoutWidget)
         self.label_7.setMinimumSize(QtCore.QSize(127, 41))
         self.label_7.setMaximumSize(QtCore.QSize(127, 41))
         self.label_7.setObjectName("label_7")
         self.horizontalLayout_4.addWidget(self.label_7)
         spacerItem = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_4.addItem(spacerItem)
-        self.comboBox_5 = QtWidgets.QComboBox(self.groupBox_4)
+        self.comboBox_5 = QtWidgets.QComboBox(self.layoutWidget)
         self.comboBox_5.setMinimumSize(QtCore.QSize(103, 41))
         self.comboBox_5.setMaximumSize(QtCore.QSize(103, 41))
         self.comboBox_5.setObjectName("comboBox_5")
-
+        self.comboBox_5.addItem("")
+        self.comboBox_5.addItem("")
+        self.comboBox_5.addItem("")
         self.horizontalLayout_4.addWidget(self.comboBox_5)
         spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_4.addItem(spacerItem1)
-        self.pushButton_5 = QtWidgets.QPushButton(self.groupBox_4)
+        self.pushButton_5 = QtWidgets.QPushButton(self.layoutWidget)
         self.pushButton_5.setMinimumSize(QtCore.QSize(103, 41))
         self.pushButton_5.setMaximumSize(QtCore.QSize(103, 41))
         self.pushButton_5.setObjectName("pushButton_5")
         self.horizontalLayout_4.addWidget(self.pushButton_5)
         self.verticalLayout_3.addLayout(self.horizontalLayout_4)
-        spacerItem2 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Maximum)
-        self.verticalLayout_3.addItem(spacerItem2)
-        self.label_5 = QtWidgets.QLabel(self.groupBox_4)
+        self.label_5 = QtWidgets.QLabel(self.layoutWidget)
         self.label_5.setMinimumSize(QtCore.QSize(0, 18))
         self.label_5.setMaximumSize(QtCore.QSize(651, 18))
         self.label_5.setObjectName("label_5")
         self.verticalLayout_3.addWidget(self.label_5)
-        self.line_2 = QtWidgets.QFrame(self.groupBox_4)
+        self.line_2 = QtWidgets.QFrame(self.layoutWidget)
         self.line_2.setFrameShape(QtWidgets.QFrame.HLine)
         self.line_2.setFrameShadow(QtWidgets.QFrame.Sunken)
         self.line_2.setObjectName("line_2")
@@ -95,49 +91,47 @@ class Ui_MainWindow(object):
         self.horizontalLayout_3 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_3.setSizeConstraint(QtWidgets.QLayout.SetDefaultConstraint)
         self.horizontalLayout_3.setObjectName("horizontalLayout_3")
-        self.label_6 = QtWidgets.QLabel(self.groupBox_4)
+        self.label_6 = QtWidgets.QLabel(self.layoutWidget)
         self.label_6.setMinimumSize(QtCore.QSize(127, 41))
         self.label_6.setMaximumSize(QtCore.QSize(127, 41))
         self.label_6.setObjectName("label_6")
-        self.horizontalLayout_3.addWidget(self.label_6, 0, QtCore.Qt.AlignLeft)
-        spacerItem3 = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum)
-        self.horizontalLayout_3.addItem(spacerItem3)
-        self.comboBox_4 = QtWidgets.QComboBox(self.groupBox_4)
+        self.horizontalLayout_3.addWidget(self.label_6)
+        spacerItem2 = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_3.addItem(spacerItem2)
+        self.comboBox_4 = QtWidgets.QComboBox(self.layoutWidget)
         self.comboBox_4.setMinimumSize(QtCore.QSize(103, 41))
         self.comboBox_4.setMaximumSize(QtCore.QSize(103, 41))
         self.comboBox_4.setObjectName("comboBox_4")
         self.comboBox_4.addItem("")
         self.horizontalLayout_3.addWidget(self.comboBox_4)
-        spacerItem4 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.horizontalLayout_3.addItem(spacerItem4)
-        self.pushButton_4 = QtWidgets.QPushButton(self.groupBox_4)
+        spacerItem3 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_3.addItem(spacerItem3)
+        self.pushButton_4 = QtWidgets.QPushButton(self.layoutWidget)
         self.pushButton_4.setMinimumSize(QtCore.QSize(103, 41))
         self.pushButton_4.setMaximumSize(QtCore.QSize(103, 41))
         self.pushButton_4.setObjectName("pushButton_4")
         self.horizontalLayout_3.addWidget(self.pushButton_4)
         self.verticalLayout_3.addLayout(self.horizontalLayout_3)
-        self.verticalLayout_7.addLayout(self.verticalLayout_3)
-        self.verticalLayout_2.addWidget(self.groupBox_4)
-        self.groupBox = QtWidgets.QGroupBox(self.groupBox_2)
-        self.groupBox.setTitle("")
-        self.groupBox.setObjectName("groupBox")
-        self.verticalLayout = QtWidgets.QVBoxLayout(self.groupBox)
-        self.verticalLayout.setObjectName("verticalLayout")
-        self.widget = QtWidgets.QWidget(self.groupBox)
+        self.widget = QtWidgets.QWidget(self.splitter)
         self.widget.setMinimumSize(QtCore.QSize(281, 141))
         self.widget.setObjectName("widget")
-        self.verticalLayout.addWidget(self.widget)
-        self.verticalLayout_2.addWidget(self.groupBox)
-        self.horizontalLayout.addWidget(self.groupBox_2)
+        self.horizontalLayout.addWidget(self.splitter)
         self.groupBox_3 = QtWidgets.QGroupBox(self.centralwidget)
         self.groupBox_3.setTitle("")
         self.groupBox_3.setObjectName("groupBox_3")
-        self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.groupBox_3)
-        self.verticalLayout_4.setObjectName("verticalLayout_4")
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.groupBox_3)
+        self.verticalLayout.setObjectName("verticalLayout")
+
         self.tabWidget = TabWidget(self.groupBox_3)
-        self.tabWidget.setMinimumSize(QtCore.QSize(457, 455))
+        self.tabWidget.setMinimumSize(QtCore.QSize(0, 0))
         self.tabWidget.setObjectName("tabWidget")
-        self.verticalLayout_4.addWidget(self.tabWidget)
+
+        """ self.treeWidget = Tree_widget(self.groupBox_3)
+        self.treeWidget.setMaximumSize(QtCore.QSize(16777215, 324))
+        self.treeWidget.setHeaderLabels(["Name", "Type"])
+        self.treeWidget.setObjectName("treeWidget")"""
+
+        self.verticalLayout.addWidget(self.tabWidget)
         self.horizontalLayout.addWidget(self.groupBox_3)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
@@ -153,6 +147,9 @@ class Ui_MainWindow(object):
         self.menuExport.setObjectName("menuExport")
         self.menuPlot = QtWidgets.QMenu(self.menubar)
         self.menuPlot.setObjectName("menuPlot")
+        self.menubar = QtWidgets.QMenuBar(MainWindow)
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 938, 26))
+        self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
@@ -251,6 +248,7 @@ class Ui_MainWindow(object):
         self.actionAll.setText(_translate("MainWindow", "All"))
         self.actionEdit_Current_Plot.setText(_translate("MainWindow", "Edit Current Plot"))
         self.actionDelete_Current_Plot.setText(_translate("MainWindow", "Delete Current Plot"))
+
 
 class UI_Create_Figure(object):
     def setupUi(self, MainWindow):
@@ -802,7 +800,7 @@ class Edit_Axe(QWidget):
         self.pushButton_2.setText(_translate("Form", "Cancel"))
 
     def closeEvent(self, event):
-            self.finish.emit("closed")
+        self.finish.emit("closed")
 
     def save_presed(self):
         self.finish.emit("save")
@@ -811,6 +809,150 @@ class Edit_Axe(QWidget):
         self.finish.emit("cancel")
 
 
+class Edit_plot(QWidget):
+    finish_signal = pyqtSignal(str)
+
+    edit_signal = pyqtSignal(int)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setupUi(self)
+
+    def setupUi(self, Form):
+        Form.setObjectName("Form")
+        Form.resize(373, 412)
+        self.verticalLayout_3 = QtWidgets.QVBoxLayout(Form)
+        self.verticalLayout_3.setObjectName("verticalLayout_3")
+        self.groupBox_4 = QtWidgets.QGroupBox(Form)
+        self.groupBox_4.setMinimumSize(QtCore.QSize(351, 331))
+        self.groupBox_4.setTitle("")
+        self.groupBox_4.setObjectName("groupBox_4")
+        self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.groupBox_4)
+        self.verticalLayout_2.setObjectName("verticalLayout_2")
+        self.label = QtWidgets.QLabel(self.groupBox_4)
+        self.label.setObjectName("label")
+        self.verticalLayout_2.addWidget(self.label)
+        self.groupBox_2 = QtWidgets.QGroupBox(self.groupBox_4)
+        self.groupBox_2.setTitle("")
+        self.groupBox_2.setObjectName("groupBox_2")
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.groupBox_2)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.listWidget = QtWidgets.QListWidget(self.groupBox_2)
+        self.listWidget.setObjectName("listWidget")
+        self.verticalLayout.addWidget(self.listWidget)
+        self.groupBox_3 = QtWidgets.QGroupBox(self.groupBox_2)
+        self.groupBox_3.setTitle("")
+        self.groupBox_3.setObjectName("groupBox_3")
+        self.horizontalLayout = QtWidgets.QHBoxLayout(self.groupBox_3)
+        self.horizontalLayout.setObjectName("horizontalLayout")
+        self.pushButton = QtWidgets.QPushButton(self.groupBox_3)
+        self.pushButton.setObjectName("pushButton")
+        self.horizontalLayout.addWidget(self.pushButton)
+        self.pushButton_2 = QtWidgets.QPushButton(self.groupBox_3)
+        self.pushButton_2.setObjectName("pushButton_2")
+        self.horizontalLayout.addWidget(self.pushButton_2)
+        self.verticalLayout.addWidget(self.groupBox_3)
+        self.verticalLayout_2.addWidget(self.groupBox_2)
+        self.groupBox = QtWidgets.QGroupBox(self.groupBox_4)
+        self.groupBox.setTitle("")
+        self.groupBox.setObjectName("groupBox")
+        self.gridLayout = QtWidgets.QGridLayout(self.groupBox)
+        self.gridLayout.setObjectName("gridLayout")
+        self.label_2 = QtWidgets.QLabel(self.groupBox)
+        self.label_2.setObjectName("label_2")
+        self.gridLayout.addWidget(self.label_2, 0, 0, 1, 1)
+        self.lineEdit = QtWidgets.QLineEdit(self.groupBox)
+        self.lineEdit.setObjectName("lineEdit")
+        self.gridLayout.addWidget(self.lineEdit, 0, 1, 1, 1)
+        self.label_3 = QtWidgets.QLabel(self.groupBox)
+        self.label_3.setObjectName("label_3")
+        self.gridLayout.addWidget(self.label_3, 1, 0, 1, 1)
+        self.lineEdit_2 = QtWidgets.QLineEdit(self.groupBox)
+        self.lineEdit_2.setObjectName("lineEdit_2")
+        self.gridLayout.addWidget(self.lineEdit_2, 1, 1, 1, 1)
+        self.comboBox = QtWidgets.QComboBox(self.groupBox)
+        self.comboBox.setObjectName("comboBox")
+        self.gridLayout.addWidget(self.comboBox, 2, 1, 1, 1)
+        self.label_4 = QtWidgets.QLabel(self.groupBox)
+        self.label_4.setObjectName("label_4")
+        self.gridLayout.addWidget(self.label_4, 2, 0, 1, 1)
+        self.verticalLayout_2.addWidget(self.groupBox)
+        self.verticalLayout_3.addWidget(self.groupBox_4)
+        self.groupBox_5 = QtWidgets.QGroupBox(Form)
+        self.groupBox_5.setTitle("")
+        self.groupBox_5.setObjectName("groupBox_5")
+        self.horizontalLayout_2 = QtWidgets.QHBoxLayout(self.groupBox_5)
+        self.horizontalLayout_2.setObjectName("horizontalLayout_2")
+        self.pushButton_3 = QtWidgets.QPushButton(self.groupBox_5)
+        self.pushButton_3.setObjectName("pushButton_3")
+        self.horizontalLayout_2.addWidget(self.pushButton_3)
+        self.pushButton_4 = QtWidgets.QPushButton(self.groupBox_5)
+        self.pushButton_4.setObjectName("pushButton_4")
+        self.horizontalLayout_2.addWidget(self.pushButton_4)
+        self.pushButton_5 = QtWidgets.QPushButton(self.groupBox_5)
+        self.pushButton_5.setObjectName("pushButton_5")
+        self.horizontalLayout_2.addWidget(self.pushButton_5)
+        self.verticalLayout_3.addWidget(self.groupBox_5, 0, QtCore.Qt.AlignRight)
+
+        self.retranslateUi(Form)
+        QtCore.QMetaObject.connectSlotsByName(Form)
+
+        self.pushButton_3.clicked.connect(self.save)
+        self.pushButton_4.clicked.connect(self.apply)
+        self.pushButton_5.clicked.connect(self.cancel)
+        self.pushButton.clicked.connect(self.edit)
+        self.pushButton_2.clicked.connect(self.hide)
+
+        self.listWidget.currentItemChanged.connect(self.change_current)
+
+        # vecteur qui garde la trace de quel axe a été édité
+        self.edited = []
+
+    def retranslateUi(self, Form):
+        _translate = QtCore.QCoreApplication.translate
+        Form.setWindowTitle(_translate("Form", "Form"))
+        self.label.setText(_translate("Form", "<html><head/><body><p><span style=\" font-size:18pt;\">Plot1</span></p></body></html>"))
+        self.pushButton.setText(_translate("Form", "Edit"))
+        self.pushButton_2.setText(_translate("Form", "Hide"))
+        self.label_2.setText(_translate("Form", "<html><head/><body><p><span style=\" font-size:14pt;\">Plot name</span></p></body></html>"))
+        self.label_3.setText(_translate("Form", "<html><head/><body><p><span style=\" font-size:14pt;\">Rescale Margin (%)</span></p></body></html>"))
+        self.label_4.setText(_translate("Form", "<html><head/><body><p><span style=\" font-size:14pt;\">Color</span></p></body></html>"))
+        self.pushButton_3.setText(_translate("Form", "Save"))
+        self.pushButton_4.setText(_translate("Form", "Apply"))
+        self.pushButton_5.setText(_translate("Form", "Cancel"))
+
+    def save(self):
+        self.finish_signal.emit("save")
+
+    def apply(self):
+        self.finish_signal.emit("apply")
+
+    def cancel(self):
+        self.finish_signal.emit("cancel")
+
+    def closeEvent(self, event):
+        self.finish_signal.emit("cancel")
+
+    def change_current(self):
+        if self.listWidget.currentItem() is not None:
+            if self.listWidget.currentItem().foreground().color() == QColor("red") and self.pushButton_2.text() == "Hide":
+                self.pushButton_2.setText("Show")
+            elif self.listWidget.currentItem().foreground().color() == QColor("black") and self.pushButton_2.text() == "Show":
+                self.pushButton_2.setText("Hide")
+
+    def edit(self):
+        self.edit_signal.emit(self.listWidget.currentRow())
+        self.listWidget.item(0).foreground()
+
+    def hide(self):
+        red = QColor("red")
+        if self.listWidget.currentItem().foreground().color() == red:
+            self.listWidget.currentItem().setForeground(QColor("black"))
+            self.pushButton_2.setText("Hide")
+
+        else:
+            self.listWidget.currentItem().setForeground(red)
+            self.pushButton_2.setText("Show")
 
 
 class Tree_widget(QtWidgets.QTreeWidget):
@@ -823,6 +965,7 @@ class Tree_widget(QtWidgets.QTreeWidget):
     la même structure que l'arbre phyqiue dont il dépends. Il servira a
     faciliter les calcules pour l'insersion de nouvelles figures.
     """
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.items = []
@@ -894,10 +1037,9 @@ class Tree_widget(QtWidgets.QTreeWidget):
                     # _item lui parcous l'arbre "physique"
                     _item = self.topLevelItem(i)
                     for i, name in enumerate(array_created_from):
-
                         # ou parcours l'arbre en utilisant les noms obtenus par get_array_created_from
                         obj, index = obj.get_child(name)
-                        _item= _item.child(index)
+                        _item = _item.child(index)
 
                     # on est au bonne endroit de l'arbre logique et physique pour ajouter litem
                     # arbre logique
@@ -937,7 +1079,6 @@ class Tree_widget(QtWidgets.QTreeWidget):
         for conteneur in self.items:
             conteneur.get_name(0)
 
-
     """---------------------------------------------------------------------------------"""
 
     class Conteneur(ABC):
@@ -945,6 +1086,7 @@ class Tree_widget(QtWidgets.QTreeWidget):
         class abstraite de qui vont hériter Conteneur_data et Conteneur_figure
         elle fournis les methode pour aider le parcours de l'arbre logique
         """
+
         def __init__(self, name):
             self.name = name
 
@@ -984,7 +1126,6 @@ class Tree_widget(QtWidgets.QTreeWidget):
             """
             pass
 
-
     class Conteneur_data(Conteneur):
         def __init__(self, name):
             super().__init__(name)
@@ -1000,7 +1141,7 @@ class Tree_widget(QtWidgets.QTreeWidget):
 
         def get_name(self, nb_tab):
             str = ""
-            for i in range(nb_tab ):
+            for i in range(nb_tab):
                 str += "\t"
             str += self.name
             print(str)
@@ -1009,7 +1150,6 @@ class Tree_widget(QtWidgets.QTreeWidget):
 
         def append(self, item):
             self.figures_child.append(item)
-
 
     class Conteneur_figure(Conteneur):
         def __init__(self, name):
@@ -1035,14 +1175,3 @@ class Tree_widget(QtWidgets.QTreeWidget):
 
         def append(self, item):
             self.figures_child.append(item)
-
-
-
-
-
-
-
-
-
-
-

@@ -1,5 +1,8 @@
 import math
 from abc import ABC, abstractmethod
+
+import numpy as np
+
 from Resources import Resources
 
 from Console_Objets import Data_array
@@ -21,6 +24,10 @@ class Abstract_objet_affiche(ABC):
         """de la forme : [int, str]"""
         self.mpl_connect = []
         self.interactive = False
+
+        # cette variable indique si les information du plot ont le droit d'être édité
+        # par défaut True
+        self.editable = True
 
     @abstractmethod
     def create_figure(self):
@@ -567,15 +574,318 @@ class Classique_affiche(Abstract_objet_affiche):
 
 
 
+class Edit_affiche(Abstract_objet_affiche):
+    def __init__(self, data, figure, norm=None):
+        super().__init__(data, figure)
+        self.ax1 = None
+        self.ax2 = None
+        self.value = None
+        self.freq = None
+        self.leg1 = None
+        self.leg2 = None
 
+        self.resource = Resources.Resource_class()
 
+        self.index = None
+        self.pos_x = None
+        self.pos_y = None
+        self.ligne1 = None
+        self.ligne2 = None
 
+        self.norm = norm
 
+        # cette variable indique si les information du plot ont le droit d'être édité
+        # sur cette interaction là on ne veut pas, elle sert juste pour rtirer des points
+        # le graph sera suprimé ensuite, aucun interet donc
+        self.editable = False
 
+        self.res = None
 
+    """----------------------------------------------------------------------------------"""
 
+    def create_figure(self):
+        """la figure est recréée à chaque fois contrairement à la version console"""
+        if self.pplot_fig is not None:
+            pplot.close(self.pplot_fig)
+            print("le plot n'est pas nouveau")
+        if self.figure.is_data_set() == 1:
+            try:
+                self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2\
+                    = self.data.load_graph(self.figure)
+                self.pplot_fig.tight_layout()
+            except ValueError as err:
+                print(err)
+                self.finish = True
+                return False
+        else:
+            self.finish = True
+            return False
+        return True
 
+    """----------------------------------------------------------------------------------"""
 
+    def interact(self):
+        black = matplotlib.colors.to_rgba("black")
+        test = matplotlib.patches.Circle((0.0, 0.0), 0, color='white')
+
+        if self.pos_x is not None:
+            if self.index is None:
+                index_x, index_y = Resources.index_array(self.figure, [self.pos_x, self.pos_y])
+
+                self.index = [index_x, index_y]
+                count = 0
+                for ax in self.pplot_fig.axes:
+                    for line in ax.lines:
+                        if "#" in line.get_color():
+                            if count != self.index[0][1]:
+                                color = line.get_color()
+                                color = str(color)
+                                color += "50"
+                                line.set_color(color)
+                        elif len(line.get_color()) == 4:
+                            if count != self.index[0][1]:
+                                hex_color = matplotlib.colors.to_hex(line.get_color())
+                                color = str(hex_color)
+                                color += "50"
+                                line.set_color(color)
+                        count += 1
+
+            if self.index[0] != -1:
+                xtickslocs = str(self.ax1.get_xticks()[1])
+                ytickslocs = str(self.ax1.get_yticks()[1])
+
+                len_x = 4
+                find = False
+                for i in range(len(xtickslocs)):
+                    if xtickslocs[i] == ".":
+                        find = True
+                    if xtickslocs[i] != "0" and find:
+                        len_x = + i + 4 + xtickslocs.find(".")
+                        break
+                len_y = 4
+                find = False
+                for i in range(len(ytickslocs)):
+                    if ytickslocs[i] == ".":
+                        find = True
+                    if ytickslocs[i] != "0" and find:
+                        len_y = i + 4 + ytickslocs.find(".")
+                        break
+
+                res = Resources.coord_to_point([[self.pos_x, self.pos_y]],
+                                              self.figure.x_axe.data[self.index[0][1]],
+                                              self.figure.y1_axe.data[self.index[1][1]])
+                self.res = res
+                if res != -1:
+                    text_legend_pointed = self.figure.y1_axe.data[self.index[1][1]].legend
+
+                    self.value.legend([test, test, test], [
+                        'courbe : ' + str(text_legend_pointed),
+                        'x : ' + str(self.figure.x_axe.data[self.index[0][1]].data[res])[0:len_x],
+                        'y : ' + str(self.figure.y1_axe.data[self.index[1][1]].data[res])[0:len_y]],
+                                      markerscale=0, borderaxespad=0, fontsize=14, loc="center right")
+
+                    self.ligne1 = self.ax1.axhline(y=self.figure.y1_axe.data[self.index[1][1]].data[res], color=black)
+                    self.ligne2 = self.ax1.axvline(x=self.figure.x_axe.data[self.index[0][1]].data[res], color=black)
+
+                    if self.freq is not None:
+                        self.freq.legend([test], [
+                            'freq : ' + str(self.data.data.get("freq/Hz")[res])[0:len_x] + " Hz"],
+                                         markerscale=0, borderaxespad=0, fontsize=14, loc="lower right")
+
+                else:
+                    text_legend_pointed = self.figure.y1_axe.data[self.index[1][1]].legend
+                    self.value.legend([test, test, test], ['courbe : ' + str(text_legend_pointed),
+                                                           'x : none', 'y : none'],
+                                      markerscale=0, borderaxespad=0, fontsize=14, loc="center right")
+
+                    if self.freq is not None:
+                        self.freq.legend([test], ['freq : none'],
+                                         markerscale=0, borderaxespad=0, fontsize=14, loc="lower right")
+            else:
+                text_legend_pointed = self.figure.y1_axe.data[self.index[1][1]].legend
+                self.value.legend([test, test, test], ['courbe : ' + str(text_legend_pointed), 'x : none', 'y : none'],
+                                  markerscale=0, borderaxespad=0, fontsize=14, loc="center right")
+                if self.freq is not None:
+                    self.freq.legend([test], ['freq : none'],
+                                     markerscale=0, borderaxespad=0, fontsize=14, loc="lower right")
+
+            self.pplot_fig.canvas.draw()
+
+    """----------------------------------------------------------------------------------"""
+
+    def update_pplot_fig(self):
+        if self.ligne1 is not None:
+            try:
+                self.ax1.lines.remove(self.ligne1)
+            except ValueError:
+                pass
+            self.ligne1 = None
+        if self.ligne2 is not None:
+            try:
+                self.ax1.lines.remove(self.ligne2)
+            except ValueError:
+                pass
+            self.ligne2 = None
+        self.interact()
+
+    """----------------------------------------------------------------------------------"""
+
+    def disconnect_all(self):
+        while len(self.mpl_connect) != 0:
+            self.pplot_fig.canvas.mpl_disconnect(self.mpl_connect[0][0])
+            del self.mpl_connect[0]
+
+    """----------------------------------------------------------------------------------"""
+
+    def disconnect_name(self, name):
+        for i in range(len(self.mpl_connect)):
+            if self.mpl_connect[i][1] == name:
+                self.pplot_fig.canvas.mpl_disconnect(self.mpl_connect[i][0])
+                del self.mpl_connect[i]
+                return
+
+    """----------------------------------------------------------------------------------"""
+
+    def connect_all(self):
+        self.mpl_connect.append([self.pplot_fig.canvas.mpl_connect('button_press_event', self.on_click),
+                                 "button_press_event"])
+
+    """----------------------------------------------------------------------------------"""
+
+    def set_open(self):
+        if self.pplot_fig is not None:
+            self.open = True
+
+    """----------------------------------------------------------------------------------"""
+
+    def set_atteractive(self):
+        if self.figure.is_interact() == 0:
+            return False
+        else:
+            return True
+
+    """----------------------------------------------------------------------------------"""
+
+    def reset_color(self):
+        for ax in self.pplot_fig.axes:
+            for line in ax.lines:
+                if "#" in line.get_color():
+                    color = line.get_color()
+                    if len(str(color)) == 9:
+                        color = str(color)
+                        color = color[0:7]
+                        line.set_color(color)
+
+        texts = self.leg1.get_legend().get_texts()
+        for text in texts:
+            text.set_c("black")
+
+    """----------------------------------------------------------------------------------"""
+
+    def on_move(self, event):
+        self.pos_x = event.xdata
+        self.pos_y = event.ydata
+
+        """On retire les lignes si elles sont déjà tracés et execute self.interact"""
+        self.update_pplot_fig()
+
+    """----------------------------------------------------------------------------------"""
+
+    def focus_off(self):
+        self.interactive = False
+        self.index = None
+        self.pos_x = None
+        self.pos_y = None
+
+        self.disconnect_name("motion_notify_event")
+
+        self.value.set_visible(False)
+
+        if self.freq is not None:
+            self.freq.set_visible(False)
+
+        if self.ligne1 is not None:
+            try:
+                self.ax1.lines.remove(self.ligne1)
+            except ValueError:
+                pass
+            self.ligne1 = None
+
+        if self.ligne2 is not None:
+            try:
+                self.ax1.lines.remove(self.ligne2)
+            except ValueError:
+                pass
+            self.ligne2 = None
+
+        self.reset_color()
+        self.pplot_fig.canvas.draw()
+
+    """----------------------------------------------------------------------------------"""
+
+    def focus_on(self):
+        if self.figure.is_interact() == 0:
+            return
+        else:
+            self.interactive = True
+
+        self.mpl_connect.append([self.pplot_fig.canvas.mpl_connect('motion_notify_event', self.on_move),
+                                 "motion_notify_event"])
+
+        self.value.set_visible(True)
+        if self.freq is not None:
+            self.freq.set_visible(True)
+
+        self.interact()
+
+    """----------------------------------------------------------------------------------"""
+
+    def on_close(self, event):
+        self.disconnect_all()
+        pplot.close(self.pplot_fig)
+
+    """----------------------------------------------------------------------------------"""
+
+    def on_key(self, event):
+        pass
+
+    """----------------------------------------------------------------------------------"""
+
+    def on_click(self, event):
+        if event.dblclick and event.inaxes is not None and event.button == MouseButton.LEFT and \
+                event.inaxes == self.ax1:
+            if self.interactive:
+                self.focus_off()
+
+            else:
+                self.focus_on()
+        elif event.dblclick and event.inaxes is not None and event.button == MouseButton.RIGHT and \
+            event.inaxes == self.ax1:
+            self.delect_point()
+
+    """----------------------------------------------------------------------------------"""
+
+    def delect_point(self):
+        if self.res is None:
+            print("res is none")
+            return
+
+        new_data_x = self.ax1.lines[0].get_xdata()
+        new_data_y = self.ax1.lines[0].get_ydata()
+
+        new_data_x = np.delete(new_data_x, self.res)
+        new_data_y = np.delete(new_data_y, self.res)
+
+        self.ax1.lines[0].set_xdata(new_data_x)
+        self.ax1.lines[0].set_ydata(new_data_y)
+
+        new_data_x = np.array(new_data_x.tolist())
+        new_data_y = np.array(new_data_y.tolist())
+
+        self.figure.x_axe.data[0].data = new_data_x
+        self.figure.y1_axe.data[0].data = new_data_y
+
+        self.pplot_fig.canvas.draw()
 
 
 

@@ -22,6 +22,10 @@ class Data_array:
         self._unite = None
         self.extra_info = None
 
+        # détermine si ce data_array doit-être tracé ou non, par défault oui
+        # cela ne sera modifié que pour un data_array d'un axe y1 ou y2, pas x
+        self._visible = True
+
     def get_color_map(self):
         if self._color is None:
             return None
@@ -78,6 +82,10 @@ class Data_array:
     def unite(self):
         return self._unite
 
+    @property
+    def visible(self):
+        return self._visible
+
     """                                                  """
     """                      setter                      """
     """                                                  """
@@ -100,11 +108,15 @@ class Data_array:
 
     @color.setter
     def color(self, color):
-        if color not in Resources.COLOR_MAP:
-            resource = Resources.Resource_class()
-            resource.print_color(color + " : couleur invalide", "fail")
+        if "#" in color:
+            self._color = color
+        elif color not in Resources.COLOR_MAP:
+            print(color + " : couleur invalide")
             raise ValueError
         else:
             self._color = color
 
+    @visible.setter
+    def visible(self, bool):
+        self._visible = bool
 
