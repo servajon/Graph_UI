@@ -36,7 +36,6 @@ class Ui_MainWindow(object):
         self.treeWidget.setHeaderLabels(["Name", "Type"])
         self.treeWidget.setObjectName("treeWidget")
 
-
         self.layoutWidget = QtWidgets.QWidget(self.splitter)
         self.layoutWidget.setObjectName("layoutWidget")
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.layoutWidget)
