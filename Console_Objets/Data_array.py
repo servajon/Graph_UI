@@ -1,4 +1,4 @@
-from Resources import Resources
+from Resources_file import Resources
 import matplotlib.pyplot as pplot
 import matplotlib.colors as mcolors
 

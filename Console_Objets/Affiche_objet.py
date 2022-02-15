@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from Resources import Resources
+from Resources_file import Resources
 
 from Console_Objets import Data_array
 from Console_Objets import Figure

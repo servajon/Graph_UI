@@ -1,0 +1,5 @@
+dans     def edit_current_plot(self):
+
+mettre des places older plutôt que quelque chose en brut
+
+self.edit_plot_w.lineEdit.setText(self.console.current_data.current_figure.name)

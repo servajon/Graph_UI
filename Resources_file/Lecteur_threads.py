@@ -2,6 +2,8 @@ import copy
 import multiprocessing as mp
 import os
 
+import Resources_file.Resources as R
+from Console_Objets.Affiche_objet import Array_Abstract_objet_affiche
 
 class Lecteur_thread:
     def open(path, file_type, format_time=None):
@@ -55,7 +57,10 @@ class Lecteur_thread:
 
 
 def extract_data_cccv(file, format_time=None):
-    print("Lecture du fichier en cours")
+    from UI_interface.Main_windows_UI import Emit
+    emit = Emit()
+    emit.emit(type="msg_console", str="Lecture du fichier en cours", foreground_color="yellow")
+
 
     data_data = file.readlines()
 
@@ -92,7 +97,7 @@ def extract_data_cccv(file, format_time=None):
             val = data_data[index][data_data[index].find(":") + 2:data_data[index].rfind(" ")]
             val = float(val.replace(',', '.'))
             if val == 0.001:
-                print("La masse de l'électrode inscrite dans le fichier est incorrecte")
+                emit.emit(type="msg_console", str="La masse de l'électrode inscrite dans le fichier est incorrecte", foreground_color="yellow")
                 mass_electrode = -1
             else:
                 pass
@@ -100,19 +105,21 @@ def extract_data_cccv(file, format_time=None):
             while index < len(data_data) and "Number of loops" not in data_data[index] and "mode" not in data_data[index]:
                 index += 1
             if index == len(data_data):
-                print("Fichier invalide")
+                emit.emit(type="msg_console", str="Fichier invalide", foreground_color="red")
                 raise ValueError
         elif index == len(data_data):
-            print("Fichier invalide")
+            emit.emit(type="msg_console", str="Fichier invalide", foreground_color="red")
             raise ValueError
         else:
-            print("La masse de l'électrode inscrite dans le fichier est incorrecte")
+            emit.emit(type="msg_console", str="La masse de l'électrode inscrite dans le fichier est incorrecte",
+                      foreground_color="yellow")
             mass_electrode = -1
     elif data_data[index] == "":
-        print("Fichier invalide")
+        emit.emit(type="msg_console", str="Fichier invalide", foreground_color="red")
         raise ValueError
     else:
-        print("L'entête du fichier est introuvable")
+        emit.emit(type="msg_console", str="L'entête du fichier est introuvable",
+                  foreground_color="yellow")
         name = "no_name_found"
         mass_electrode = -1
 
@@ -178,7 +185,8 @@ def extract_data_cccv(file, format_time=None):
         else:
             res = create_loop(data["time/h"])
         if len(res) == 1:
-            print("Fichier invalide, impossible de créer les loops")
+            emit.emit(type="msg_console", str="Fichier invalide, impossible de créer les loops",
+                      foreground_color="red")
             raise ValueError
         else:
             data["loop_data"] = res
@@ -190,7 +198,8 @@ def extract_data_cccv(file, format_time=None):
             data = create_data(data_data[index+1:], data, data_row)
 
     except ValueError:
-        print("Fichier contenant des valeurs invalides : UNKVAR")
+        emit.emit(type="msg_console", str="Fichier contenant des valeurs invalides : UNKVAR",
+                  foreground_color="red")
         raise ValueError
     else:
         return data

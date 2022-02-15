@@ -1,4 +1,4 @@
-from Resources import Resources
+from Resources_file import Resources
 
 
 def rename_axe(name):

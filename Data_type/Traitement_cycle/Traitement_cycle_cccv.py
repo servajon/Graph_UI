@@ -2,7 +2,7 @@ from Console_Objets.Data_array import Data_array
 from Console_Objets.Figure import Figure
 from Data_type.Traitement_cycle import Traitements_cycle_outils
 import matplotlib.pyplot as pplot
-from Resources import Resources
+from Resources_file import Resources
 
 
 def potentio(loop_data, time_data, i_data, mode_data, format_time, cycle, color_arg=None):

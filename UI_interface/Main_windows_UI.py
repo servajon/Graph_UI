@@ -5,7 +5,7 @@ import sys
 import matplotlib
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import QThread, pyqtSignal
-from PyQt5.QtGui import QColor
+from PyQt5.QtGui import QColor, QFont
 from PyQt5.QtWidgets import (
     QApplication, QDialog, QMainWindow, QMessageBox, QFileDialog, QWidget, QLineEdit, QVBoxLayout, QInputDialog
 )
@@ -19,7 +19,7 @@ from Console_Objets.Console import Console
 from Console_Objets.Data_array import Data_array
 from Console_Objets.Figure import Figure
 from Data_type.CCCV_data import CCCV_data
-from Resources import Resources
+from Resources_file import Resources
 from UI_interface import Threads_UI
 from UI_interface.Main_window_QT import Ui_MainWindow, Edit_Axe, Edit_plot
 
@@ -27,6 +27,43 @@ from UI_interface.Main_window_QT import Ui_MainWindow, Edit_Axe, Edit_plot
 """                                   Main window                                    """
 """----------------------------------------------------------------------------------"""
 
+class Emit(QWidget):
+    """
+    On utlise cette class pour faire passer des signaux de n'importe quel class
+    à la fenêtre principal, notament utile pour afficher les messages de la console
+    sur la fenêtre en bas à gauche
+    """
+    # c'est un singleton
+    _instance = None
+
+    # vecteur des fonctions de callbacks
+    _connect = []
+
+    # dictionnaire d'argument a passer comme signal
+    message = pyqtSignal(dict)
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(Emit, cls).__new__(cls)
+        return cls._instance
+
+    def emit(self, **kwargs):
+        for func in self._connect:
+            func(kwargs)
+
+    def connect(self, func):
+        self._connect.append(func)
+
+    def disconnect(self, _func):
+        for i, func in enumerate(self._connect):
+            if func == _func:
+                self._connect.pop(i)
+                break
+
+    def disconnect_all(self):
+        self._connect.clear()
+
+    """"-----------------------------------------------------"""
 
 class Figure_plot(QWidget):
     """
@@ -607,6 +644,11 @@ class Window(QMainWindow, Ui_MainWindow):
         # création de la console
         self.console = Console()
 
+        # on créer une instance de resource
+        self.emit = Emit()
+
+        self.resource = Resources.Resource_class()
+
         # self.threads est de la forme : [thread, worker]
         self.threads = []
 
@@ -621,6 +663,11 @@ class Window(QMainWindow, Ui_MainWindow):
 
         # on garde en mémoire la fénêtre d'édition du plot
         self.edit_plot_w = None
+
+        # cette variable stock l'objet abstarct figure sur lequel l'édition a commencé
+        # comme cela même si la figure courrante change, les résultats de l'édition
+        # se fonront toujours sur cette figure là
+        self.current_figure_edit_plot = None
 
         # variable qui garde en mémoire l'objet Abstract_Affiche de la figure édité
         self.edit_plot_figure_w = None
@@ -649,6 +696,10 @@ class Window(QMainWindow, Ui_MainWindow):
         self.tabWidget.name_changed_tab.connect(self.name_changed_tab)
         self.tabWidget.break_tab.connect(self.break_tab)
         self.tabWidget.change_current.connect(self.tab_changed)
+
+        # sert pour faire passer des signaux pour l'affichage de text dans la zone par n'importe
+        # quel class, en j'en suis très fière :)
+        self.emit.connect(self.message_console)
 
     """---------------------------------------------------------------------------------"""
 
@@ -759,39 +810,58 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def edit_current_plot(self):
         """
+        création de la fenêtre d'édition du plot
 
         :return: None
         """
+        # si current data est None, une erreur s'affiche
         if self.console.current_data is None:
             self.current_data_None()
+
+        # si current figure est None, une erreur s'affiche
         elif self.console.current_data.current_figure is None:
             self.current_figure_None()
         else:
+            # on créer la nouvelle fenêtre
             self.edit_plot_w = Edit_plot()
 
+            # on change le label pour y affiche le nom de la figure courrante
             self.edit_plot_w.label.setText(self.console.current_data.current_figure.name)
 
+            # on ajoute toutes les légendes des axes pour leurs édition
+            # on commence par l'axe y1
             for i, data_array in enumerate(self.console.current_data.current_figure.y1_axe.data):
                 self.edit_plot_w.listWidget.addItem(data_array.legend)
+                # si l'axe est invisible, on passe l'écriture de la légende en rouge
                 if not data_array.visible:
                     self.edit_plot_w.listWidget.item(i).setForeground(QColor("red"))
 
+            # de même pour l'axe y2
             if self.console.current_data.current_figure.y2_axe is not None:
                 for i, data_array in enumerate(self.console.current_data.current_figure.y2_axe.data):
                     self.edit_plot_w.listWidget.addItem(data_array.legend)
+                    # si l'axe est invisible, on passe l'écriture de la légende en rouge
                     if not data_array.visible:
                         self.edit_plot_w.listWidget.item(i).setForeground(QColor("red"))
 
-
+            # on change le label d'édition du nom de la figure en mettant le nom de la figure
+            # par défault
             self.edit_plot_w.lineEdit.setText(self.console.current_data.current_figure.name)
+
+            # on remplie l'edit line avec le zoom actuel
             self.edit_plot_w.lineEdit_2.setText(str(self.console.current_data.current_figure.zoom))
 
+            # on compléte le combobox avec le nom de toutes le couleurs disponible
             for color in Resources.COLOR_MAP.keys():
                 self.edit_plot_w.comboBox.addItem(color)
 
+            # on connect le signal indiquant que l'édition est fini
             self.edit_plot_w.finish_signal.connect(self.res_edit_plot)
+
+            # signal pour la création d'une figure servant à la supréssion de points
             self.edit_plot_w.edit_signal.connect(self.create_edit_plot)
 
+            # on affiche la fenêtre
             self.edit_plot_w.show()
 
     """---------------------------------------------------------------------------------"""
@@ -991,6 +1061,9 @@ class Window(QMainWindow, Ui_MainWindow):
 
                         # on update le tree widget
                         self.treeWidget.add_data("cccv", obj_data.name)
+
+                        self.update_console({"str": "Done", "foreground_color": "green"})
+
 
                     # on récupére les actions disponibles pour ce type de fichier pour update
                     # current data comboBox_5
@@ -1361,19 +1434,36 @@ class Window(QMainWindow, Ui_MainWindow):
     """---------------------------------------------------------------------------------"""
 
     def res_edit_plot(self, signal):
+        """
+        fonction callback de la la fin de l'édition de la fenêtre édit plot
+        pour le apply je n'est encire rien fait
+
+        :param signal: save, cancel, apply
+        :return: None
+        """
+        # si les oppérations ne sont pas sauvegardée, on del la fenêtre
         if signal == "cancel":
             self.edit_plot_w.deleteLater()
             self.edit_plot_w = None
+
+        # on savegarde les changements
         elif signal == "save":
             if len(self.edit_plot_dics) == 0:
                 obj_figure_plot = None
             else:
-                obj_figure_plot = self.process_del_point_plot()
+                # on applique la suppression des points effectuée sur les différentes courbes
+                self.process_del_point_plot()
 
-            obj_figure_plot = self.hide_data_array(obj_figure_plot)
-            obj_figure_plot.canvas.draw()
+            # on cache les courbes qui doivent l'être
+            self.hide_data_array()
 
+            # on met à jours le figure
+            self.edit_plot_figure_w.abstract_affiche.canvas.draw()
+
+            # l'édition étant terminé on clear le vecteur qui gardais en mémoire les éditions
             self.edit_plot_dics.clear()
+
+            # on délect la fenêtre
             self.edit_plot_w.deleteLater()
             self.edit_plot_w = None
 
@@ -1390,6 +1480,7 @@ class Window(QMainWindow, Ui_MainWindow):
         # si une figure d'édition est déjà ouverte, ou return
         # un message a ajouter ici par la suite
         if self.edit_plot_figure_w is not None:
+            self.update_console({"str": "One figure is already being edited", "foreground_color": "red"})
             return
 
         # création d'une nouvelle figure avec pour nom la légende du cycle sélectionné
@@ -1453,7 +1544,7 @@ class Window(QMainWindow, Ui_MainWindow):
         """
         Effectue la mise à jours des figures et des plots correspondant aux éditions effectuées
 
-        :return: l'objet Figure_plot qui correspond à la figure courrante
+        :return: None
         """
 
         obj_figure_plot = None
@@ -1464,114 +1555,134 @@ class Window(QMainWindow, Ui_MainWindow):
 
             # si l'index est plus grand que le nombre de data dans y1_axe, c'est un index pour
             # l'axe y2
-            if key >= len(self.console.current_data.current_figure.y1_axe.data):
+
+
+
+            if key >= len(self.edit_plot_figure_w.figure.y1_axe.data):
                 # on calcule l'index pour l'axe y2
-                y2_index = key - len(self.console.current_data.current_figure.y1_axe.data)
+                y2_index = key - len(self.edit_plot_figure_w.figure.y1_axe.data)
 
                 # on update current_figure avec les valeurs de value
-                self.console.current_data.current_figure.x_axe.data[key].data = value[0]
-                self.console.current_data.current_figure.y2_axe.data[y2_index].data = value[1]
+                self.edit_plot_figure_w.figure.x_axe.data[key].data = value[0]
+                self.edit_plot_figure_w.figure.y2_axe.data[y2_index].data = value[1]
 
-                name_figure = self.console.current_data.current_figure.name
-
-                # on garde en mémoire si on a update
-                done = False
-                for obj_figure_w in self.figure_w:
-                    # on cherche si la figure mise à jours est dans un fenêtre
-                    if obj_figure_w.abstract_affiche.figure.name == name_figure:
-                        # si oui on la met à jours
-                        obj_figure_w.update_plot("y2", key, value[0], value[1])
-                        obj_figure_plot = obj_figure_w
-                        done = True
-                        break
-
-                if not done:
-                    # la figure n'était pas dans une fenêtre
-                    for i in range(self.tabWidget.count()):
-                        # on cherche dans les tabs
-                        if self.tabWidget.tabText(i) == name_figure:
-                            # on la met à jours
-                            self.tabWidget.widget(i).update_plot("y2", key, value[0], value[1])
-                            obj_figure_plot = self.tabWidget.widget(i)
-                            break
+                self.edit_plot_figure_w.abstract_affiche.update_plot("y2", key, value[0], value[1])
             else:
                 # on update current_figure avec les valeurs de value
-                self.console.current_data.current_figure.x_axe.data[key].data = value[0]
-                self.console.current_data.current_figure.y1_axe.data[key].data = value[1]
+                self.edit_plot_figure_w.figure.x_axe.data[key].data = value[0]
+                self.edit_plot_figure_w.figure.y1_axe.data[key].data = value[1]
 
-                name_figure = self.console.current_data.current_figure.name
-
-                # on garde en mémoire si on a update
-                done = False
-                for obj_figure_w in self.figure_w:
-                    # on cherche si la figure mise à jours est dans un fenêtre
-                    if obj_figure_w.abstract_affiche.figure.name == name_figure:
-                        # si oui on la met à jours
-                        obj_figure_w.update_plot("y1", key, value[0], value[1])
-                        obj_figure_plot = obj_figure_w
-                        done = True
-                        break
-
-                if not done:
-                    # la figure n'était pas dans une fenêtre
-                    for i in range(self.tabWidget.count()):
-                        # on cherche dans les tabs
-                        if self.tabWidget.tabText(i) == name_figure:
-                            # on la met à jours
-                            self.tabWidget.widget(i).update_plot("y1", key, value[0], value[1])
-                            obj_figure_plot = self.tabWidget.widget(i)
-                            break
-
-        return obj_figure_plot
+                self.edit_plot_figure_w.abstract_affiche.update_plot("y1", key, value[0], value[1])
 
     """---------------------------------------------------------------------------------"""
 
-    def hide_data_array(self, obj_figure_plot):
-        if obj_figure_plot is None:
-            current_name = self.console.current_data.current_figure.name
+    def hide_data_array(self):
+        """
+        On set sivible du data_array de chacune des courbes, False si elles doivent être
+        caché et True sinon
 
-            done = False
-            for obj_figure_w in self.figure_w:
-                # on cherche si la figure mise à jours est dans un fenêtre
-                if obj_figure_w.abstract_affiche.figure.name == current_name:
-                    obj_figure_plot = obj_figure_w
-                    done = True
-                    break
-
-            if not done:
-                # la figure n'était pas dans une fenêtre
-                for i in range(self.tabWidget.count()):
-                    # on cherche dans les tabs
-                    if self.tabWidget.tabText(i) == current_name:
-                        # on la met à jours
-                        obj_figure_plot = self.tabWidget.widget(i)
-                        break
+        :param obj_figure_plot:
+        :return: obj_figure_plot correspondant à la figure édité
+        """
 
         # on update current figure pour passer en hide les éléments indiqué
         for i in range(self.edit_plot_w.listWidget.count()):
+            # si la couleur du text est rouge, la courbe doit être cachée
             if self.edit_plot_w.listWidget.item(i).foreground().color() == QColor("red"):
-                self.console.current_data.current_figure.get_data_yaxe_i(i).visible = False
-                self.console.current_data.current_figure.x_axe.data[i].visible = False
+                # on update Data_array
+                self.edit_plot_figure_w.abstract_affiche.figure.get_data_yaxe_i(i).visible = False
 
-                if i >= len(self.console.current_data.current_figure.y1_axe.data):
-                    index = i - len(self.console.current_data.current_figure.y1_axe.data)
-                    obj_figure_plot.set_visibility_2d_line("y2", index, False)
+                # on update la figure matplotlib pour afficher les chagements sans avoir à la retracer
+                self.edit_plot_figure_w.abstract_affiche.figure.x_axe.data[i].visible = False
+
+                # on regarde l'index de l'axe y en fonction de celui de l'axe x
+                # si l'index de laxe x est plus grande que len(y1_axe)
+                # c'est l'axe y2 qui est édité
+                if i >= len(self.edit_plot_figure_w.abstract_affiche.figure.y1_axe.data):
+                    # on recalcule l'index
+                    index = i - len(self.edit_plot_figure_w.abstract_affiche.figure.y1_axe.data)
+                    # c'est l'axe y2 qui est édité
+
+                    self.edit_plot_figure_w.abstract_affiche.pplot_fig.set_visibility_2d_line("y2", index, False)
                 else:
+                    # rien à faire ici
                     index = i
-                    obj_figure_plot.set_visibility_2d_line("y1", index, False)
+                    # c'est l'axe y1 qui est édité
+                    self.edit_plot_figure_w.abstract_affiche.pplot_fig.set_visibility_2d_line("y1", index, False)
             else:
-                self.console.current_data.current_figure.get_data_yaxe_i(i).visible = True
-                self.console.current_data.current_figure.x_axe.data[i].visible = True
+                # on update Data_array
+                self.edit_plot_figure_w.abstract_affiche.figure.get_data_yaxe_i(i).visible = True
 
-                if i >= len(self.console.current_data.current_figure.y1_axe.data):
-                    index = i - len(self.console.current_data.current_figure.y1_axe.data)
-                    obj_figure_plot.set_visibility_2d_line("y2", index, True)
+                # on update la figure matplotlib pour afficher les chagements sans avoir à la retracer
+                self.edit_plot_figure_w.abstract_affiche.figure.x_axe.data[i].visible = True
+
+                # on regarde l'index de l'axe y en fonction de celui de l'axe x
+                # si l'index de laxe x est plus grande que len(y1_axe)
+                # c'est l'axe y2 qui est édité
+                if i >= len(self.edit_plot_figure_w.abstract_affiche.figure.y1_axe.data):
+                    # on recalcule l'index
+                    index = i - len(self.edit_plot_figure_w.abstract_affiche.figure.y1_axe.data)
+                    # c'est l'axe y2 qui est édité
+                    self.edit_plot_figure_w.abstract_affiche.pplot_fig.set_visibility_2d_line("y2", index, True)
                 else:
+                    # rien à faire ici
                     index = i
-                    obj_figure_plot.set_visibility_2d_line("y1", index, True)
+                    # c'est l'axe y1 qui est édité
+                    self.edit_plot_figure_w.abstract_affiche.pplot_fig.set_visibility_2d_line("y1", index, True)
 
-        return obj_figure_plot
+    """---------------------------------------------------------------------------------"""
 
+    def message_console(self, signal):
+        """
+        Callback de self.emit, on regarde le type donnée dans le
+        signal et en fonction on apelle la methode correspondante
+
+        :param signal: dict : {type: msg_console, ...}
+        :return: None
+        """
+
+        if signal["type"] == "msg_console":
+            del signal["type"]
+            self.update_console(signal)
+
+    """---------------------------------------------------------------------------------"""
+
+    def update_console(self, signal):
+        """
+        Callback de print_console de la classe resource pour afficher un message
+        dans le widget "console"
+
+        :param signal: dict : str
+                              background-color:
+                              foreground-color
+                              font
+
+        :return: None
+        """
+
+        # on crééer un nouvel item
+        item = QtWidgets.QListWidgetItem()
+        # il ne doit pas être interactif
+        item.setFlags(QtCore.Qt.NoItemFlags)
+        # on set le text
+        item.setText(signal["str"])
+
+        # on check dans le dict de signal les arguments pour la mise en forme du text
+        if "background_color:" in signal:
+            item.setBackground(QColor(signal["background_color:"]))
+
+        if "foreground_color" in signal:
+            item.setForeground(QColor(signal["foreground_color"]))
+
+        if "font" in signal:
+            item.setFont(QFont(signal["font"]))
+        else:
+            item.setFont(QFont(*self.resource.default_font))
+
+        # on add l'item à la listWidget
+        self.listWidget.addItem(item)
+
+    """---------------------------------------------------------------------------------"""
 
     def fichier_invalide_error(self):
         """

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 import matplotlib
 import matplotlib.pyplot as pplot
-from Resources import Resources
+from Resources_file import Resources
 
 
 def format_axes_figure(figure, ax1, ax2):

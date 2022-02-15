@@ -2,8 +2,8 @@ import PyQt5
 from PyQt5.QtCore import QObject, QThread, pyqtSignal
 from PyQt5.uic.properties import QtCore
 
-from Resources import Lecteur_threads
-from Resources.Lecteur_threads import Lecteur_thread
+from Resources_file import Lecteur_threads
+from Resources_file.Lecteur_threads import Lecteur_thread
 
 
 class Open_file_cccv(QObject):

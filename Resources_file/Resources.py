@@ -3,9 +3,12 @@ import textwrap
 from os import listdir
 import matplotlib
 import matplotlib.colors as mcolors
+from PyQt5.QtCore import pyqtSignal, QObject
+from PyQt5.QtGui import QFont
+from PyQt5.QtWidgets import QWidget
 
 
-class Resource_class(object):
+class Resource_class:
     _instance = None
 
     def __new__(cls):
@@ -28,6 +31,10 @@ class Resource_class(object):
             cls.time_h_format = "Time [h]"
             cls.time_min_format = "Time [min]"
             cls.time_s_format = "Time [s]"
+
+            # taille par défaut de l'écriture dans le widget console
+            cls.default_size = 8
+            cls.default_font = ("Times", cls.default_size)
 
         return cls._instance
 
@@ -360,8 +367,7 @@ def fusion_figure(fig1, fig2):
 def get_file_from_dir(path):
     """Prend en input un chemin d'accés a un dossier et return le pth de tout ce qui est présent dans le dossier"""
     if not os.path.exists(path):
-        resource = Resource_class()
-        resource.print_color("Chemin d'accès invalide", "fail")
+        print("Chemin d'accès invalide", "fail")
         raise ValueError
     else:
         if not os.path.isdir(path):

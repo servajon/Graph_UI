@@ -2,7 +2,7 @@ import copy
 
 from Console_Objets.Figure import Figure
 from Data_type.Abstract_data import Abstract_data
-from Resources import Resources
+from Resources_file import Resources
 from Data_type.Traitement_cycle import Traitements_cycle_outils, Traitement_cycle_cccv
 
 
