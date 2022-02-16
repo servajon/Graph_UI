@@ -6,6 +6,7 @@
 import cgitb
 from UI_interface import Main_windows_UI
 
+
 if __name__ == '__main__':
     cgitb.enable(format='text')
     main = Main_windows_UI.Main_interface()

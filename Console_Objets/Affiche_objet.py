@@ -214,7 +214,7 @@ class Classique_affiche(Abstract_objet_affiche):
             pplot.close(self.pplot_fig)
             print("le plot n'est pas nouveau")
 
-        if self.figure.type is not None and "3d" in self.figure.type:
+        if "3d" in self.figure.type:
             if self.figure.is_data_set_3d() == 1:
                 try:
                     if self.save is not None:
@@ -235,7 +235,7 @@ class Classique_affiche(Abstract_objet_affiche):
                 self.finish = True
                 return False
 
-        elif self.figure.type is not None and "bar" in self.figure.type:
+        elif "bar" in self.figure.type:
             if self.figure.is_data_set_bar() == 1:
                 try:
                     if self.save is not None:
@@ -255,7 +255,7 @@ class Classique_affiche(Abstract_objet_affiche):
             else:
                 self.finish = True
                 return False
-        elif self.figure.type is not None and "contour" in self.figure.type:
+        elif "contour" in self.figure.type:
             if self.figure.is_data_set_contour() == 1:
                 if self.save is not None:
                     self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
@@ -270,7 +270,7 @@ class Classique_affiche(Abstract_objet_affiche):
             else:
                 self.finish = True
                 return False
-        elif self.figure.type is not None and "res_diffraction" in self.figure.type:
+        elif "res_diffraction" in self.figure.type:
             if self.figure.is_data_set() == 1:
                 if self.save is not None:
                     self.pplot_fig = self.data.load_graph_affichage(self.figure, self.save)
@@ -282,7 +282,7 @@ class Classique_affiche(Abstract_objet_affiche):
             else:
                 self.finish = True
                 return False
-        elif self.figure.type is not None and "res_waxs" in self.figure.type:
+        elif "res_waxs" in self.figure.type:
             if self.figure.is_data_set() == 1:
                 if self.save is not None:
                     self.pplot_fig = self.data.load_graph_affichage(self.figure, self.save)
@@ -294,7 +294,7 @@ class Classique_affiche(Abstract_objet_affiche):
             else:
                 self.finish = True
                 return False
-        elif self.figure.type is not None and "res_saxs" in self.figure.type:
+        elif "res_saxs" in self.figure.type:
             if self.figure.is_data_set() == 1:
                 if self.save is not None:
                     self.pplot_fig = self.data.load_graph_affichage(self.figure, self.save)
@@ -607,7 +607,6 @@ class Edit_affiche(Abstract_objet_affiche):
         """la figure est recréée à chaque fois contrairement à la version console"""
         if self.pplot_fig is not None:
             pplot.close(self.pplot_fig)
-            print("le plot n'est pas nouveau")
         if self.figure.is_data_set() == 1:
             try:
                 self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2\

@@ -52,10 +52,6 @@ def format_axes_figure(figure, ax1, ax2):
             tick.label2.set_fontsize(18)
             tick.label2.set_fontweight('bold')
 
-        """for tick in ax1.zaxis.get_major_ticks():
-            tick.label1.set_fontsize(18)
-            tick.label1.set_fontweight('bold')"""
-
     if ax2 is not None:
         """update du min et du man pour l'axe ax2"""
         if figure.y2_axe.first_val is not None and figure.y2_axe.last_val is not None:
@@ -91,9 +87,29 @@ def format_axes_figure(figure, ax1, ax2):
             tick.label2.set_fontsize(18)
             tick.label2.set_fontweight('bold')
 
-        """for tick in ax2.zaxis.get_major_ticks():
-            tick.label1.set_fontsize(18)
-            tick.label1.set_fontweight('bold')"""
+    resize_axe(ax1, ax2, figure.margin)
+
+
+def resize_axe(axe1, axe2, new_p, old_p=None):
+    if old_p is not None:
+        new_p = new_p - old_p
+    if old_p is not None and old_p != 0:
+        p = (100 - old_p) / 100 * new_p
+    else:
+        p = new_p
+
+    if p == 0:
+        return
+    size_axe_x = axe1.get_xlim()[1] - axe1.get_xlim()[0]
+    axe1.set_xlim(axe1.get_xlim()[0] - (size_axe_x * p / 100), axe1.get_xlim()[1] + (size_axe_x * p / 100))
+
+    size_axe_y1 = axe1.get_ylim()[1] - axe1.get_ylim()[0]
+    axe1.set_ylim(axe1.get_ylim()[0] - (size_axe_y1 * p / 100), axe1.get_ylim()[1] + (size_axe_y1 * p / 100))
+
+    if axe2 is not None:
+        size_axe_y2 = axe2.get_ylim()[1] - axe2.get_ylim()[0]
+        axe2.set_ylim(axe2.get_ylim()[0] - (size_axe_y2 * p / 100),
+                      axe2.get_ylim()[1] + (size_axe_y2 * p / 100))
 
 
 class Abstract_data(ABC):
@@ -410,24 +426,6 @@ class Abstract_data(ABC):
             fig.savefig(path_save, bbox_inches='tight', dpi=150)
 
         return fig, ax1, None, value, val_freq, leg1, None
-
-    """----------------------------------------------------------------------------------"""
-
-    def resize_axe(self, axe1, axe2, p, figure=None):
-        if figure is not None and figure.type == "bode":
-            return
-        else:
-            p = -p
-            size_axe_x = axe1.get_xlim()[1] - axe1.get_xlim()[0]
-            axe1.set_xlim(axe1.get_xlim()[0] - (size_axe_x * p / 100), axe1.get_xlim()[1] + (size_axe_x * p / 100))
-
-            size_axe_y1 = axe1.get_ylim()[1] - axe1.get_ylim()[0]
-            axe1.set_ylim(axe1.get_ylim()[0] - (size_axe_y1 * p / 100), axe1.get_ylim()[1] + (size_axe_y1 * p / 100))
-
-            if axe2 is not None:
-                size_axe_y2 = axe2.get_ylim()[1] - axe2.get_ylim()[0]
-                axe2.set_ylim(axe2.get_ylim()[0] - (size_axe_y2 * p / 100),
-                              axe2.get_ylim()[1] + (size_axe_y2 * p / 100))
 
     """----------------------------------------------------------------------------------"""
 

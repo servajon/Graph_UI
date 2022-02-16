@@ -1,6 +1,7 @@
 import copy
 import os
 import sys
+import warnings
 
 import matplotlib
 from PyQt5 import QtCore, QtWidgets
@@ -18,6 +19,7 @@ from Console_Objets.Affiche_objet import Classique_affiche, Edit_affiche
 from Console_Objets.Console import Console
 from Console_Objets.Data_array import Data_array
 from Console_Objets.Figure import Figure
+from Data_type import Abstract_data
 from Data_type.CCCV_data import CCCV_data
 from Resources_file import Resources
 from UI_interface import Threads_UI
@@ -26,6 +28,7 @@ from UI_interface.Main_window_QT import Ui_MainWindow, Edit_Axe, Edit_plot
 """----------------------------------------------------------------------------------"""
 """                                   Main window                                    """
 """----------------------------------------------------------------------------------"""
+
 
 class Emit(QWidget):
     """
@@ -64,6 +67,7 @@ class Emit(QWidget):
         self._connect.clear()
 
     """"-----------------------------------------------------"""
+
 
 class Figure_plot(QWidget):
     """
@@ -482,80 +486,119 @@ class Figure_plot(QWidget):
 
             # si new_start a été modifié
             if new_start != "":
-                try:
-                    # on check que c'est un nombre qui est donné
-                    new_start = float(new_start)
-                    # si l'axe édité de x
-                    if self.axe_edited == "x":
-                        # on update le graph et la figure
+                # on check que c'est un nombre qui est donné
+                new_start = float(new_start)
+                # si l'axe édité de x
+                if self.axe_edited == "x":
+                    # on update le graph et la figure
+                    if self.abstract_affiche.figure.x_axe.scale == 'log' and new_start < 0:
+                        emit = Emit()
+                        emit.emit(type="msg_console", str="Can't set a non-positive value on a "
+                                                          "log-scaled axis", foreground_color="red")
+                    else:
                         self.abstract_affiche.figure.x_axe.first_val = new_start
                         self.abstract_affiche.ax1.set_xlim(new_start, self.abstract_affiche.ax1.get_xlim()[1])
-                        # si l'axe édité de y1
-                    elif self.axe_edited == "y1":
-                        # on update le graph et la figure
+
+                    # si l'axe édité de y1
+                elif self.axe_edited == "y1":
+                    # on update le graph et la figure
+                    if self.abstract_affiche.figure.y1_axe.scale == 'log' and new_start < 0:
+                        emit = Emit()
+                        emit.emit(type="msg_console", str="Can't set a non-positive value on a "
+                                                          "log-scaled axis", foreground_color="red")
+                    else:
                         self.abstract_affiche.figure.y1_axe.first_val = new_start
                         self.abstract_affiche.ax1.set_ylim(new_start, self.abstract_affiche.ax1.get_ylim()[1])
-                    # si l'axe édité de y2
-                    elif self.axe_edited == "y2":
-                        # on update le graph et la figure
+                # si l'axe édité de y2
+                elif self.axe_edited == "y2":
+                    # on update le graph et la figure
+                    if self.abstract_affiche.figure.y2_axe.scale == 'log' and new_start < 0:
+                        emit = Emit()
+                        emit.emit(type="msg_console", str="Can't set a non-positive value on a "
+                                                          "log-scaled axis", foreground_color="red")
+                    else:
                         self.abstract_affiche.figure.y2_axe.first_val = new_start
                         self.abstract_affiche.ax2.set_ylim(new_start, self.abstract_affiche.ax2.get_ylim()[1])
-                except ValueError:
-                    print("valeur invalide pour new_start")
+
 
             # si new_end a été modifié
             if new_end != "":
-                try:
-                    new_end = float(new_end)
-                    if self.axe_edited == "x":
+                new_end = float(new_end)
+                if self.axe_edited == "x":
+                    if self.abstract_affiche.figure.x_axe.scale == 'log' and new_end < 0:
+                        emit = Emit()
+                        emit.emit(type="msg_console", str="Can't set a non-positive value on a "
+                                                          "log-scaled axis", foreground_color="red")
+                    else:
                         self.abstract_affiche.figure.x_axe.last_val = new_end
                         self.abstract_affiche.ax1.set_xlim(self.abstract_affiche.ax1.get_xlim()[0], new_end)
-                    elif self.axe_edited == "y1":
+
+                elif self.axe_edited == "y1":
+                    if self.abstract_affiche.figure.y1_axe.scale == 'log' and new_end < 0:
+                        emit = Emit()
+                        emit.emit(type="msg_console", str="Can't set a non-positive value on a "
+                                                          "log-scaled axis", foreground_color="red")
+                    else:
                         self.abstract_affiche.figure.y1_axe.last_val = new_end
                         self.abstract_affiche.ax1.set_ylim(self.abstract_affiche.ax1.get_ylim()[0], new_end)
-                    elif self.axe_edited == "y2":
+
+                elif self.axe_edited == "y2":
+                    if self.abstract_affiche.figure.y2_axe.scale == 'log' and new_end < 0:
+                        emit = Emit()
+                        emit.emit(type="msg_console", str="Can't set a non-positive value on a "
+                                                          "log-scaled axis", foreground_color="red")
+                    else:
                         self.abstract_affiche.figure.y2_axe.last_val = new_end
                         self.abstract_affiche.ax2.set_ylim(self.abstract_affiche.ax2.get_ylim()[0], new_end)
-                except ValueError:
-                    pass
+
 
             # On check le scale de l'axe indiqué
             new_scale = self.edit_w.comboBox_18.itemText(self.edit_w.comboBox_18.currentIndex())
 
-            # on regarde si l'édition du scale de l'axe peut être effectué
-            check = True
-
-            if new_scale == "log":
-                if self.axe_edited == "x":
-                    if self.abstract_affiche.ax1.get_xlim()[0] < 0 or self.abstract_affiche.ax1.get_xlim()[1] < 0:
-                        check = False
-
-                elif self.axe_edited == "y1":
-                    if self.abstract_affiche.ax1.get_ylim()[0] < 0 or self.abstract_affiche.ax1.get_ylim()[1] < 0:
-                        check = False
-
-                elif self.axe_edited == "y2":
-                    if self.abstract_affiche.ax2.get_ylim()[0] < 0 or self.abstract_affiche.ax2.get_ylim()[1] < 0:
-                        check = False
-
-            # si check est respé a true on edit de scale
-            if check:
-                # si l'axe édité de x
-                if self.axe_edited == "x":
-                    # on update le graph et la figure
-                    self.abstract_affiche.figure.x_axe.scale = new_scale
+            # si l'axe édité de x
+            if self.axe_edited == "x":
+                # on update le graph et la figure
+                with warnings.catch_warnings(record=True) as w:
                     self.abstract_affiche.ax1.set_xscale(new_scale)
-                # si l'axe édité de y1
-                elif self.axe_edited == "y1":
-                    # on update le graph et la figure
-                    self.abstract_affiche.figure.y1_axe.scale = new_scale
+
+                    if len(w) == 0:
+                        self.abstract_affiche.figure.x_axe.scale = new_scale
+                    else:
+                        self.abstract_affiche.figure.x_axe.scale = 'linear'
+                        self.abstract_affiche.ax1.set_xscale('linear')
+                        emit = Emit()
+                        emit.emit(type="msg_console", str="Data has no positive values x, scale set to linear",
+                                  foreground_color="red")
+
+            # si l'axe édité de y1
+            elif self.axe_edited == "y1":
+                # on update le graph et la figure
+                with warnings.catch_warnings(record=True) as w:
                     self.abstract_affiche.ax1.set_yscale(new_scale)
-                # si l'axe édité de y2
-                elif self.axe_edited == "y2":
-                    # on update le graph et la figure
-                    self.abstract_affiche.figure.y2_axe.scale = new_scale
+
+                    if len(w) == 0:
+                        self.abstract_affiche.figure.y1_axe.scale = new_scale
+                    else:
+                        self.abstract_affiche.figure.y1_axe.scale = 'linear'
+                        self.abstract_affiche.ax1.set_yscale('linear')
+                        emit = Emit()
+                        emit.emit(type="msg_console", str="Data has no positive values, y1 scale set to linear",
+                                  foreground_color="red")
+
+            # si l'axe édité de y2
+            elif self.axe_edited == "y2":
+                # on update le graph et la figure
+                with warnings.catch_warnings(record=True) as w:
                     self.abstract_affiche.ax2.set_yscale(new_scale)
 
+                    if len(w) == 0:
+                        self.abstract_affiche.figure.y2_axe.scale = new_scale
+                    else:
+                        self.abstract_affiche.figure.y2_axe.scale = 'linear'
+                        self.abstract_affiche.ax2.set_yscale('linear')
+                        emit = Emit()
+                        emit.emit(type="msg_console", str="Data has no positive values, y2 scale set to linear",
+                                  foreground_color="red")
             self.canvas.draw()
 
         self.edit_w.deleteLater()
@@ -626,7 +669,113 @@ class Figure_plot(QWidget):
             self.abstract_affiche.ax2.lines[index].set_xdata(array_x)
             self.abstract_affiche.ax2.lines[index].set_ydata(array_y)
 
+    """---------------------------------------------------------------------------------"""
+
+    def update_color_plot(self, axe):
+        """
+        Les couleurs de la figure de self.abstract_affiche on était modifié, on
+        update les 2dline et les légendes du plot avec les nouvelle couleurs
+
+        :param axe: y1, y2
+        :return: None
+        """
+
+        if axe == "y1":
+            for i in range(len(self.abstract_affiche.figure.y1_axe.data)):
+                self.abstract_affiche.ax1.lines[i].set_color(self.abstract_affiche.figure.y1_axe.data[i].color)
+            modulo_y1 = []
+            nb_y1 = 0
+            # on check le nombre de legende
+            for data in self.abstract_affiche.figure.y1_axe.data:
+                if data.legend is not None:
+                    nb_y1 += 1
+            # si ce nombre est supérieur au nombres de légendes affichées
+            if nb_y1 > self.abstract_affiche.figure.nb_legende:
+                # même algo que pour la création des légendes, pour récupérer l'index de data_array correspondant
+                # à l'index de la légende affiché
+                for j in range(self.abstract_affiche.figure.nb_legende):
+                    temp = int(nb_y1 / self.abstract_affiche.figure.nb_legende * j)
+                    if temp not in modulo_y1:
+                        modulo_y1.append(temp)
+
+                # on parcours les légendes pour update la couleur
+                for i in range(len(self.abstract_affiche.leg1.get_legend().get_lines())):
+                    color = self.abstract_affiche.figure.y1_axe.data[modulo_y1[i]].color
+                    self.abstract_affiche.leg1.get_legend().get_lines()[i].set_color(color)
+
+            else:
+                # on parcours les légendes pour update la couleur
+                for i in range(len(self.abstract_affiche.leg1.get_legend().get_lines())):
+                    color = self.abstract_affiche.figure.y1_axe.data[i].color
+                    self.abstract_affiche.leg1.get_legend().get_lines()[i].set_color(color)
+
+        elif axe == "y2":
+            for i in range(len(self.abstract_affiche.figure.y2_axe.data)):
+                self.abstract_affiche.ax2.lines[i].set_color(self.abstract_affiche.figure.y2_axe.data[i].color)
+            modulo_y2 = []
+            nb_y2 = 0
+            # on check le nombre de legende
+            for data in self.abstract_affiche.figure.y2_axe.data:
+                if data.legend is not None:
+                    nb_y2 += 1
+            # si ce nombre est supérieur au nombres de légendes affichées
+            if nb_y2 > self.abstract_affiche.figure.nb_legende:
+                # même algo que pour la création des légendes, pour récupérer l'index de data_array correspondant
+                # à l'index de la légende affiché
+                for j in range(self.abstract_affiche.figure.nb_legende):
+                    temp = int(nb_y2 / self.abstract_affiche.figure.nb_legende * j)
+                    if temp not in modulo_y2:
+                        modulo_y2.append(temp)
+
+                # on parcours les légendes pour update la couleur
+                for i in range(len(self.abstract_affiche.leg2.get_legend().get_lines())):
+                    color = self.abstract_affiche.figure.y2_axe.data[modulo_y2[i]].color
+                    self.abstract_affiche.leg2.get_legend().get_lines()[i].set_color(color)
+
+            else:
+                # on parcours les légendes pour update la couleur
+                for i in range(len(self.abstract_affiche.leg2.get_legend().get_lines())):
+                    color = self.abstract_affiche.figure.y2_axe.data[i].color
+                    self.abstract_affiche.leg2.get_legend().get_lines()[i].set_color(color)
+
+    """---------------------------------------------------------------------------------"""
+
+    def reset_color_plot(self, axe):
+        """
+        Les couleurs de la figure de self.abstract_affiche on était reset, les
+        couleurs a appliqué sont celle par défaut de matplotlib
+
+        :param axe: y1, y2
+        :return: None
+        """
+        colors = matplotlib.rcParams['axes.prop_cycle'].by_key()['color']
+        if axe == "y1":
+            index = 0
+            for i in range(len(self.abstract_affiche.figure.y1_axe.data)):
+                if index == len(colors):
+                    index = 0
+
+                self.abstract_affiche.ax1.lines[i].set_color(colors[index])
+                index += 1
+        elif axe == "y2":
+            index = 0
+            for i in range(len(self.abstract_affiche.figure.y2_axe.data)):
+                if index == len(colors):
+                    index = 0
+                self.abstract_affiche.ax2.lines[i].set_color(colors[index])
+                index += 1
+
+    """---------------------------------------------------------------------------------"""
+
     def set_visibility_2d_line(self, axe, index, visibility):
+        """
+        On update l'arg visible de la 2dline à l'index index avec visibility
+
+        :param axe: y1 ,y2
+        :param index: index de la 2dline a update
+        :param visibility: True, False
+        :return: None
+        """
         if axe == "y1":
             self.abstract_affiche.ax1.lines[index].set_visible(visibility)
         elif axe == "y2":
@@ -661,13 +810,11 @@ class Window(QMainWindow, Ui_MainWindow):
         # on connect un peu tout
         self.connectSignalsSlots()
 
+        # garde en mémoire la figure édité
+        self.figure_edited = None
+
         # on garde en mémoire la fénêtre d'édition du plot
         self.edit_plot_w = None
-
-        # cette variable stock l'objet abstarct figure sur lequel l'édition a commencé
-        # comme cela même si la figure courrante change, les résultats de l'édition
-        # se fonront toujours sur cette figure là
-        self.current_figure_edit_plot = None
 
         # variable qui garde en mémoire l'objet Abstract_Affiche de la figure édité
         self.edit_plot_figure_w = None
@@ -805,64 +952,6 @@ class Window(QMainWindow, Ui_MainWindow):
         print("-----------------")
         self.treeWidget.info()
         print("-----------------")
-
-    """---------------------------------------------------------------------------------"""
-
-    def edit_current_plot(self):
-        """
-        création de la fenêtre d'édition du plot
-
-        :return: None
-        """
-        # si current data est None, une erreur s'affiche
-        if self.console.current_data is None:
-            self.current_data_None()
-
-        # si current figure est None, une erreur s'affiche
-        elif self.console.current_data.current_figure is None:
-            self.current_figure_None()
-        else:
-            # on créer la nouvelle fenêtre
-            self.edit_plot_w = Edit_plot()
-
-            # on change le label pour y affiche le nom de la figure courrante
-            self.edit_plot_w.label.setText(self.console.current_data.current_figure.name)
-
-            # on ajoute toutes les légendes des axes pour leurs édition
-            # on commence par l'axe y1
-            for i, data_array in enumerate(self.console.current_data.current_figure.y1_axe.data):
-                self.edit_plot_w.listWidget.addItem(data_array.legend)
-                # si l'axe est invisible, on passe l'écriture de la légende en rouge
-                if not data_array.visible:
-                    self.edit_plot_w.listWidget.item(i).setForeground(QColor("red"))
-
-            # de même pour l'axe y2
-            if self.console.current_data.current_figure.y2_axe is not None:
-                for i, data_array in enumerate(self.console.current_data.current_figure.y2_axe.data):
-                    self.edit_plot_w.listWidget.addItem(data_array.legend)
-                    # si l'axe est invisible, on passe l'écriture de la légende en rouge
-                    if not data_array.visible:
-                        self.edit_plot_w.listWidget.item(i).setForeground(QColor("red"))
-
-            # on change le label d'édition du nom de la figure en mettant le nom de la figure
-            # par défault
-            self.edit_plot_w.lineEdit.setText(self.console.current_data.current_figure.name)
-
-            # on remplie l'edit line avec le zoom actuel
-            self.edit_plot_w.lineEdit_2.setText(str(self.console.current_data.current_figure.zoom))
-
-            # on compléte le combobox avec le nom de toutes le couleurs disponible
-            for color in Resources.COLOR_MAP.keys():
-                self.edit_plot_w.comboBox.addItem(color)
-
-            # on connect le signal indiquant que l'édition est fini
-            self.edit_plot_w.finish_signal.connect(self.res_edit_plot)
-
-            # signal pour la création d'une figure servant à la supréssion de points
-            self.edit_plot_w.edit_signal.connect(self.create_edit_plot)
-
-            # on affiche la fenêtre
-            self.edit_plot_w.show()
 
     """---------------------------------------------------------------------------------"""
 
@@ -1063,7 +1152,6 @@ class Window(QMainWindow, Ui_MainWindow):
                         self.treeWidget.add_data("cccv", obj_data.name)
 
                         self.update_console({"str": "Done", "foreground_color": "green"})
-
 
                     # on récupére les actions disponibles pour ce type de fichier pour update
                     # current data comboBox_5
@@ -1433,205 +1521,6 @@ class Window(QMainWindow, Ui_MainWindow):
 
     """---------------------------------------------------------------------------------"""
 
-    def res_edit_plot(self, signal):
-        """
-        fonction callback de la la fin de l'édition de la fenêtre édit plot
-        pour le apply je n'est encire rien fait
-
-        :param signal: save, cancel, apply
-        :return: None
-        """
-        # si les oppérations ne sont pas sauvegardée, on del la fenêtre
-        if signal == "cancel":
-            self.edit_plot_w.deleteLater()
-            self.edit_plot_w = None
-
-        # on savegarde les changements
-        elif signal == "save":
-            if len(self.edit_plot_dics) == 0:
-                obj_figure_plot = None
-            else:
-                # on applique la suppression des points effectuée sur les différentes courbes
-                self.process_del_point_plot()
-
-            # on cache les courbes qui doivent l'être
-            self.hide_data_array()
-
-            # on met à jours le figure
-            self.edit_plot_figure_w.abstract_affiche.canvas.draw()
-
-            # l'édition étant terminé on clear le vecteur qui gardais en mémoire les éditions
-            self.edit_plot_dics.clear()
-
-            # on délect la fenêtre
-            self.edit_plot_w.deleteLater()
-            self.edit_plot_w = None
-
-    """---------------------------------------------------------------------------------"""
-
-    def create_edit_plot(self, signal):
-        """
-        On créer la figure qui servira a sélectionner les points a supprimer
-        Cette figure correspondra à un cycle de current_figure
-
-        :param signal: current_index de la listWidget
-        :return: None
-        """
-        # si une figure d'édition est déjà ouverte, ou return
-        # un message a ajouter ici par la suite
-        if self.edit_plot_figure_w is not None:
-            self.update_console({"str": "One figure is already being edited", "foreground_color": "red"})
-            return
-
-        # création d'une nouvelle figure avec pour nom la légende du cycle sélectionné
-        new_figure = Figure(self.edit_plot_w.listWidget.currentItem().text(), 1)
-
-        # on ajoute à la nouvelle figure interactive une copie de data_x correspondant à l'index sélectionné
-        new_figure.add_data_x_Data(copy.copy(self.console.current_data.current_figure.x_axe.data[signal]))
-
-        # on ajoute à la nouvelle figure interactive une copie de data_y correspondant à l'index sélectionné
-        # on utilise get_data_yaxe_i pour récupérer data_array, qu'il soit en y1 ou y2 en fonction de l'index
-        data_y1 = copy.copy(self.console.current_data.current_figure.get_data_yaxe_i(signal))
-
-        # si array_data n'a pas de couleur, c'est la couleur de maptplotlib par défault qu'il prends, donc
-        # on prends la même pour garde une cohérence des couleurs
-        if data_y1.color is None:
-            list_c = matplotlib.rcParams["axes.prop_cycle"].by_key()['color']
-            while len(list_c) <= signal:
-                signal -= len(list_c)
-
-            data_y1.color = list_c[signal]
-
-        # on ajoute data_y1 comme data y1 à la nouvelle figure
-        new_figure.add_data_y1_Data(data_y1)
-
-        # on passe la ligne est point pour faciliter la supression de ces derniers
-        if new_figure.format_line_y1 is None or new_figure.format_line_y1 == "-":
-            new_figure.format_line_y1 = "x"
-
-        # on créer un obj Edit_affiche, fille de Abstract_objet_affiche servant à l'édition de points
-        edit_affiche = Edit_affiche(self.console.current_data, new_figure)
-
-        # on garde une ref de l'objet créée
-        self.edit_plot_figure_w = Figure_plot(edit_affiche)
-
-        # on connect de callback, on utilise lambda pour passer signal comme arg suplémentaire
-        self.edit_plot_figure_w.closed.connect(lambda event: self.edit_plot_figure_w_close(event, signal))
-
-        # on affiche le widget
-        self.edit_plot_figure_w.show()
-
-    """---------------------------------------------------------------------------------"""
-
-    def edit_plot_figure_w_close(self, event, index):
-        """
-        Methode callback de create_edit_plot pour la fermeture du plot
-        d'édition
-        On sauvegarde dans un dictionnaire les résultats obtenue lors de l'édition du plot
-
-        :param event: nom de la figure qui est close
-        :param index: index du cycle qui a été édité
-        :return: None
-        """
-        new_data_x = self.edit_plot_figure_w.abstract_affiche.figure.x_axe.data[0].data
-        new_data_y = self.edit_plot_figure_w.abstract_affiche.figure.y1_axe.data[0].data
-
-        self.edit_plot_dics[index] = [new_data_x, new_data_y]
-
-    """---------------------------------------------------------------------------------"""
-
-    def process_del_point_plot(self):
-        """
-        Effectue la mise à jours des figures et des plots correspondant aux éditions effectuées
-
-        :return: None
-        """
-
-        obj_figure_plot = None
-
-        # key : x_index de l'édition
-        # value : [new_datax, new_datay]
-        for key, value, in self.edit_plot_dics.items():
-
-            # si l'index est plus grand que le nombre de data dans y1_axe, c'est un index pour
-            # l'axe y2
-
-
-
-            if key >= len(self.edit_plot_figure_w.figure.y1_axe.data):
-                # on calcule l'index pour l'axe y2
-                y2_index = key - len(self.edit_plot_figure_w.figure.y1_axe.data)
-
-                # on update current_figure avec les valeurs de value
-                self.edit_plot_figure_w.figure.x_axe.data[key].data = value[0]
-                self.edit_plot_figure_w.figure.y2_axe.data[y2_index].data = value[1]
-
-                self.edit_plot_figure_w.abstract_affiche.update_plot("y2", key, value[0], value[1])
-            else:
-                # on update current_figure avec les valeurs de value
-                self.edit_plot_figure_w.figure.x_axe.data[key].data = value[0]
-                self.edit_plot_figure_w.figure.y1_axe.data[key].data = value[1]
-
-                self.edit_plot_figure_w.abstract_affiche.update_plot("y1", key, value[0], value[1])
-
-    """---------------------------------------------------------------------------------"""
-
-    def hide_data_array(self):
-        """
-        On set sivible du data_array de chacune des courbes, False si elles doivent être
-        caché et True sinon
-
-        :param obj_figure_plot:
-        :return: obj_figure_plot correspondant à la figure édité
-        """
-
-        # on update current figure pour passer en hide les éléments indiqué
-        for i in range(self.edit_plot_w.listWidget.count()):
-            # si la couleur du text est rouge, la courbe doit être cachée
-            if self.edit_plot_w.listWidget.item(i).foreground().color() == QColor("red"):
-                # on update Data_array
-                self.edit_plot_figure_w.abstract_affiche.figure.get_data_yaxe_i(i).visible = False
-
-                # on update la figure matplotlib pour afficher les chagements sans avoir à la retracer
-                self.edit_plot_figure_w.abstract_affiche.figure.x_axe.data[i].visible = False
-
-                # on regarde l'index de l'axe y en fonction de celui de l'axe x
-                # si l'index de laxe x est plus grande que len(y1_axe)
-                # c'est l'axe y2 qui est édité
-                if i >= len(self.edit_plot_figure_w.abstract_affiche.figure.y1_axe.data):
-                    # on recalcule l'index
-                    index = i - len(self.edit_plot_figure_w.abstract_affiche.figure.y1_axe.data)
-                    # c'est l'axe y2 qui est édité
-
-                    self.edit_plot_figure_w.abstract_affiche.pplot_fig.set_visibility_2d_line("y2", index, False)
-                else:
-                    # rien à faire ici
-                    index = i
-                    # c'est l'axe y1 qui est édité
-                    self.edit_plot_figure_w.abstract_affiche.pplot_fig.set_visibility_2d_line("y1", index, False)
-            else:
-                # on update Data_array
-                self.edit_plot_figure_w.abstract_affiche.figure.get_data_yaxe_i(i).visible = True
-
-                # on update la figure matplotlib pour afficher les chagements sans avoir à la retracer
-                self.edit_plot_figure_w.abstract_affiche.figure.x_axe.data[i].visible = True
-
-                # on regarde l'index de l'axe y en fonction de celui de l'axe x
-                # si l'index de laxe x est plus grande que len(y1_axe)
-                # c'est l'axe y2 qui est édité
-                if i >= len(self.edit_plot_figure_w.abstract_affiche.figure.y1_axe.data):
-                    # on recalcule l'index
-                    index = i - len(self.edit_plot_figure_w.abstract_affiche.figure.y1_axe.data)
-                    # c'est l'axe y2 qui est édité
-                    self.edit_plot_figure_w.abstract_affiche.pplot_fig.set_visibility_2d_line("y2", index, True)
-                else:
-                    # rien à faire ici
-                    index = i
-                    # c'est l'axe y1 qui est édité
-                    self.edit_plot_figure_w.abstract_affiche.pplot_fig.set_visibility_2d_line("y1", index, True)
-
-    """---------------------------------------------------------------------------------"""
-
     def message_console(self, signal):
         """
         Callback de self.emit, on regarde le type donnée dans le
@@ -1684,19 +1573,389 @@ class Window(QMainWindow, Ui_MainWindow):
 
     """---------------------------------------------------------------------------------"""
 
-    def fichier_invalide_error(self):
+    def get_plot_from_figure(self, figure):
         """
-        QMessageBox indiquand que le type de fichier sélectionné est invalide
+        On cherche l'objet plot, si il existe à partir d'un objet figure, on retourne None
+        si il n'y a pas d'objet plot assicié
+
+        :param figure: objet figure
+        :return: plot_obj
+        """
+
+        # on cherche dans les fen^tre si le plot y esst présent
+        for plot_obj in self.figure_w:
+            if plot_obj.abstract_affiche.figure == figure:
+                return plot_obj
+
+        # on cherche dans le tab si le plot est présent
+        for i in range(self.tabWidget.count()):
+            if self.tabWidget.tabText(i) == figure.name:
+                return self.tabWidget.widget(i)
+
+        # elle n'est pas présente, on return None
+        return None
+
+    """---------------------------------------------------------------------------------"""
+    """                            Edit Current Plot start                              """
+    """---------------------------------------------------------------------------------"""
+
+    def edit_current_plot(self):
+        """
+        création de la fenêtre d'édition du plot
 
         :return: None
         """
-        msgBox = QMessageBox()
-        msgBox.setIcon(QMessageBox.Warning)
-        msgBox.setText("File type invalid")
-        msgBox.setWindowTitle("Error")
-        msgBox.setStandardButtons(QMessageBox.Ok)
-        msgBox.exec()
+        # si current data est None, une erreur s'affiche
+        if self.console.current_data is None:
+            self.current_data_None()
 
+        # si current figure est None, une erreur s'affiche
+        elif self.console.current_data.current_figure is None:
+            self.current_figure_None()
+        elif self.edit_plot_w is not None:
+            self.edit_plot_w.activateWindow()
+            return
+        else:
+
+            if "bar" in self.console.current_data.current_figure.type:
+                self.update_console({"str": "Bar plot cannot be edited", "foreground_color": "red"})
+                return
+
+            # on créer la nouvelle fenêtre
+            self.edit_plot_w = Edit_plot()
+
+            # on sauvegarde la figure édité
+            self.figure_edited = self.console.current_data.current_figure
+
+            # on change le label pour y affiche le nom de la figure courrante
+            self.edit_plot_w.label.setText(self.console.current_data.current_figure.name)
+            self.edit_plot_w.label.setFont(QFont(*self.resource.default_font))
+
+            # on ajoute toutes les légendes des axes pour leurs édition
+            # on commence par l'axe y1
+            for i, data_array in enumerate(self.console.current_data.current_figure.y1_axe.data):
+                self.edit_plot_w.listWidget.addItem(data_array.legend)
+                # si l'axe est invisible, on passe l'écriture de la légende en rouge
+                if not data_array.visible:
+                    self.edit_plot_w.listWidget.item(i).setForeground(QColor("red"))
+
+            # de même pour l'axe y2
+            if self.console.current_data.current_figure.y2_axe is not None:
+                for i, data_array in enumerate(self.console.current_data.current_figure.y2_axe.data):
+                    self.edit_plot_w.listWidget.addItem(data_array.legend)
+                    # si l'axe est invisible, on passe l'écriture de la légende en rouge
+                    if not data_array.visible:
+                        self.edit_plot_w.listWidget.item(i).setForeground(QColor("red"))
+
+            self.edit_plot_w.listWidget.setCurrentRow(0)
+
+            # on remplie l'edit line avec le zoom actuel
+            self.edit_plot_w.lineEdit_4.setText(str(self.console.current_data.current_figure.margin))
+
+            # on compléte le combobox avec le nom de toutes le couleurs disponible
+            self.edit_plot_w.comboBox_left.addItem("unchanged")
+            self.edit_plot_w.comboBox_left.addItem("default")
+            for color in Resources.COLOR_MAP.keys():
+                self.edit_plot_w.comboBox_left.addItem(color)
+
+            if self.figure_edited.y2_axe is not None:
+                # color right axis
+                self.edit_plot_w.comboBox_right = QtWidgets.QComboBox(self.edit_plot_w)
+                self.edit_plot_w.comboBox_right.setObjectName("comboBox_right")
+                self.edit_plot_w.gridLayout_2.addWidget(self.edit_plot_w.comboBox_right, 3, 2, 1, 1)
+                spacerItem5 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding,
+                                                    QtWidgets.QSizePolicy.Minimum)
+                self.edit_plot_w.gridLayout_2.addItem(spacerItem5, 3, 1, 1, 1)
+                self.edit_plot_w.label_8 = QtWidgets.QLabel(self.edit_plot_w)
+                self.edit_plot_w.label_8.setObjectName("label_8")
+                self.edit_plot_w.gridLayout_2.addWidget(self.edit_plot_w.label_8, 3, 0, 1, 1)
+
+                _translate = QtCore.QCoreApplication.translate
+                self.edit_plot_w.label_8.setText(_translate("Dialog",
+                                                "<html><head/><body><p><span style=\" font-size:8pt;\">Color right axis</span></p></body></html>"))
+
+
+                # type line right axis
+                self.edit_plot_w.comboBox_type_line_right = QtWidgets.QComboBox(self.edit_plot_w)
+                self.edit_plot_w.comboBox_type_line_right.setObjectName("comboBox_type_line_right")
+                self.edit_plot_w.gridLayout_2.addWidget(self.edit_plot_w.comboBox_type_line_right, 4, 2, 1, 1)
+                spacerItem6 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding,
+                                                    QtWidgets.QSizePolicy.Minimum)
+                self.edit_plot_w.gridLayout_2.addItem(spacerItem6, 4, 1, 1, 1)
+                self.edit_plot_w.label_9 = QtWidgets.QLabel(self.edit_plot_w)
+                self.edit_plot_w.label_9.setObjectName("label_9")
+                self.edit_plot_w.gridLayout_2.addWidget(self.edit_plot_w.label_9, 4, 0, 1, 1)
+
+                self.edit_plot_w.label_9.setText(_translate("Dialog",
+                                                "<html><head/><body><p><span style=\" font-size:8pt;\">Style lines right axis</span></p></body></html>"))
+
+
+                self.edit_plot_w.comboBox_right.addItem("unchanged")
+                self.edit_plot_w.comboBox_right.addItem("default")
+                for color in Resources.COLOR_MAP.keys():
+                    self.edit_plot_w.comboBox_right.addItem(color)
+
+
+                # on connect le signal indiquant que l'édition est fini
+            self.edit_plot_w.finish_signal.connect(self.res_edit_plot)
+
+            # signal pour la création d'une figure servant à la supréssion de points
+            self.edit_plot_w.edit_signal.connect(self.create_edit_plot)
+
+            # on affiche la fenêtre
+            self.edit_plot_w.show()
+
+    """---------------------------------------------------------------------------------"""
+
+    def res_edit_plot(self, signal):
+        """
+        fonction callback de la la fin de l'édition de la fenêtre édit plot
+        pour le apply je n'est encire rien fait
+
+        :param signal: save, cancel, apply
+        :return: None
+        """
+        # si les oppérations ne sont pas sauvegardée, on del la fenêtre
+        if signal == "cancel":
+            self.edit_plot_w.deleteLater()
+            self.edit_plot_w = None
+            self.figure_edited = None
+
+        # on savegarde les changements
+        elif signal == "save":
+
+            obj_figure = self.get_plot_from_figure(self.figure_edited)
+
+            if len(self.edit_plot_dics) != 0:
+                # on applique la suppression des points effectuée sur les différentes courbes
+                self.process_del_point_plot(obj_figure)
+
+            # on cache les courbes qui doivent l'être
+            self.hide_data_array(obj_figure)
+
+            # on applique la couleur
+            colory1 = self.edit_plot_w.comboBox_left.itemText(self.edit_plot_w.comboBox_left.currentIndex())
+            if colory1 == "unchanged":
+                pass
+            elif colory1 == "default":
+                for data in self.figure_edited.y1_axe.data:
+                    data.color = None
+                if obj_figure is not None:
+                    obj_figure.reset_color_plot("y1")
+            else:
+                self.figure_edited.y1_axe.color_map = colory1
+                self.figure_edited.y1_axe.apply_color()
+
+                if obj_figure is not None:
+                    obj_figure.update_color_plot("y1")
+
+            if self.figure_edited.y2_axe is not None:
+                colory2 = self.edit_plot_w.comboBox_right.itemText(self.edit_plot_w.comboBox_right.currentIndex())
+                if colory2 == "unchanged":
+                    pass
+                elif colory2 == "default":
+                    for data in self.figure_edited.y2_axe.data:
+                        data.color = None
+                    if obj_figure is not None:
+                        obj_figure.reset_color_plot("y2")
+                else:
+                    self.figure_edited.y2_axe.color_map = colory2
+                    self.figure_edited.y2_axe.apply_color()
+
+                    if obj_figure is not None:
+                        obj_figure.update_color_plot("y2")
+
+
+
+            # on applique la marge
+            margin = float(self.edit_plot_w.lineEdit_4.text())
+            # si il y a eu un chagement
+            if self.figure_edited.margin != margin:
+                # on garde en mémoire la marge précédente
+                old_margin = self.figure_edited.margin
+                self.figure_edited.margin = margin
+                if obj_figure is not None:
+                    Abstract_data.resize_axe(obj_figure.abstract_affiche.ax1, obj_figure.abstract_affiche.ax2, margin,
+                                             old_margin)
+
+            # on met à jours le figure
+            if obj_figure is not None:
+                obj_figure.canvas.draw()
+
+            # l'édition étant terminé on clear le vecteur qui gardais en mémoire les éditions
+            self.edit_plot_dics.clear()
+
+            # on délect la fenêtre
+            self.edit_plot_w.deleteLater()
+            self.edit_plot_w = None
+            # passe a None la figure édité
+            self.figure_edited = None
+        else:
+            raise NotImplementedError
+
+    """---------------------------------------------------------------------------------"""
+
+    def create_edit_plot(self, signal):
+        """
+        On créer la figure qui servira a sélectionner les points a supprimer
+        Cette figure correspondra à un cycle de self.figure_edited
+
+        :param signal: current_index de la listWidget
+        :return: None
+        """
+        # si une figure d'édition est déjà ouverte, ou return
+        # un message a ajouter ici par la suite
+        if self.edit_plot_figure_w is not None:
+            self.update_console({"str": "One figure is already being edited", "foreground_color": "red"})
+            return
+
+        # création d'une nouvelle figure avec pour nom la légende du cycle sélectionné
+        new_figure = Figure(self.edit_plot_w.listWidget.currentItem().text(), 1)
+
+        # on ajoute à la nouvelle figure interactive une copie de data_x correspondant à l'index sélectionné
+        new_figure.add_data_x_Data(copy.copy(self.figure_edited.x_axe.data[signal]))
+
+        # on ajoute à la nouvelle figure interactive une copie de data_y correspondant à l'index sélectionné
+        # on utilise get_data_yaxe_i pour récupérer data_array, qu'il soit en y1 ou y2 en fonction de l'index
+        data_y1 = copy.copy(self.figure_edited.get_data_yaxe_i(signal))
+
+        # si array_data n'a pas de couleur, c'est la couleur de maptplotlib par défault qu'il prends, donc
+        # on prends la même pour garde une cohérence des couleurs
+        if data_y1.color is None:
+            list_c = matplotlib.rcParams["axes.prop_cycle"].by_key()['color']
+            while len(list_c) <= signal:
+                signal -= len(list_c)
+
+            data_y1.color = list_c[signal]
+
+        # on ajoute data_y1 comme data y1 à la nouvelle figure
+        new_figure.add_data_y1_Data(data_y1)
+
+        # on passe la ligne est point pour faciliter la supression de ces derniers
+        if new_figure.format_line_y1 is None or new_figure.format_line_y1 == "-":
+            new_figure.format_line_y1 = "x"
+
+        # on créer un obj Edit_affiche, fille de Abstract_objet_affiche servant à l'édition de points
+        edit_affiche = Edit_affiche(self.console.current_data, new_figure)
+
+        # on garde une ref de l'objet créée
+        self.edit_plot_figure_w = Figure_plot(edit_affiche)
+
+        # on connect de callback, on utilise lambda pour passer signal comme arg suplémentaire
+        self.edit_plot_figure_w.closed.connect(lambda event: self.edit_plot_figure_w_close(event, signal))
+
+        # on affiche le widget
+        self.edit_plot_figure_w.show()
+
+    """---------------------------------------------------------------------------------"""
+
+    def hide_data_array(self, obj_plot):
+        """
+        On set sivible du data_array de chacune des courbes, False si elles doivent être
+        caché et True sinon
+
+        :param obj_plot: objet plot de matplotlib
+        :return: obj_figure_plot correspondant à la figure édité
+        """
+
+        # on update current figure pour passer en hide les éléments indiqué
+        for i in range(self.edit_plot_w.listWidget.count()):
+            # si la couleur du text est rouge, la courbe doit être cachée
+            if self.edit_plot_w.listWidget.item(i).foreground().color() == QColor("red"):
+                # on update Data_array
+                self.figure_edited.get_data_yaxe_i(i).visible = False
+                self.figure_edited.x_axe.data[i].visible = False
+
+                if obj_plot is not None:
+                    # on regarde l'index de l'axe y en fonction de celui de l'axe x
+                    # si l'index de laxe x est plus grande que len(y1_axe)
+                    # c'est l'axe y2 qui est édité
+                    if i >= len(self.figure_edited.y1_axe.data):
+                        # on recalcule l'index
+                        index = i - len(self.figure_edited.y1_axe.data)
+                        # c'est l'axe y2 qui est édité
+
+                        obj_plot.set_visibility_2d_line("y2", index, False)
+                    else:
+                        # rien à faire ici
+                        index = i
+                        # c'est l'axe y1 qui est édité
+                        obj_plot.set_visibility_2d_line("y1", index, False)
+            else:
+                # on update Data_array
+                self.figure_edited.get_data_yaxe_i(i).visible = True
+                self.figure_edited.x_axe.data[i].visible = True
+
+                if obj_plot is not None:
+                    # on regarde l'index de l'axe y en fonction de celui de l'axe x
+                    # si l'index de laxe x est plus grande que len(y1_axe)
+                    # c'est l'axe y2 qui est édité
+                    if i >= len(self.figure_edited.y1_axe.data):
+                        # on recalcule l'index
+                        index = i - len(self.figure_edited.y1_axe.data)
+                        # c'est l'axe y2 qui est édité
+                        obj_plot.set_visibility_2d_line("y2", index, True)
+                    else:
+                        # rien à faire ici
+                        index = i
+                        # c'est l'axe y1 qui est édité
+                        obj_plot.set_visibility_2d_line("y1", index, True)
+
+    """---------------------------------------------------------------------------------"""
+
+    def process_del_point_plot(self, obj_figure):
+        """
+        Effectue la mise à jours des figures et des plots correspondant aux éditions effectuées
+
+        :return: None
+        """
+
+        # key : x_index de l'édition
+        # value : [new_datax, new_datay]
+        for key, value, in self.edit_plot_dics.items():
+
+            # si l'index est plus grand que le nombre de data dans y1_axe, c'est un index pour
+            # l'axe y2
+            if key >= len(self.figure_edited.y1_axe.data):
+                # on calcule l'index pour l'axe y2
+                y2_index = key - len(self.figure_edited.y1_axe.data)
+
+                # on update current_figure avec les valeurs de value
+                self.figure_edited.x_axe.data[key].data = value[0]
+                self.figure_edited.y2_axe.data[y2_index].data = value[1]
+
+                if obj_figure is not None:
+                    obj_figure.update_plot("y2", y2_index, value[0], value[1])
+            else:
+                # on update current_figure avec les valeurs de value
+                self.figure_edited.x_axe.data[key].data = value[0]
+                self.figure_edited.y1_axe.data[key].data = value[1]
+
+                if obj_figure is not None:
+                    obj_figure.update_plot("y1", key, value[0], value[1])
+
+    """---------------------------------------------------------------------------------"""
+
+    def edit_plot_figure_w_close(self, event, index):
+        """
+        Methode callback de create_edit_plot pour la fermeture du plot
+        d'édition
+        On sauvegarde dans un dictionnaire les résultats obtenue lors de l'édition du plot
+
+        :param event: nom de la figure qui est close
+        :param index: index du cycle qui a été édité
+        :return: None
+        """
+        new_data_x = self.edit_plot_figure_w.abstract_affiche.figure.x_axe.data[0].data
+        new_data_y = self.edit_plot_figure_w.abstract_affiche.figure.y1_axe.data[0].data
+
+        self.edit_plot_dics[index] = [new_data_x, new_data_y]
+
+        self.edit_plot_figure_w.deleteLater()
+        self.edit_plot_figure_w = None
+
+    """---------------------------------------------------------------------------------"""
+    """                            Edit Current Plot end                                """
     """---------------------------------------------------------------------------------"""
 
     def current_data_None(self):
@@ -1745,6 +2004,22 @@ class Window(QMainWindow, Ui_MainWindow):
         msgBox.setStandardButtons(QMessageBox.Ok)
         msgBox.exec()
 
+    """---------------------------------------------------------------------------------"""
+
+    def fichier_invalide_error(self):
+        """
+        QMessageBox indiquand que le type de fichier sélectionné est invalide
+
+        :return: None
+        """
+        msgBox = QMessageBox()
+        msgBox.setIcon(QMessageBox.Warning)
+        msgBox.setText("File type invalid")
+        msgBox.setWindowTitle("Error")
+        msgBox.setStandardButtons(QMessageBox.Ok)
+        msgBox.exec()
+
+    """---------------------------------------------------------------------------------"""
 
 class Main_interface:
     def __init__(self):

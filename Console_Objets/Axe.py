@@ -43,7 +43,7 @@ class Axe:
 
             self.data = []
 
-            self.color_map = None
+            self._color_map = None
 
     """----------------------------------------------------------------------------------"""
 
@@ -73,15 +73,21 @@ class Axe:
 
     """----------------------------------------------------------------------------------"""
 
-    def apply_color(self):
+    def apply_color(self, reverse=False):
         """pour l'axe x et z1 les couleurs ne seront pas prisent en compte, je préfère les interdires"""
         if self.type == "x" or self.type == "z1":
             raise ValueError
 
-        """On applique la color map au données de l'axe"""
+        # On applique la color map au données de l'axe
         if self.color_map is not None:
-            for i in range(len(self.data)):
-                self.data[i].color = self.color_map(i / len(self.data))
+            array_color = Resources.create_array_color(self.color_map, len(self.data))
+            if reverse:
+                for i in reversed(range(len(self.data))):
+                    self.data[i].color = array_color[i]
+            else:
+
+                for i in range(len(self.data)):
+                    self.data[i].color = array_color[i]
 
     """----------------------------------------------------------------------------------"""
 
@@ -101,4 +107,13 @@ class Axe:
     def name(self, _name):
         self.__name = _name
 
+    @property
+    def color_map(self):
+        return self._color_map
 
+    @color_map.setter
+    def color_map(self, _color_map):
+        if type(_color_map) == str:
+            self._color_map = Resources.get_color_map(_color_map)
+        else:
+            self._color_map = _color_map

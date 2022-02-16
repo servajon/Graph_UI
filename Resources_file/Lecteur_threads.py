@@ -63,6 +63,7 @@ def extract_data_cccv(file, format_time=None):
 
 
     data_data = file.readlines()
+    file.close()
 
     index = 0
     data = {}
@@ -210,6 +211,7 @@ def extract_data_gitt(file, format_time=None):
 
 
     data_data = file.readlines()
+    file.close()
 
     index = 0
     data = {}
@@ -352,6 +354,7 @@ def extract_data_impedance(file, format_time=None):
 
 
     data_data = file.readlines()
+    file.close()
 
     index = 0
     data = {}
@@ -476,6 +479,7 @@ def extract_data_cp(file, format_time=None):
     resource.print_color("Lecture du fichier en cours", "work")
 
     data_data = file.readlines()
+    file.close()
 
     index = 0
     data = {}
@@ -615,12 +619,14 @@ def extract_data_modulo_v(file, format_time=None):
         obj_data.stop_main = True
         obj_data.event_thread2.wait()
         data_data = file.readlines()
+        file.close()
         obj_data.stop_main = False
         obj_data.event_thread1.set()
         obj_data.event_thread1.clear()
         obj_data.event_thread2.clear()
     else:
         data_data = file.readlines()
+        file.close()
 
     index = 0
     data = {}

@@ -108,10 +108,10 @@ class Data_array:
 
     @color.setter
     def color(self, color):
-        if "#" in color:
+        if color is None or "#" in color or type(color) == tuple:
             self._color = color
         elif color not in Resources.COLOR_MAP:
-            print(color + " : couleur invalide")
+            print(" @color.setter : couleur invalide")
             raise ValueError
         else:
             self._color = color

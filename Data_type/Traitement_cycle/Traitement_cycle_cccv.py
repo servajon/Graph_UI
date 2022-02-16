@@ -5,7 +5,7 @@ import matplotlib.pyplot as pplot
 from Resources_file import Resources
 
 
-def potentio(loop_data, time_data, i_data, mode_data, format_time, cycle, color_arg=None):
+def potentio(loop_data, time_data, i_data, mode_data, format_time, cycle, color_arg):
     """Prends en paramètre les data des loop, du temps, i, mode et le format du temps des data courrantes
     Return une figure format time est soit h, min ou s, c'est une chaine de caractère"""
     resource = Resources.Resource_class()
@@ -29,20 +29,18 @@ def potentio(loop_data, time_data, i_data, mode_data, format_time, cycle, color_
         conversion = 1 / 60
 
     name = ""
-
-    if color_arg is not None:
+    color_y1 = []
+    if color_arg is not None :
         if color_arg not in Resources.COLOR_MAP:
             resource.print_color(color_arg + " : couleur invalide", "fail")
             color_arg = None
 
-    color_y1 = []
-
     if color_arg is not None:
         for i in range(len(cycle)):
-            color_y1.append(Traitements_cycle_outils.create_array_color(pplot.cm.get_cmap(color_arg), len(cycle)))
+            color_y1.append(Resources.create_array_color(pplot.cm.get_cmap(color_arg), len(cycle)))
     else:
         for i in range(len(cycle)):
-            color_y1.append(Traitements_cycle_outils.create_array_color(None, len(cycle)))
+            color_y1.append(Resources.create_array_color(None, len(cycle)))
 
     for i in range(len(cycle)):
         name += "_" + str(cycle[i] + 1)

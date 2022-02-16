@@ -227,24 +227,3 @@ def get_vecteur_color(figure):
 
 
 """---------------------------------------------------------------------------------------------"""
-
-
-def create_array_color(color_map, nb):
-    color = []
-    if color_map is None:
-        for i in range(0, nb):
-            color.append(None)
-        return color
-    else:
-        if nb < 3:
-            for i in range(0, nb):
-                start = 0
-                end = 1/2
-                pas = 1/2/nb
-                while start < end:
-                    color.append(color_map(start))
-                    start += pas
-        else:
-            for i in range(0, nb):
-                color.append(color_map(i/nb))
-    return color

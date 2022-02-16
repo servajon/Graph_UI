@@ -6,6 +6,7 @@ import matplotlib.colors as mcolors
 from PyQt5.QtCore import pyqtSignal, QObject
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QWidget
+from matplotlib.markers import MarkerStyle
 
 
 class Resource_class:
@@ -33,7 +34,7 @@ class Resource_class:
             cls.time_s_format = "Time [s]"
 
             # taille par défaut de l'écriture dans le widget console
-            cls.default_size = 8
+            cls.default_size = 12
             cls.default_font = ("Times", cls.default_size)
 
         return cls._instance
@@ -384,8 +385,36 @@ def get_file_from_dir(path):
 
 def get_color_map(name):
     color = COLOR_MAP[name]
-    colors = matplotlib.pyplot.get_cmap(color).colors
-    return mcolors.LinearSegmentedColormap.from_list(name, colors, N=256)
+    try:
+        colors = matplotlib.pyplot.get_cmap(color).colors
+    except AttributeError:
+        return matplotlib.pyplot.cm.get_cmap(color)
+    else:
+        return mcolors.LinearSegmentedColormap.from_list(name, colors, N=256)
+
+
+"""----------------------------------------------------------------------------------"""
+
+
+def create_array_color(color_map, nb):
+    color = []
+    if color_map is None:
+        for i in range(0, nb):
+            color.append(None)
+        return color
+    else:
+        if nb < 3:
+            for i in range(0, nb):
+                start = 0
+                end = 1/2
+                pas = 1/2/nb
+                while start < end:
+                    color.append(color_map(start))
+                    start += pas
+        else:
+            for i in range(0, nb):
+                color.append(color_map(i/nb))
+    return color
 
 
 """----------------------------------------------------------------------------------"""

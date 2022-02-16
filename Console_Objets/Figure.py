@@ -10,7 +10,7 @@ class Figure:
         self.z1_axe = None
 
         self.__plot_name = ""
-        self._type = {}
+        self._type = []
 
         """pour la normalisation"""
         self.aspect = None
@@ -23,9 +23,8 @@ class Figure:
         self._format_ligne_y2 = None
         self._marker_size = 4
 
-        """Le zoom est en %, zoom = 10 correspond à un zoom de 10%, -10 à un dézoom de 10%
-        On dézoom de 5% par défaut"""
-        self._zoom = -5
+        # margin en %, 0 par défaut
+        self._margin = 0
 
         """SI la figure a était créer depuis une autre figure, on garde l'adresse pour l'afficher"""
         self._created_from = None
@@ -66,8 +65,8 @@ class Figure:
         return self._marker_size
 
     @property
-    def zoom(self):
-        return self._zoom
+    def margin(self):
+        return self._margin
 
     @property
     def type(self):
@@ -111,13 +110,13 @@ class Figure:
         num = int(num)
         self._marker_size = num
 
-    @zoom.setter
-    def zoom(self, zoom):
-        self._zoom = zoom
+    @margin.setter
+    def margin(self, zoom):
+        self._margin = zoom
 
     @type.setter
     def type(self, type):
-        self._type = type
+        self._type.append(type)
 
     @created_from.setter
     def created_from(self, created_form):
