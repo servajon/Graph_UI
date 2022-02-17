@@ -906,7 +906,6 @@ class Edit_plot(QWidget):
         marker = MarkerStyle("o")
         print(marker.get_path())
 
-
     def hide(self):
         red = QColor("red")
         if self.listWidget.currentItem().foreground().color() == red:
