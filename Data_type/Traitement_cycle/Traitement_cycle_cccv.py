@@ -56,27 +56,32 @@ def potentio(loop_data, time_data, i_data, mode_data, format_time, cycle, color_
         """On parcours le vecteur dans l'autre sens, en général les mode 2, que l'on cherche sont en fin ou
         au milieu de fichier, boucle en moyenne moins longue"""
 
-        while val_min < j:
+
+        j = val_min
+        while j < val_max:
             if mode_data[j] == 2:
                 temp_x = []
                 temp_y1 = []
+
+                global_index = []
                 """Quand on a trouvé la région ou le mod est 2, on créer 2 nouveaux vecteur et on ajoute les
                 données dans ces derniers"""
-                while val_min < j and mode_data[j] == 2:
+                while j < val_max and mode_data[j] == 2:
                     temp_x.append(time_data[j] * conversion)
                     temp_y1.append(i_data[j])
-                    j -= 1
+                    global_index.append(j)
+                    j += 1
 
-                temp_x.reverse()
                 Traitements_cycle_outils.start_0(temp_x)
 
-                temp_y1.reverse()
+                data_array_x = Data_array(temp_x, "time/min", None, "cycle " + str(cycle[i] + 1))
+                data_array_x.global_index = global_index
 
-                new_figure.add_data_x_Data(Data_array(temp_x, "time/min", None, "cycle " + str(cycle[i] + 1)))
+                new_figure.add_data_x_Data(data_array_x)
                 new_figure.add_data_y1_Data(Data_array(temp_y1, "<I>/mA", None, "cycle " + str(cycle[i] + 1), color))
 
             else:
-                j -= 1
+                j += 1
 
     if cycle_start is None:
         new_figure.name = "potentio_all"

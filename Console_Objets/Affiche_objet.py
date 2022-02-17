@@ -2,6 +2,7 @@ import math
 from abc import ABC, abstractmethod
 
 import numpy as np
+from PyQt5.QtCore import pyqtSignal
 
 from Resources_file import Resources
 
@@ -14,7 +15,11 @@ from scipy.stats import linregress
 
 
 class Abstract_objet_affiche(ABC):
+
     def __init__(self, data, figure):
+        from UI_interface.Main_windows_UI import Emit
+        self.emit = Emit()
+
         self.data = data
         self.figure = figure
         self.pplot_fig = None
@@ -187,6 +192,7 @@ class Array_Abstract_objet_affiche(object):
 
 
 class Classique_affiche(Abstract_objet_affiche):
+
     def __init__(self, data, figure, norm=None):
         super().__init__(data, figure)
         self.ax1 = None
@@ -205,6 +211,8 @@ class Classique_affiche(Abstract_objet_affiche):
         self.ligne2 = None
 
         self.norm = norm
+
+        self.__name__ = "Classique_affiche"
 
     """----------------------------------------------------------------------------------"""
 
@@ -380,6 +388,9 @@ class Classique_affiche(Abstract_objet_affiche):
                 res = Resources.coord_to_point([[self.pos_x, self.pos_y]],
                                               self.figure.x_axe.data[self.index[0][1]],
                                               self.figure.y1_axe.data[self.index[1][1]])
+
+                self.emit.emit("update_values", res=res)
+
                 if res != -1:
                     text_legend_pointed = self.figure.y1_axe.data[self.index[1][1]].legend
 

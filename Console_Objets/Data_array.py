@@ -9,6 +9,7 @@ class Data_array:
 
     def __init__(self, data, name, source, legende, color=None):
         self._data = data
+
         self._name = name
         """La source est le fichier de provenance de la data"""
         self._source = source
@@ -21,6 +22,10 @@ class Data_array:
         self._color = color
         self._unite = None
         self.extra_info = None
+
+        # cette variable référence la position des donnée de self.data par rapport à l'intégralité
+        # des données ne sera présente que sur data_array appartenant à X_axe
+        self._global_index = []
 
         # détermine si ce data_array doit-être tracé ou non, par défault oui
         # cela ne sera modifié que pour un data_array d'un axe y1 ou y2, pas x
@@ -86,6 +91,10 @@ class Data_array:
     def visible(self):
         return self._visible
 
+    @property
+    def global_index(self):
+        return self._global_index
+
     """                                                  """
     """                      setter                      """
     """                                                  """
@@ -119,4 +128,8 @@ class Data_array:
     @visible.setter
     def visible(self, bool):
         self._visible = bool
+
+    @global_index.setter
+    def global_index(self, global_index):
+        self._global_index = global_index
 

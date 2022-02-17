@@ -542,3 +542,32 @@ COLOR_MAP = {
     "nipy_spectral": "nipy_spectral",
     "gist_ncar": "gist_ncar"
 }
+
+MARKERS_PLOT = {
+        '__': 'default',
+        '.': 'point',
+        ',': 'pixel',
+        'o': 'circle',
+        'v': 'triangle_down',
+        '^': 'triangle_up',
+        '<': 'triangle_left',
+        '>': 'triangle_right',
+        '1': 'tri_down',
+        '2': 'tri_up',
+        '3': 'tri_left',
+        '4': 'tri_right',
+        '8': 'octagon',
+        's': 'square',
+        'p': 'pentagon',
+        '*': 'star',
+        'h': 'hexagon1',
+        'H': 'hexagon2',
+        '+': 'plus',
+        'x': 'x',
+        'D': 'diamond',
+        'd': 'thin_diamond',
+        '|': 'vline',
+        '_': 'hline',
+        'P': 'plus_filled',
+        'X': 'x_filled'
+}
