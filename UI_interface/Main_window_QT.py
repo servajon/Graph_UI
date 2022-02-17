@@ -10,7 +10,7 @@ from abc import abstractmethod, ABC
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import pyqtSignal, Qt, QMimeData, QPoint, QEvent, QItemSelectionModel
-from PyQt5.QtGui import QPixmap, QDrag, QCursor, QRegion, QColor
+from PyQt5.QtGui import QPixmap, QDrag, QCursor, QRegion, QColor, QIcon
 from PyQt5.QtWidgets import QWidget, QLineEdit, QInputDialog, QMainWindow, QTreeWidgetItem, QListView
 from matplotlib.markers import MarkerStyle
 
@@ -903,8 +903,11 @@ class Edit_plot(QWidget):
         self.listWidget.item(0).foreground()
 
     def create_combobox_marker(self, combo_item):
-        marker = MarkerStyle("o")
-        print(marker.get_path())
+        import Resources_img.Markers_plot as markers
+        print()
+        for key, value in MarkerStyle.markers.items():
+            icon = QIcon(markers)
+            combo_item.addItem()
 
     def hide(self):
         red = QColor("red")
