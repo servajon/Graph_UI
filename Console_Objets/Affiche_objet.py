@@ -20,6 +20,8 @@ class Abstract_objet_affiche(ABC):
         from UI_interface.Main_windows_UI import Emit
         self.emit = Emit()
 
+        self.can_emit = False
+
         self.data = data
         self.figure = figure
         self.pplot_fig = None
@@ -389,7 +391,8 @@ class Classique_affiche(Abstract_objet_affiche):
                                               self.figure.x_axe.data[self.index[0][1]],
                                               self.figure.y1_axe.data[self.index[1][1]])
 
-                self.emit.emit("update_values", res=res)
+                if self.can_emit:
+                    self.emit.emit("update_values", res=res, index=self.index)
 
                 if res != -1:
                     text_legend_pointed = self.figure.y1_axe.data[self.index[1][1]].legend

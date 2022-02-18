@@ -2,8 +2,10 @@ import copy
 import sys
 import warnings
 
+from PyQt5.QtCore import *
 import matplotlib
-from PyQt5 import QtCore, QtWidgets
+
+from PyQt5 import QtCore, QtWidgets, Qt
 from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtGui import QColor, QFont
 from PyQt5.QtWidgets import (
@@ -22,7 +24,7 @@ from Data_type import Abstract_data
 from Data_type.CCCV_data import CCCV_data
 from Resources_file import Resources
 from UI_interface import Threads_UI
-from UI_interface.Main_window_QT import Ui_MainWindow, Edit_Axe, Edit_plot, Edit_view_data
+from UI_interface.Main_window_QT import Ui_MainWindow, Edit_Axe, Edit_plot, Edit_view_data, View_data_value
 
 """----------------------------------------------------------------------------------"""
 """                                   Main window                                    """
@@ -52,15 +54,11 @@ class Emit(QWidget):
     def emit(self, name, **kwargs):
         self._connect[name](kwargs)
 
-
     def connect(self, name, func):
         self._connect[name] = func
 
-    def disconnect(self, _func):
-        for i, func in enumerate(self._connect):
-            if func == _func:
-                self._connect.pop(i)
-                break
+    def disconnect(self, name):
+        self._connect.pop(name)
 
     def disconnect_all(self):
         self._connect.clear()
@@ -84,9 +82,6 @@ class Figure_plot(QWidget):
     # utilisé quand le plot est sous la forme d'une fenêtre et qu'il est en focus
     focus_in = pyqtSignal(str)
 
-    # utilisé pour créer la list view de l'affichage des datas
-    create_list_view_data = pyqtSignal(int)
-
     def __init__(self, abstract_affiche):
         super().__init__()
         self.canvas = None
@@ -101,15 +96,12 @@ class Figure_plot(QWidget):
         # abstract_affiche
         self.abstract_affiche = abstract_affiche
 
-        # variable qui garde en mémoire la fenêtre de sélection des données a affiché en plus
-        self.edit_view_data = None
+        # variable qui garde en mémoire la fenêtre d'affichage des valeurs
+        self.view_data_value = None
 
         # Array qui garde en méoire les noms des data a être affiché dans en plus lors de l'intération
         # avec un graph cela ne se fera que si self.abstract_affiche est Classique_affiche
         self.array_data_displayed = []
-
-        # list des valeurs a afficher dans self.edit_view_data
-        self.list_view_data = None
 
         # on récupére une instance de Emit
         self.emit = Emit()
@@ -509,7 +501,7 @@ class Figure_plot(QWidget):
                     if self.abstract_affiche.figure.x_axe.scale == 'log' and new_start < 0:
                         emit = Emit()
                         emit.emit("msg_console", type="msg_console", str="Can't set a non-positive value on a "
-                                                          "log-scaled axis", foreground_color="red")
+                                                                         "log-scaled axis", foreground_color="red")
                     else:
                         self.abstract_affiche.figure.x_axe.first_val = new_start
                         self.abstract_affiche.ax1.set_xlim(new_start, self.abstract_affiche.ax1.get_xlim()[1])
@@ -520,7 +512,7 @@ class Figure_plot(QWidget):
                     if self.abstract_affiche.figure.y1_axe.scale == 'log' and new_start < 0:
                         emit = Emit()
                         emit.emit("msg_console", type="msg_console", str="Can't set a non-positive value on a "
-                                                          "log-scaled axis", foreground_color="red")
+                                                                         "log-scaled axis", foreground_color="red")
                     else:
                         self.abstract_affiche.figure.y1_axe.first_val = new_start
                         self.abstract_affiche.ax1.set_ylim(new_start, self.abstract_affiche.ax1.get_ylim()[1])
@@ -530,11 +522,10 @@ class Figure_plot(QWidget):
                     if self.abstract_affiche.figure.y2_axe.scale == 'log' and new_start < 0:
                         emit = Emit()
                         emit.emit("msg_console", type="msg_console", str="Can't set a non-positive value on a "
-                                                          "log-scaled axis", foreground_color="red")
+                                                                         "log-scaled axis", foreground_color="red")
                     else:
                         self.abstract_affiche.figure.y2_axe.first_val = new_start
                         self.abstract_affiche.ax2.set_ylim(new_start, self.abstract_affiche.ax2.get_ylim()[1])
-
 
             # si new_end a été modifié
             if new_end != "":
@@ -543,7 +534,7 @@ class Figure_plot(QWidget):
                     if self.abstract_affiche.figure.x_axe.scale == 'log' and new_end < 0:
                         emit = Emit()
                         emit.emit("msg_console", type="msg_console", str="Can't set a non-positive value on a "
-                                                          "log-scaled axis", foreground_color="red")
+                                                                         "log-scaled axis", foreground_color="red")
                     else:
                         self.abstract_affiche.figure.x_axe.last_val = new_end
                         self.abstract_affiche.ax1.set_xlim(self.abstract_affiche.ax1.get_xlim()[0], new_end)
@@ -552,7 +543,7 @@ class Figure_plot(QWidget):
                     if self.abstract_affiche.figure.y1_axe.scale == 'log' and new_end < 0:
                         emit = Emit()
                         emit.emit("msg_console", type="msg_console", str="Can't set a non-positive value on a "
-                                                          "log-scaled axis", foreground_color="red")
+                                                                         "log-scaled axis", foreground_color="red")
                     else:
                         self.abstract_affiche.figure.y1_axe.last_val = new_end
                         self.abstract_affiche.ax1.set_ylim(self.abstract_affiche.ax1.get_ylim()[0], new_end)
@@ -561,11 +552,10 @@ class Figure_plot(QWidget):
                     if self.abstract_affiche.figure.y2_axe.scale == 'log' and new_end < 0:
                         emit = Emit()
                         emit.emit("msg_console", type="msg_console", str="Can't set a non-positive value on a "
-                                                          "log-scaled axis", foreground_color="red")
+                                                                         "log-scaled axis", foreground_color="red")
                     else:
                         self.abstract_affiche.figure.y2_axe.last_val = new_end
                         self.abstract_affiche.ax2.set_ylim(self.abstract_affiche.ax2.get_ylim()[0], new_end)
-
 
             # On check le scale de l'axe indiqué
             new_scale = self.edit_w.comboBox_18.itemText(self.edit_w.comboBox_18.currentIndex())
@@ -582,7 +572,8 @@ class Figure_plot(QWidget):
                         self.abstract_affiche.figure.x_axe.scale = 'linear'
                         self.abstract_affiche.ax1.set_xscale('linear')
                         emit = Emit()
-                        emit.emit("msg_console", type="msg_console", str="Data has no positive values x, scale set to linear",
+                        emit.emit("msg_console", type="msg_console",
+                                  str="Data has no positive values x, scale set to linear",
                                   foreground_color="red")
 
             # si l'axe édité de y1
@@ -597,7 +588,8 @@ class Figure_plot(QWidget):
                         self.abstract_affiche.figure.y1_axe.scale = 'linear'
                         self.abstract_affiche.ax1.set_yscale('linear')
                         emit = Emit()
-                        emit.emit("msg_console", type="msg_console", str="Data has no positive values, y1 scale set to linear",
+                        emit.emit("msg_console", type="msg_console",
+                                  str="Data has no positive values, y1 scale set to linear",
                                   foreground_color="red")
 
             # si l'axe édité de y2
@@ -612,7 +604,8 @@ class Figure_plot(QWidget):
                         self.abstract_affiche.figure.y2_axe.scale = 'linear'
                         self.abstract_affiche.ax2.set_yscale('linear')
                         emit = Emit()
-                        emit.emit("msg_console", type="msg_console", str="Data has no positive values, y2 scale set to linear",
+                        emit.emit("msg_console", type="msg_console",
+                                  str="Data has no positive values, y2 scale set to linear",
                                   foreground_color="red")
             self.canvas.draw()
 
@@ -838,48 +831,61 @@ class Figure_plot(QWidget):
     """                         View data current plot start                            """
     """---------------------------------------------------------------------------------"""
 
-    def res_view_data_Current_Plot(self, signal):
-        """
-        Callbak de la fenêtre view_data_Current_Plot
-        :param signal: save / cancel
-        :return: None
-        """
-        # si cancel a été cliqué, on del la fenêtre
-        if signal == "cancel":
-            self.edit_view_data.deleteLater()
-            self.edit_view_data = None
-        # sinon on gére les éditions
-        else:
-            self.array_data_displayed = self.edit_view_data.names_selected
-            if len(self.array_data_displayed) > 0:
-                self.create_list_view_data.emit(1)
-
-            self.emit.connect("update_values", self.update_values)
-
-            self.edit_view_data.deleteLater()
-            self.edit_view_data = None
-
-    """---------------------------------------------------------------------------------"""
-
-    def init_list_view_data(self, listwidget):
+    def init_window_view_data(self, list):
         """
         On update list_view_data avec l'adresse de listwidget
         de la console pour pouvoir l'éditer
         :param list_view: adresse de l'objet listwidget
         :return: None
         """
-        self.list_view_data = listwidget
+
+        self.array_data_displayed = list
+        self.view_data_value = View_data_value(self.array_data_displayed)
+
+        _translate = QtCore.QCoreApplication.translate
+        self.view_data_value.label.setText(_translate("Dialog",
+                                                      "<html><head/><body><p><span style=\" font-size:8pt;\">Res "
+                                                      "figure " + self.abstract_affiche.figure.name +
+                                                      " :</span></p></body></html>"))
+
+        self.view_data_value.setWindowFlags(
+            QtCore.Qt.Window |
+            QtCore.Qt.CustomizeWindowHint |
+            QtCore.Qt.WindowTitleHint |
+            QtCore.Qt.WindowCloseButtonHint |
+            QtCore.Qt.WindowStaysOnTopHint
+        )
+
+        self.view_data_value.finish_signal.connect(self.close_view_data_value)
+
+        self.view_data_value.show()
 
         # on connect index_res de self.abstract_affiche pour récupérer l'index
         # calculé lors de l'affichage du pointeur
         self.emit.connect("update_values", self.update_values)
-
-
+        self.abstract_affiche.can_emit = True
 
     """---------------------------------------------------------------------------------"""
 
     def update_values(self, signal):
-        print(signal)
+        index_data = signal["res"]
+        index_data_array = signal["index"][0][1]
+
+        global_index = self.abstract_affiche.figure.x_axe.data[index_data_array].global_index[index_data]
+
+        for i, data_name in enumerate(self.array_data_displayed):
+            self.view_data_value.gridLayout.itemAtPosition(i, 2).widget().\
+                setText(str(self.abstract_affiche.data.data[data_name][global_index]))
+
+    """---------------------------------------------------------------------------------"""
+
+    def close_view_data_value(self, event):
+        self.abstract_affiche.can_emit = False
+        self.emit.disconnect("update_values")
+        self.view_data_value.deleteLater()
+        self.view_data_value = None
+
+        self.array_data_displayed = []
 
     """---------------------------------------------------------------------------------"""
     """                         View data current plot end                              """
@@ -923,13 +929,11 @@ class Window(QMainWindow, Ui_MainWindow):
         # variable qui garde en mémoire l'objet Abstract_Affiche de la figure édité
         self.edit_plot_figure_w = None
 
-        # variable qui correspondra à la listview de l'affichage des valaurs
-        self.view_values = None
+        # on garde obj_plot quand on a commencé
+        self.obj_plot_show_value = None
 
-        # variable qui correspondra à l'obj Figure_plot responsable de l'édition
-        # de Edit view data Il faut la garder en mémoire car si la figure courrante
-        # est modifié pendant l'édition cela créra des problémes
-        self.figure_plot_value = None
+        # fenêtre de sélection des valeurs a afficher
+        self.select_value_show_w = None
 
         # on sauvegarde ici les résultats obtenue lors de l'édition d'un plot
         # de la forme : {index_x de l'édition : [data_x, data_y]}
@@ -1210,7 +1214,6 @@ class Window(QMainWindow, Ui_MainWindow):
                     new_tab = Figure_plot(obj)
                     new_tab.setObjectName(figure.name)
                     new_tab.name_changed.connect(self.name_changed_plot)
-                    new_tab.create_list_view_data.connect(self.create_data_view)
 
                     # on ajoute la tab
                     self.tabWidget.addTab(new_tab, figure.name)
@@ -1805,8 +1808,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
                 _translate = QtCore.QCoreApplication.translate
                 self.edit_plot_w.label_8.setText(_translate("Dialog",
-                                                "<html><head/><body><p><span style=\" font-size:8pt;\">Color right axis</span></p></body></html>"))
-
+                                                            "<html><head/><body><p><span style=\" font-size:8pt;\">Color right axis</span></p></body></html>"))
 
                 # type line right axis
                 self.edit_plot_w.comboBox_type_line_right = QtWidgets.QComboBox(self.edit_plot_w)
@@ -1822,14 +1824,12 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.edit_plot_w.gridLayout_2.addWidget(self.edit_plot_w.label_9, 4, 0, 1, 1)
 
                 self.edit_plot_w.label_9.setText(_translate("Dialog",
-                                                "<html><head/><body><p><span style=\" font-size:8pt;\">Style lines right axis</span></p></body></html>"))
-
+                                                            "<html><head/><body><p><span style=\" font-size:8pt;\">Style lines right axis</span></p></body></html>"))
 
                 self.edit_plot_w.comboBox_right.addItem("unchanged")
                 self.edit_plot_w.comboBox_right.addItem("default")
                 for color in Resources.COLOR_MAP.keys():
                     self.edit_plot_w.comboBox_right.addItem(color)
-
 
             # on connect le signal indiquant que l'édition est fini
             self.edit_plot_w.finish_signal.connect(self.res_edit_plot)
@@ -1885,7 +1885,7 @@ class Window(QMainWindow, Ui_MainWindow):
                     obj_figure.update_color_plot("y1")
 
             # on applique le nouveau marker
-            left_axis_line = self.edit_plot_w.comboBox_type_line_left.itemText\
+            left_axis_line = self.edit_plot_w.comboBox_type_line_left.itemText \
                 (self.edit_plot_w.comboBox_type_line_left.currentIndex())
 
             # si la valeurs est à unchanged on n'a rien à faire
@@ -1911,8 +1911,6 @@ class Window(QMainWindow, Ui_MainWindow):
                     # si le plot est ouvert, on l'update
                     if obj_figure is not None:
                         obj_figure.update_marker_plot("y1", left_axis_line)
-
-
 
             if self.figure_edited.y2_axe is not None:
                 colory2 = self.edit_plot_w.comboBox_right.itemText(self.edit_plot_w.comboBox_right.currentIndex())
@@ -1957,8 +1955,6 @@ class Window(QMainWindow, Ui_MainWindow):
                         # si le plot est ouvert, on l'update
                         if obj_figure is not None:
                             obj_figure.update_marker_plot("y2", right_axis_line)
-
-
 
             # on applique la marge
             margin = float(self.edit_plot_w.lineEdit_4.text())
@@ -2155,7 +2151,7 @@ class Window(QMainWindow, Ui_MainWindow):
     """                        Vieux data current plot start                            """
     """---------------------------------------------------------------------------------"""
 
-    def view_data_Current_Plot(self, event):
+    def view_data_Current_Plot(self):
         """
         Callback du boutton View data current plot
         On check qu'un plot est bien sélectionné et on lui demande
@@ -2168,6 +2164,7 @@ class Window(QMainWindow, Ui_MainWindow):
         :param event: peu importe
         :return: None
         """
+
         if self.console.current_data is None:
             self.current_data_None()
         elif self.console.current_data.current_figure is None:
@@ -2179,34 +2176,19 @@ class Window(QMainWindow, Ui_MainWindow):
                 return
             else:
                 if plot_obj.abstract_affiche.__name__ != "Classique_affiche":
-                    self.update_console({"str": "Impossible to view data on this type of graph", "foreground_color": "red"})
+                    self.update_console(
+                        {"str": "Impossible to view data on this type of graph", "foreground_color": "red"})
                 else:
-                    # si une fenêtre dédition est déjà ouverte on la met on top
-                    if plot_obj.edit_view_data is not None:
-                        plot_obj.edit_view_data.activateWindow()
-                        return
+                    self.obj_plot_show_value = plot_obj
 
-                    self.figure_plot_value = plot_obj
+                    self.select_value_show_w = Edit_view_data()
+                    for data_name in self.console.current_data.data["row_data"]:
+                        self.select_value_show_w.listWidget.addItem(data_name)
 
-                    # on créer la fenêtre
-                    plot_obj.edit_view_data = Edit_view_data()
+                    self.select_value_show_w.finish_signal.connect(self.view_data_Current_Plot_callback)
+                    self.select_value_show_w.show()
 
-                    # on ajoute le nom des données diponible avec le fichier
-                    for data in plot_obj.abstract_affiche.data.data["row_data"]:
-                        plot_obj.edit_view_data.listWidget.addItem(data)
-
-                    # update le titre de la figure
-                    _translate = QtCore.QCoreApplication.translate
-                    plot_obj.edit_view_data.label.setText(
-                        _translate("Dialog", "<html><head/><body><p><span style=\" font-size:14pt;\">"
-                                   + plot_obj.abstract_affiche.figure.name + "</span></p></body></html>"))
-
-
-                    plot_obj.edit_view_data.finish_signal.connect(plot_obj.res_view_data_Current_Plot)
-
-                    plot_obj.edit_view_data.show()
-
-    def create_data_view(self, signal):
+    def view_data_Current_Plot_callback(self, signal):
         """
         Callback de la fermeture de l'édition
         :param signal: cancel / save
@@ -2214,17 +2196,17 @@ class Window(QMainWindow, Ui_MainWindow):
         """
 
         # si les donnée sont sauvegardé on créer une list view pour l'affichage des données
-        if signal == 1:
-            # si le widget n'est pas créé on le fait
-            if self.view_values is None:
-                self.view_values = QtWidgets.QListWidget(self.verticalLayout_left)
-                self.view_values.setObjectName("view_values")
-                self.view_values.setMinimumSize(QtCore.QSize(0, 0))
-                self.view_values.setMaximumSize(QtCore.QSize(16777215, 16777215))
-                self.verticalLayout.addWidget(self.view_values)
-
-            self.figure_plot_value.init_list_view_data(self.view_values)
-            self.figure_plot_value = None
+        if signal == "cancel":
+            self.obj_plot_show_value = None
+            self.select_value_show_w.deleteLater()
+            self.select_value_show_w = None
+        else:
+            if len(self.select_value_show_w.names_selected) != 0:
+                names_selected = self.select_value_show_w.names_selected
+                self.obj_plot_show_value.init_window_view_data(names_selected)
+                self.obj_plot_show_value = None
+                self.select_value_show_w.deleteLater()
+                self.select_value_show_w = None
 
     """---------------------------------------------------------------------------------"""
     """                        Vieux data current plot  end                             """
@@ -2308,6 +2290,7 @@ class Window(QMainWindow, Ui_MainWindow):
         msgBox.exec()
 
     """---------------------------------------------------------------------------------"""
+
 
 class Main_interface:
     def __init__(self):
