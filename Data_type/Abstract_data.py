@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 import matplotlib
 import matplotlib.pyplot as pplot
 from Resources_file import Resources
+from Resources_file.Emit import Emit
 
 
 def format_axes_figure(figure, ax1, ax2):
@@ -589,6 +590,27 @@ class Abstract_data(ABC):
         return self.resource.time_format[5:len(self.resource.time_format)]
 
     """----------------------------------------------------------------------------------"""
+
+    def return_create_cycle(self, cycle):
+        if cycle is not None:
+            if len(cycle) == 3:
+                if cycle[1] == "to":
+                    if cycle[2] < len(self.data["loop_data"]) and cycle[0] != 0 and cycle[2] != 0:
+                        return True
+                    else:
+                        return False
+            for i in cycle:
+                if i > len(self.data["loop_data"]) or i == 0:
+                    emit = Emit()
+                    emit.emit("msg_console", type="msg_console", str="Numéro de cycle " + str(i) + " invalide",
+                              foreground_color="red")
+                    emit.emit("msg_console", type="msg_console", str="Cycle compris entre 1 et " +
+                                                                     str(len(self.data["loop_data"])),
+                              foreground_color="red")
+                    return False
+            return True
+        else:
+            return True
 
     @property
     @abstractmethod

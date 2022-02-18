@@ -23,48 +23,14 @@ from Console_Objets.Figure import Figure
 from Data_type import Abstract_data
 from Data_type.CCCV_data import CCCV_data
 from Resources_file import Resources
+from Resources_file.Emit import Emit
 from UI_interface import Threads_UI
-from UI_interface.Main_window_QT import Ui_MainWindow, Edit_Axe, Edit_plot, Edit_view_data, View_data_value
+from UI_interface.Main_window_QT import Ui_MainWindow, Edit_Axe, Edit_plot, Edit_view_data, View_data_value, \
+    Cycle_Selection
 
 """----------------------------------------------------------------------------------"""
 """                                   Main window                                    """
 """----------------------------------------------------------------------------------"""
-
-
-class Emit(QWidget):
-    """
-    On utlise cette class pour faire passer des signaux de n'importe quel class
-    à la fenêtre principal, notament utile pour afficher les messages de la console
-    sur la fenêtre en bas à gauche
-    """
-    # c'est un singleton
-    _instance = None
-
-    # vecteur des fonctions de callbacks
-    _connect = {}
-
-    # dictionnaire d'argument a passer comme signal
-    message = pyqtSignal(dict)
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(Emit, cls).__new__(cls)
-        return cls._instance
-
-    def emit(self, name, **kwargs):
-        self._connect[name](kwargs)
-
-    def connect(self, name, func):
-        self._connect[name] = func
-
-    def disconnect(self, name):
-        self._connect.pop(name)
-
-    def disconnect_all(self):
-        self._connect.clear()
-
-    """"-----------------------------------------------------"""
-
 
 class Figure_plot(QWidget):
     """
@@ -765,6 +731,40 @@ class Figure_plot(QWidget):
 
                 self.abstract_affiche.ax1.lines[i].set_color(colors[index])
                 index += 1
+
+            modulo_y1 = []
+            nb_y1 = 0
+            # on check le nombre de legende
+            for data in self.abstract_affiche.figure.y1_axe.data:
+                if data.legend is not None:
+                    nb_y1 += 1
+            # si ce nombre est supérieur au nombres de légendes affichées
+            if nb_y1 > self.abstract_affiche.figure.nb_legende:
+                # même algo que pour la création des légendes, pour récupérer l'index de data_array correspondant
+                # à l'index de la légende affiché
+                for j in range(self.abstract_affiche.figure.nb_legende):
+                    temp = int(nb_y1 / self.abstract_affiche.figure.nb_legende * j)
+                    if temp not in modulo_y1:
+                        modulo_y1.append(temp)
+
+                # on parcours les légendes pour update la couleur
+                index = 0
+                for i in range(len(self.abstract_affiche.leg1.get_legend().get_lines())):
+                    if index == len(colors):
+                        index = 0
+                    color = colors[index]
+                    self.abstract_affiche.leg1.get_legend().get_lines()[i].set_color(color)
+                    index += 1
+            else:
+                # on parcours les légendes pour update la couleur
+                index = 0
+                for i in range(len(self.abstract_affiche.leg1.get_legend().get_lines())):
+                    if index == len(colors):
+                        index = 0
+                    color = colors[index]
+                    self.abstract_affiche.leg1.get_legend().get_lines()[i].set_color(color)
+                    index += 1
+
         elif axe == "y2":
             index = 0
             for i in range(len(self.abstract_affiche.figure.y2_axe.data)):
@@ -772,6 +772,39 @@ class Figure_plot(QWidget):
                     index = 0
                 self.abstract_affiche.ax2.lines[i].set_color(colors[index])
                 index += 1
+
+            modulo_y2 = []
+            nb_y2 = 0
+            # on check le nombre de legende
+            for data in self.abstract_affiche.figure.y2_axe.data:
+                if data.legend is not None:
+                    nb_y2 += 1
+            # si ce nombre est supérieur au nombres de légendes affichées
+            if nb_y2 > self.abstract_affiche.figure.nb_legende:
+                # même algo que pour la création des légendes, pour récupérer l'index de data_array correspondant
+                # à l'index de la légende affiché
+                for j in range(self.abstract_affiche.figure.nb_legende):
+                    temp = int(nb_y2 / self.abstract_affiche.figure.nb_legende * j)
+                    if temp not in modulo_y2:
+                        modulo_y2.append(temp)
+
+                # on parcours les légendes pour update la couleur
+                index = 0
+                for i in range(len(self.abstract_affiche.leg2.get_legend().get_lines())):
+                    if index == len(colors):
+                        index = 0
+                    color = colors[index]
+                    self.abstract_affiche.leg2.get_legend().get_lines()[i].set_color(color)
+                    index += 1
+            else:
+                # on parcours les légendes pour update la couleur
+                index = 0
+                for i in range(len(self.abstract_affiche.leg2.get_legend().get_lines())):
+                    if index == len(colors):
+                        index = 0
+                    color = colors[index]
+                    self.abstract_affiche.leg2.get_legend().get_lines()[i].set_color(color)
+                    index += 1
 
     """---------------------------------------------------------------------------------"""
 
@@ -803,9 +836,18 @@ class Figure_plot(QWidget):
                 self.abstract_affiche.ax1.lines[i].set_marker(marker)
                 self.abstract_affiche.ax1.lines[i].set_ls('')
 
+            for i in range(len(self.abstract_affiche.leg1.get_legend().get_lines())):
+                self.abstract_affiche.leg1.get_legend().get_lines()[i].set_marker(marker)
+                self.abstract_affiche.leg1.get_legend().get_lines()[i].set_ls('')
+
         elif axe == "y2":
             for i in range(len(self.abstract_affiche.figure.y2_axe.data)):
                 self.abstract_affiche.ax2.lines[i].set_marker(marker)
+                self.abstract_affiche.ax2.lines[i].set_ls('')
+
+            for i in range(len(self.abstract_affiche.leg2.get_legend().get_lines())):
+                self.abstract_affiche.leg2.get_legend().get_lines()[i].set_marker(marker)
+                self.abstract_affiche.leg2.get_legend().get_lines()[i].set_ls('')
 
     """---------------------------------------------------------------------------------"""
 
@@ -820,10 +862,18 @@ class Figure_plot(QWidget):
                 self.abstract_affiche.ax1.lines[i].set_marker(None)
                 self.abstract_affiche.ax1.lines[i].set_ls("-")
 
+            for i in range(len(self.abstract_affiche.leg1.get_legend().get_lines())):
+                self.abstract_affiche.leg1.get_legend().get_lines()[i].set_marker(None)
+                self.abstract_affiche.leg1.get_legend().get_lines()[i].set_ls("-")
+
         elif axe == "y2":
-            for i in range(len(self.abstract_affiche.figure.y1_axe.data)):
-                self.abstract_affiche.ax1.lines[i].set_marker(None)
-                self.abstract_affiche.ax1.lines[i].set_ls('-')
+            for i in range(len(self.abstract_affiche.figure.y2_axe.data)):
+                self.abstract_affiche.ax2.lines[i].set_marker(None)
+                self.abstract_affiche.ax2.lines[i].set_ls('-')
+
+            for i in range(len(self.abstract_affiche.leg2.get_legend().get_lines())):
+                self.abstract_affiche.leg2.get_legend().get_lines()[i].set_marker(None)
+                self.abstract_affiche.leg2.get_legend().get_lines()[i].set_ls("-")
 
     """---------------------------------------------------------------------------------"""
 
@@ -868,11 +918,20 @@ class Figure_plot(QWidget):
     """---------------------------------------------------------------------------------"""
 
     def update_values(self, signal):
+        """
+        Fonction callback de interactive de self. abstract_affiche
+        on met à jours les valeurs dans la fenêtre d'affichage des valeurs
+
+        :param signal: signal{"res" : index_data, "index" : index_data_array}
+        :return: None
+        """
         index_data = signal["res"]
         index_data_array = signal["index"][0][1]
 
+        # on récupére l'index global correspondant à index_data_array et index_data
         global_index = self.abstract_affiche.figure.x_axe.data[index_data_array].global_index[index_data]
 
+        # on update les valeurs en utilisant global_index
         for i, data_name in enumerate(self.array_data_displayed):
             self.view_data_value.gridLayout.itemAtPosition(i, 2).widget().\
                 setText(str(self.abstract_affiche.data.data[data_name][global_index]))
@@ -880,16 +939,40 @@ class Figure_plot(QWidget):
     """---------------------------------------------------------------------------------"""
 
     def close_view_data_value(self, event):
+        """
+        Fonction callback de la fermeture de la fenêtre de visualisation des données
+
+        :param event: peu importe
+        :return: None
+        """
+        # on désactive l'émission de abstract_affiche
         self.abstract_affiche.can_emit = False
+
+        # on déconnect update_values
         self.emit.disconnect("update_values")
+
+        # on suprime la fenêtre
         self.view_data_value.deleteLater()
         self.view_data_value = None
 
+        # on reset array_data_displayed
         self.array_data_displayed = []
 
     """---------------------------------------------------------------------------------"""
     """                         View data current plot end                              """
     """---------------------------------------------------------------------------------"""
+
+    def close_view_values(self):
+        """
+        fonction appelé lors de la fermeture de la tab
+        on ferme la fenêtre d'affichage des valeurs si besoin
+
+        :return: None
+        """
+        if self.view_data_value is not None:
+            # on delet la fenêtre
+            self.view_data_value.deleteLater()
+            self.view_data_value = None
 
 
 class Window(QMainWindow, Ui_MainWindow):
@@ -934,6 +1017,9 @@ class Window(QMainWindow, Ui_MainWindow):
 
         # fenêtre de sélection des valeurs a afficher
         self.select_value_show_w = None
+
+        # fenêtre de selection des argument du nouveau plot
+        self.argument_selection_creation_w = None
 
         # on sauvegarde ici les résultats obtenue lors de l'édition d'un plot
         # de la forme : {index_x de l'édition : [data_x, data_y]}
@@ -1089,6 +1175,38 @@ class Window(QMainWindow, Ui_MainWindow):
         else:
             # capa
             if self.comboBox_5.currentText() == "capa":
+
+                if self.console.current_data.data["mass_electrode"] == -1:
+                    pass
+                else:
+                    # pas d'utilisation de callback ici, il n'y a pas d'argument à récupérer
+                    self.callback_create_current_data({"rep": "save"}, "capa")
+
+            # potentio
+            elif self.comboBox_5.currentText() == "potentio":
+                self.argument_selection_creation_w = Cycle_Selection()
+                self.argument_selection_creation_w.finish_signal.connect(
+                    lambda signal: self.callback_create_current_data(signal, "potentio"))
+
+                self.argument_selection_creation_w.show()
+
+    """---------------------------------------------------------------------------------"""
+
+    def callback_create_current_data(self, event, name):
+        """
+
+        :param event: save / cancel
+        :param name: capa / potentio / custom ...
+        :return: None
+        """
+
+        # si l'oppéraion est cancel on reset la fenêtre et return
+        if event["rep"] == "cancel":
+            if self.argument_selection_creation_w is not None:
+                self.argument_selection_creation_w.deleteLater()
+                self.argument_selection_creation_w = None
+        else:
+            if name == "capa":
                 # on apelle la fonction pour créer les figures et les récupére, c'est un vecteur
                 figures_res = self.console.current_data.capa()
 
@@ -1099,24 +1217,37 @@ class Window(QMainWindow, Ui_MainWindow):
                     self.console.current_data.figures.append(figure)
 
             # potentio
-            elif self.comboBox_5.currentText() == "potentio":
+            elif name == "potentio":
+
+                # info de self.&rgument_selection_creation_w a récupérer ici pour créer la figure
+
                 # on apelle la fonction pour créer les figures et les récupére, c'est une figure seul
-                figures_res = self.console.current_data.potentio()
+                if event["arg"] == "all":
+                    figures_res = self.console.current_data.potentio()
+                else:
+                    figures_res = self.console.current_data.potentio(event["arg1"])
+
+                if figures_res is None:
+                    self.argument_selection_creation_w.deleteLater()
+                    self.argument_selection_creation_w = None
+                    return
 
                 # on update le tree widget
                 # on ajoute la figure a current_data
                 self.treeWidget.add_figure(figures_res, self.console.current_data.name)
                 self.console.current_data.figures.append(figures_res)
 
-        self.console.current_data.current_figure = self.console.current_data.figures[-1]
 
-        _translate = QtCore.QCoreApplication.translate
-        self.label_5.setText(
-            _translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
-                                     "Current plot : "
-                       + self.console.current_data.current_figure.name + " </span></p></body></html>"))
+            self.console.current_data.current_figure = self.console.current_data.figures[-1]
+            _translate = QtCore.QCoreApplication.translate
+            self.label_5.setText(
+                _translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                         "Current plot : "
+                           + self.console.current_data.current_figure.name + " </span></p></body></html>"))
 
-    """---------------------------------------------------------------------------------"""
+            if self.argument_selection_creation_w is not None:
+                self.argument_selection_creation_w.deleteLater()
+                self.argument_selection_creation_w = None
 
     def create_current_figure(self):
         """
@@ -1349,6 +1480,8 @@ class Window(QMainWindow, Ui_MainWindow):
         :param index: index de la tab qui a déchanché cette demande de fermeture
         :return: None
         """
+
+        self.tabWidget.widget(index).close_view_values()
 
         # la tab à l'index est remove
         self.tabWidget.removeTab(index)

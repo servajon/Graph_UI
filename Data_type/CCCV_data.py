@@ -263,10 +263,10 @@ class CCCV_data(Abstract_data):
 
     """----------------------------------------------------------------------------------"""
 
-    def potentio(self, cycle=None, color=None):
+    def potentio(self, cycle=None):
         if self.data.get("mode") is None:
-            #self.resource.print_color("ImpossibLe de tracer le graphique potentio pour ce fichier", "work")
-            return
+            print("ImpossibLe de tracer le graphique potentio pour ce fichier")
+            return None
 
         if cycle is not None and len(cycle) == 3 and cycle[1] == "to":
             name = str(cycle[0]) + "_to_" + str(cycle[2])
@@ -274,15 +274,14 @@ class CCCV_data(Abstract_data):
         else:
             name = None
 
-        """if self.return_create_cycle(cycle) is False:
-            return"""
+        if self.return_create_cycle(cycle) is False:
+            return None
 
         temp = "time/" + self.get_format_time()
 
         new_figure = Traitement_cycle_cccv.potentio(self.data.get("loop_data"),
                                                     self.data.get(temp), self.data.get(self.resource.I),
-                                                    self.data.get(self.resource.mode), self.get_format_time(), cycle
-                                                    , color)
+                                                    self.data.get(self.resource.mode), self.get_format_time(), cycle)
 
         """On modifie le nom de la figure pour être sûr qu'il soit unique"""
 

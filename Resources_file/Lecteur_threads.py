@@ -4,6 +4,8 @@ import os
 
 import Resources_file.Resources as R
 from Console_Objets.Affiche_objet import Array_Abstract_objet_affiche
+from Resources_file.Emit import Emit
+
 
 class Lecteur_thread:
     def open(path, file_type, format_time=None):
@@ -57,10 +59,8 @@ class Lecteur_thread:
 
 
 def extract_data_cccv(file, format_time=None):
-    from UI_interface.Main_windows_UI import Emit
     emit = Emit()
     emit.emit("msg_console", type="msg_console", str="Lecture du fichier en cours", foreground_color="yellow")
-
 
     data_data = file.readlines()
     file.close()
@@ -70,8 +70,8 @@ def extract_data_cccv(file, format_time=None):
     loop_data = []
 
     # on récupére le nom original du fichier
-    while index < len(data_data) and "Saved on :" not in data_data[index] and "Number of loops" not in data_data[index] \
-            and "mode" not in data_data[index]:
+    while index < len(data_data) and "Saved on :" not in data_data[index] and "Number of loops" not in \
+            data_data[index] and "mode" not in data_data[index]:
         index += 1
 
     if index == len(data_data):
@@ -791,7 +791,7 @@ def create_data(data_data, data, data_row, loop_data=None):
         print("Le fichier ne correspond pas à l'expérience indiqué")
         raise ValueError
 
-    if len(data_data) < 200000:
+    if len(data_data) < 20000:
         if loop_data is not None:
             data = work([data, data_data, data_row])
             data["loop_data"] = loop_data
@@ -855,7 +855,7 @@ def create_data(data_data, data, data_row, loop_data=None):
                 else:
                     temp.append([loop_data[i][0], loop_data[i][1]])
                 i += 1
-            if len(loop_data) > 1 and loop_data[-2] != loop_data[-1]:
+            if len(loop_data) > 1 and loop_data[-2][2] != loop_data[-1][2]:
                 temp.append(loop_data[-1])
             data["loop_data"] = temp
 
