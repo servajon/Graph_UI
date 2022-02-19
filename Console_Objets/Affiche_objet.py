@@ -222,7 +222,6 @@ class Classique_affiche(Abstract_objet_affiche):
         """la figure est recréée à chaque fois contrairement à la version console"""
         if self.pplot_fig is not None:
             pplot.close(self.pplot_fig)
-            print("le plot n'est pas nouveau")
 
         if "3d" in self.figure.type:
             if self.figure.is_data_set_3d() == 1:
