@@ -23,12 +23,28 @@ class CCCV_data(Abstract_data):
     """----------------------------------------------------------------------------------"""
 
     def capa(self):
+        """
+        On créer les graphs de capa
+
+        Pour le moment les axes contenant des unités mAh/g ont None comme unité, il
+        faudra s'occuper des conversion par la suite
+
+        :return: None
+        """
+
+        # on répére la masse de l'électode
         val = self.data["mass_electrode"]
+
+        # on créer une nouvelle figure
         figure = Figure(self.nom_cell + " capa", 1)
+
+        # avec le type capa
         figure.type = "capa"
 
+        # on récupére le nombre de cycles
         nb_cycle = len(self.data["loop_data"])
 
+        # déclaration des vecteurs pour les données
         new_data_x1 = []
         new_data_x2 = []
         new_data_x3 = []
@@ -37,15 +53,16 @@ class CCCV_data(Abstract_data):
         new_data_y11 = []
         new_data_y2 = []
 
+        # on parcours touts les cycles
         for i in range(nb_cycle):
-            min = self.data["loop_data"][i][0]
-            max = self.data["loop_data"][i][1]
+            val_min = self.data["loop_data"][i][0]
+            val_max = self.data["loop_data"][i][1]
 
             val_max_1 = 0
             val_max_2 = 0
             val_max_3 = 0
 
-            for j in range(min, max + 1):
+            for j in range(val_min, val_max + 1):
                 if abs(self.data.get(self.resource.Q_charge)[j]) > val_max_1:
                     val_max_1 = abs(self.data.get(self.resource.Q_charge)[j])
 
@@ -75,21 +92,23 @@ class CCCV_data(Abstract_data):
 
         figure.name_axes_y1 = "Specific charge (mAh/g)"
 
-        """tricheur :/ """
+        # tricheur :/
+        # on change les valeurs de début et de fin de la figure
         figure.y1_axe.first_val = 0
         figure.y2_axe.first_val = 40
 
-        max = 0
-        for i in new_data_y2:
-            if i > max:
-                max = i
-        if max < 110:
+
+        val_max = max(new_data_y2)
+        # on fait en sorte de cacher les valeurs abérentes
+        if val_max < 110:
             figure.y2_axe.last_val = 110
         else:
             figure.y2_axe.last_val = 140
 
-        """On modifie le nom de la figure pour être sûr qu'il soit unique"""
+        # On modifie le nom de la figure pour être sûr qu'il soit unique
         figure.name = self.unique_name(figure.name)
+
+        # on modifie les markers de la figure
         figure.format_line_y1 = 'x'
         figure.format_line_y2 = '>'
         figure.marker_size = 6
@@ -118,8 +137,8 @@ class CCCV_data(Abstract_data):
         val_max_p_v_decharge = []
 
         for i in range(nb_cycle):
-            min = self.data["loop_data"][i][0]
-            max = self.data["loop_data"][i][1]
+            val_min = self.data["loop_data"][i][0]
+            val_max = self.data["loop_data"][i][1]
 
             val_max_non_p_charge = 0
             val_max_p_charge = 0
@@ -132,7 +151,7 @@ class CCCV_data(Abstract_data):
             start_plateaux_charge = None
             start_plateaux_decharge = None
 
-            """sah quel plaisir, tout ça pour 1 point de merde........"""
+            # sah quel plaisir, tout ça pour 1 point de merde........
 
             mode_1_pass_charge = False
             mode_2_pass_charge = False
@@ -144,7 +163,7 @@ class CCCV_data(Abstract_data):
             mode_1_done_decharge = False
             mode_2_done_decharge = False
 
-            for j in range(min, max + 1):
+            for j in range(val_min, val_max + 1):
                 if self.data.get("mode")[j] == 1 and self.data.get(self.resource.Q_charge)[j] > val_max_charge:
                     if not mode_1_done_charge:
                         if mode_2_pass_charge:
@@ -272,7 +291,7 @@ class CCCV_data(Abstract_data):
 
 
         new_figure = Traitement_cycle_cccv.potentio(self.data.get("loop_data"),
-                                                    self.data.get("time/s"), self.data.get(self.resource.I),
+                                                    self.data.get("time/h"), self.data.get(self.resource.I),
                                                     self.data.get(self.resource.mode), cycle)
 
         # On modifie le nom de la figure pour être sûr qu'il soit unique

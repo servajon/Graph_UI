@@ -1,4 +1,5 @@
 from Console_Objets.Axe import Axe
+from Console_Objets.DataUnit import Data_unit
 from Console_Objets.Data_array import Data_array
 
 
@@ -26,12 +27,22 @@ class Figure:
         # pour la normalisation
         self.aspect = None
 
+        # nom de la figure
         self._name = name
+
+        # si la figure est dirty ou non
         self._dirty = dirty
 
+        # nombre de légendes a afficher
         self._nb_legende = 5
+
+        # format des 2dlines en y1
         self._format_ligne_y1 = None
+
+        # format des 2dlines en y2
         self._format_ligne_y2 = None
+
+        # taille des markers
         self._marker_size = 4
 
         # margin en %, 0 par défaut
@@ -140,105 +151,242 @@ class Figure:
     """                      methodes add vecteur de data                      """
     """                                                                        """
 
-    def add_data_x(self, data_x, name,  source, legende=None):
-        """créer l'axe x si il n'existe pas encore"""
+    def add_data_x(self, data_x, name,  source, legend=None):
+        """
+        On ajoute à l'axe x de la figure data_x. data_x est soit une list
+        soit un objet Data_unit
+
+        Dans le cas ou c'est une list, on créer l'objet Data_unit ici, son
+        unité sera None
+
+        Si c'est un ojbet data_unit on l'append juste
+        Pas d'argument color pour l'axe x
+
+        :param data_x: list / Data_unit
+        :param name: Nom que l'on souhaite affichier comme nom par défaut de l'axe x
+        :param source: fichier source dont les données proviennent
+        :param legende: légende a afficher pour cette courbe
+        :return: None
+        """
+
+        # créer l'axe x si il n'existe pas encore
         if self.x_axe is None:
             self.x_axe = Axe("x")
 
-        """créer un objet Data_array et l'ajoute à l'axe"""
-        data = Data_array(data_x, name, source, legende)
+        # si data_x est une list, on créer un objet data_unit
+        # son unité sera None, aucune conversion possible
+        if isinstance(data_x, list):
+            data_x = Data_unit(data_x)
+
+        # créer un objet Data_array et l'ajoute à l'axe
+        data = Data_array(data_x, name, source, legend)
+
+        # on ajoute l'ojet data_array
         self.x_axe.append(data)
 
     """----------------------------------------------------------------------------------"""
 
     def add_data_x_Data(self, data):
-        """créer l'axe x si il n'existe pas encore"""
+        """
+        data est de type Data_array, on suppose ici que les unités sont
+        correct
+
+        :param data: Data_array
+        :return: None
+        """
+
+        # créer l'axe x si il n'existe pas encore
         if self.x_axe is None:
             self.x_axe = Axe("x")
 
-        """On ajoute l'objet data_array à l'axe x"""
+        # On ajoute l'objet data_array à l'axe x
         self.x_axe.append(data)
 
     """----------------------------------------------------------------------------------"""
 
-    def set_data_x(self, data_x, name,  source, legende=None):
-        """pas d'argument color pour l'axe"""
+    def set_data_x(self, data_x, name,  source, legend=None):
+        """
+        On ajoute à l'axe x de la figure data_x. data_x est soit une list
+        soit un objet Data_unit
 
-        """créer l'axe x si il n'existe pas encore"""
+        Dans le cas ou c'est une list, on créer l'objet Data_unit ici, son
+        unité sera None
+
+        l'objet Data_array sera ici le seul a être présent sur l'axe
+
+        :param data_x: list / Data_unit
+        :param name: Nom que l'on souhaite affichier comme nom par défaut de l'axe x
+        :param source: fichier source dont les données proviennent
+        :param legende: légende a afficher pour cette courbe
+        :return: None
+        """
+
+        # pas d'argument color pour l'axe
+
+        # créer l'axe x si il n'existe pas encore
         if self.x_axe is None:
             self.x_axe = Axe("x")
 
-        """clear l'ancien data_x, créer et ajoute un nouvel objet Data_array"""
+        # si data_x est une list, on créer un objet data_unit
+        # son unité sera None, aucune conversion possible
+        if isinstance(data_x, list):
+            data_x = Data_unit(data_x)
+
+        # clear l'ancien data_x, créer et ajoute un nouvel objet Data_array
         self.x_axe.clear()
 
-        """créer un objet Data_array et l'ajoute à l'axe"""
-        data = Data_array(data_x, name, source, legende)
+        # créer un objet Data_array et l'ajoute à l'axe
+        data = Data_array(data_x, name, source, legend)
         self.x_axe.append(data)
 
     """----------------------------------------------------------------------------------"""
 
-    def add_data_y1(self, data_y, name,  source, legende=None, color=None):
-        """créer l'axe y1 si il n'existe pas encore"""
+    def add_data_y1(self, data_y, name,  source, legend=None, color=None):
+        """
+        On ajoute à l'axe y1 de la figure data_y. data_y est soit une list
+        soit un objet Data_unit
+
+        Dans le cas ou c'est une list, on créer l'objet Data_unit ici, son
+        unité sera None
+
+        Si c'est un ojbet data_unit on l'append juste
+
+        :param data_y: list / Data_unit
+        :param name: Nom que l'on souhaite affichier comme nom par défaut de l'axe x
+        :param source: fichier source dont les données proviennent
+        :param legende: légende a afficher pour cette courbe
+        :return: None
+        """
+
+        # créer l'axe y1 si il n'existe pas encore
         if self.y1_axe is None:
             self.y1_axe = Axe("y1")
 
-        """créer un objet Data_array et l'ajoute à l'axe"""
-        data = Data_array(data_y, name, source, legende, color)
+        # si data_y est une list, on créer un objet data_unit
+        # son unité sera None, aucune conversion possible
+        if isinstance(data_y, list):
+            data_y = Data_unit(data_y)
+
+        # créer un objet Data_array et l'ajoute à l'axe
+        data = Data_array(data_y, name, source, legend, color)
         self.y1_axe.append(data)
 
     """----------------------------------------------------------------------------------"""
 
     def add_data_y1_Data(self, data):
-        """créer l'axe y1 si il n'existe pas encore"""
+        """
+        data est de type Data_array, on suppose ici que les unités sont
+        correct
+
+        :param data: Data_array
+        :return: None
+        """
+
+        # créer l'axe y1 si il n'existe pas encore
         if self.y1_axe is None:
             self.y1_axe = Axe("y1")
 
-        """ajoute un nouvel objet Data_array à data_y1"""
+        # ajoute un nouvel objet Data_array à data_y1
         self.y1_axe.append(data)
-
-        if self.x_axe is not None and len(self.y1_axe) != len(self.x_axe):
-            self.x_axe.append(self.x_axe[-1])
 
     """----------------------------------------------------------------------------------"""
 
     def add_data_y2(self, data_y, name,  source, legende=None, color=None):
-        """créer l'axe y2 si il n'existe pas encore"""
+        """
+        On ajoute à l'axe y2 de la figure data_y. data_y est soit une list
+        soit un objet Data_unit
+
+        Dans le cas ou c'est une list, on créer l'objet Data_unit ici, son
+        unité sera None
+
+        Si c'est un ojbet data_unit on l'append juste
+
+        :param data_y: list / Data_unit
+        :param name: Nom que l'on souhaite affichier comme nom par défaut de l'axe x
+        :param source: fichier source dont les données proviennent
+        :param legende: légende a afficher pour cette courbe
+        :return: None
+        """
+
+        # créer l'axe y2 si il n'existe pas encore
         if self.y2_axe is None:
             self.y2_axe = Axe("y2")
 
-        """créer et ajoute un nouvel objet Data_array à data_y2"""
+        # si data_y est une list, on créer un objet data_unit
+        # son unité sera None, aucune conversion possible
+        if isinstance(data_y, list):
+            data_y = Data_unit(data_y)
+
+        # créer et ajoute un nouvel objet Data_array à data_y2
         data = Data_array(data_y, name, source, legende, color)
         self.y2_axe.append(data)
 
     """----------------------------------------------------------------------------------"""
 
     def add_data_y2_Data(self, data):
-        """créer l'axe y2 si il n'existe pas encore"""
+        """
+        data est de type Data_array, on suppose ici que les unités sont
+        correct
+
+        :param data: Data_array
+        :return: None
+        """
+
+        # créer l'axe y2 si il n'existe pas encore
         if self.y2_axe is None:
             self.y2_axe = Axe("y2")
 
-        """ajoute un nouvel objet Data_array à data_y2"""
+        # ajoute un nouvel objet Data_array à data_y2
         self.y2_axe.append(data)
 
     """----------------------------------------------------------------------------------"""
 
-    def add_data_z1(self, data_y, name,  source, legende=None):
-        """créer l'axe z1 si il n'existe pas encore"""
+    def add_data_z1(self, data_z, name,  source, legende=None):
+        """
+        On ajoute à l'axe z1 de la figure data_z. data_z est soit une list
+        soit un objet Data_unit
+
+        Dans le cas ou c'est une list, on créer l'objet Data_unit ici, son
+        unité sera None
+
+        Si c'est un ojbet data_unit on l'append juste
+
+        :param data_z: list / Data_unit
+        :param name: Nom que l'on souhaite affichier comme nom par défaut de l'axe x
+        :param source: fichier source dont les données proviennent
+        :param legende: légende a afficher pour cette courbe
+        :return: None
+        """
+
+        # créer l'axe z1 si il n'existe pas encore
         if self.z1_axe is None:
             self.z1_axe = Axe("z1")
 
-        """créer et ajoute un nouvel objet Data_array à data_z1"""
-        data = Data_array(data_y, name, source, legende)
+        # si data_y est une list, on créer un objet data_unit
+        # son unité sera None, aucune conversion possible
+        if isinstance(data_z, list):
+            data_z = Data_unit(data_z)
+
+        # créer et ajoute un nouvel objet Data_array à data_z1
+        data = Data_array(data_z, name, source, legende)
         self.z1_axe.append(data)
 
     """----------------------------------------------------------------------------------"""
 
     def add_data_z1_Data(self, data):
-        """créer l'axe z1 si il n'existe pas encore"""
+        """
+        data est de type Data_array, on suppose ici que les unités sont
+        correct
+
+        :param data: Data_array
+        :return: None
+        """
+
+        # créer l'axe z1 si il n'existe pas encore
         if self.z1_axe is None:
             self.z1_axe = Axe("z1")
 
-        """ajoute un nouvel objet Data_array à data_z1"""
+        # ajoute un nouvel objet Data_array à data_z1
         self.z1_axe.append(data)
 
     """----------------------------------------------------------------------------------"""

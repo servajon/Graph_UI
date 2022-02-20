@@ -1,3 +1,4 @@
+from Console_Objets.DataUnit import Data_unit, Units
 from Console_Objets.Data_array import Data_array
 from Console_Objets.Figure import Figure
 from Data_type.Traitement_cycle import Traitements_cycle_outils
@@ -18,6 +19,14 @@ def potentio(loop_data, time_data, i_data, mode_data, cycle):
     :return: la nouvelle figure créée
     """
 
+    units = Units()
+    unit_x = units["minutes"]
+
+    unit_y = units[i_data.unit.fullname]
+
+    print(unit_x)
+    print(unit_y)
+
     # si cycle est None c'est qu'il faut tracer tous les cycles, on créer le vecteur
     if cycle is None:
         cycle_start = None
@@ -32,6 +41,8 @@ def potentio(loop_data, time_data, i_data, mode_data, cycle):
     new_figure = Figure("", 1)
 
     new_figure.type = "cycle"
+
+    conversion = 60
 
     # variable name qui évoluera en fonction des cycles tracés
     name = ""
@@ -59,7 +70,7 @@ def potentio(loop_data, time_data, i_data, mode_data, cycle):
                 # Quand on a trouvé la région ou le mod est 2, on créer 2 nouveaux vecteur et on ajoute les
                 # données dans ces derniers
                 while j < val_max and mode_data[j] == 2:
-                    temp_x.append(time_data[j])
+                    temp_x.append(time_data[j] * conversion)
                     temp_y1.append(i_data[j])
                     global_index.append(j)
                     j += 1
@@ -67,16 +78,23 @@ def potentio(loop_data, time_data, i_data, mode_data, cycle):
                 # on normalise le vecteur à 0
                 Traitements_cycle_outils.start_0(temp_x)
 
+                # on créer l'objet qui contiendra les valeurs et l'unité
+                data_unit_x = Data_unit(temp_x, unit_x)
+
                 # on créer data array_x
-                data_array_x = Data_array(temp_x, "time/min", None, "cycle " + str(cycle[i] + 1))
+                data_array_x = Data_array(data_unit_x, "time", None, "cycle " + str(cycle[i] + 1))
 
                 # on lui ajoute global index
                 data_array_x.global_index = global_index
 
                 # on ajoute data_array à new_figure
                 new_figure.add_data_x_Data(data_array_x)
+
+                # on créer l'objet qui contiendra les valeurs et l'unité
+                data_unit_y = Data_unit(temp_y1, unit_y)
+
                 # on ajoute data_array à new_figure
-                new_figure.add_data_y1_Data(Data_array(temp_y1, "<I>/mA", None, "cycle " + str(cycle[i] + 1)))
+                new_figure.add_data_y1_Data(Data_array(data_unit_y, "<I>", None, "cycle " + str(cycle[i] + 1)))
 
             else:
                 j += 1

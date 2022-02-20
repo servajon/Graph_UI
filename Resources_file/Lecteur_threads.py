@@ -4,6 +4,7 @@ import os
 
 import Resources_file.Resources as R
 from Console_Objets.Affiche_objet import Array_Abstract_objet_affiche
+from Console_Objets.DataUnit import Data_unit, UNITS, Units
 from Resources_file.Emit import Emit
 
 
@@ -148,14 +149,18 @@ def extract_data_cccv(file, format_time=None):
     data_row = []
 
     mot = ''
+
     for i in range(len(data_data[index])):
         if data_data[index][i] == '\t':
-            if mot == "Ewe/V":
+            if mot == "time/s":
+                data_row.append("time/h")
+                data["time/h"] = Data_unit(None, UNITS["time/h"])
+            elif mot == "Ewe/V":
                 data_row.append("Ecell/V")
-                data["Ecell/V"] = []
+                data["Ecell/V"] = Data_unit(None, UNITS["Ecell/V"])
             else:
                 data_row.append(mot)
-                data[mot] = []
+                data[mot] = Data_unit(None, UNITS[mot])
 
             mot = ''
         else:
@@ -171,7 +176,7 @@ def extract_data_cccv(file, format_time=None):
     if "cycle_number" not in data_row and miss_loop:
         data = create_data(data_data[index + 1:], data, data_row, -1)
 
-        res = create_loop(data["time/s"])
+        res = create_loop(data["time/h"])
 
         if len(res) == 1:
             emit.emit("msg_console", type="msg_console", str="Fichier invalide, impossible de créer les loops",
@@ -543,16 +548,10 @@ def extract_data_cp(file, format_time=None):
     for i in range(len(data_data[index])):
         if data_data[index][i] == '\t':
             if mot == "time/s":
-                if format_time == "s":
-                    data_row.append("time/s")
-                    data["time/s"] = []
-                elif format_time == "min":
-                    data_row.append("time/min")
-                    data["time/min"] = []
-                else:
-                    data_row.append("time/h")
-                    data["time/h"] = []
-                    """Pour un fichier de CV on n'a pas Ecell/V mais Ewe/V, on le remplace par Ecell/V"""
+                data_row.append("time/h")
+                data["time/h"] = Data_unit(None, UNITS["time/h"])
+
+            # Pour un fichier de CV on n'a pas Ecell/V mais Ewe/V, on le remplace par Ecell/V
             elif mot == "<Ewe>/V" or mot == "Ewe/V":
                 data_row.append("Ecell/V")
                 data["Ecell/V"] = []
@@ -561,7 +560,7 @@ def extract_data_cp(file, format_time=None):
                 data["<I>/mA"] = []
             else:
                 data_row.append(mot)
-                data[mot] = []
+                data[mot] = Data_unit(None, UNITS["mot"])
 
             mot = ''
         else:
@@ -850,7 +849,12 @@ def create_data(data_data, data, data_row, loop_data=None):
         data["row_data"] = data_row
         for i in range(1, len(res)):
             for key in data.get("row_data"):
-                data.get(key).extend(res[i].get(key))
+                data.get(key).data.extend(res[i].get(key).data)
+
+        for key in data.get("row_data"):
+            data.get(key).set_units()
+
+
         return data
 
 
@@ -864,8 +868,12 @@ def work(args):
         value = ""
         for i in range(len(ligne)):
             if ligne[i] == "\t":
-                # on remplace , par ., notation différente pour les chiffres
-                data.get(data_row[index]).append(float(value.replace(',', '.')))
+                if data_row[index] == "time/h":
+                    f = float(value.replace(',', '.')) / 3600
+                    data.get(data_row[index]).append(f)
+                else:
+                    # on remplace , par ., notation différente pour les chiffres
+                    data.get(data_row[index]).append(float(value.replace(',', '.')))
                 value = ""
                 index += 1
             else:
@@ -893,7 +901,10 @@ def work_loop(args):
         value = ""
         for i in range(len(ligne)):
             if ligne[i] == "\t":
-                if data_row[index] == "cycle_number" and int(
+                if data_row[index] == "time/h":
+                    f = float(value.replace(',', '.')) / 3600
+                    data.get(data_row[index]).append(f)
+                elif data_row[index] == "cycle_number" and int(
                         float(value.replace(',', '.'))) != current_loop:
 
                     if start_loop is None:

@@ -243,6 +243,12 @@ class Figure_plot(QWidget):
             elif self.abstract_affiche.figure.x_axe.scale == "log":
                 self.edit_w.comboBox_18.setCurrentIndex(1)
 
+            # création de la combo box avec les unités disponibles
+            self.edit_w.comboBox_19.addItem("unchanged")
+            if self.abstract_affiche.figure.x_axe.data[0].unit is not None:
+                for unit in self.abstract_affiche.figure.x_axe.data[0].unit.get_units_available():
+                    self.edit_w.comboBox_19.addItem(unit.fullname)
+
             self.edit_w.finish.connect(self.edit_finishded)
             self.edit_w.show()
 
@@ -268,6 +274,12 @@ class Figure_plot(QWidget):
             elif self.abstract_affiche.figure.y1_axe.scale == "log":
                 self.edit_w.comboBox_18.setCurrentIndex(1)
 
+            # création de la combo box avec les unités disponibles
+            self.edit_w.comboBox_19.addItem("unchanged")
+            if self.abstract_affiche.figure.y1_axe.data[0].unit is not None:
+                for unit in self.abstract_affiche.figure.y1_axe.data[0].unit.get_units_available():
+                    self.edit_w.comboBox_19.addItem(unit.fullname)
+
             self.edit_w.finish.connect(self.edit_finishded)
             self.edit_w.show()
 
@@ -292,6 +304,12 @@ class Figure_plot(QWidget):
                 self.edit_w.comboBox_18.setCurrentIndex(0)
             elif self.abstract_affiche.figure.y2_axe.scale == "log":
                 self.edit_w.comboBox_18.setCurrentIndex(1)
+
+            # création de la combo box avec les unités disponibles
+            self.edit_w.comboBox_19.addItem("unchanged")
+            if self.abstract_affiche.figure.y2_axe.data[0].unit is not None:
+                for unit in self.abstract_affiche.figure.y2_axe.data[0].unit.get_units_available():
+                    self.edit_w.comboBox_19.addItem(unit.fullname)
 
             self.edit_w.finish.connect(self.edit_finishded)
             self.edit_w.show()
@@ -416,26 +434,88 @@ class Figure_plot(QWidget):
         :return:
         """
 
-        # si les données de la fen^tre sont sauvegardées
+        # si les données de la fenêtre sont sauvegardées
         if event == "save":
+
+            unit = self.edit_w.comboBox_19.itemText(self.edit_w.comboBox_19.currentIndex())
+            if unit != "unchanged":
+                if self.axe_edited == "x":
+                    self.abstract_affiche.figure.x_axe.change_unit(unit)
+
+                    _max = self.abstract_affiche.figure.x_axe.data[0].data[0]
+                    _min = self.abstract_affiche.figure.x_axe.data[0].data[0]
+
+                    for i, data_array in enumerate(self.abstract_affiche.figure.x_axe.data):
+                        temp_max = max(data_array.data)
+                        temp_min = min(data_array.data)
+                        if temp_max > _max:
+                            _max = temp_max
+                        if temp_min < _min:
+                            _min = temp_min
+
+                        self.update_plot_data("x", i, data_array.data)
+
+                    delta = _max - _min
+                    self.abstract_affiche.ax1.set_xlim(_min - delta * 0.05, _max + delta * 0.05)
+                    self.abstract_affiche.ax1.xaxis.set_label_text(self.abstract_affiche.figure.x_axe.name_unit)
+
+                elif self.axe_edited == "y1":
+                    self.abstract_affiche.figure.y1_axe.change_unit(unit)
+
+                    _max = self.abstract_affiche.figure.y1_axe.data[0].data[0]
+                    _min = self.abstract_affiche.figure.y1_axe.data[0].data[0]
+
+                    for i, data_array in enumerate(self.abstract_affiche.figure.y1_axe.data):
+                        temp_max = max(data_array.data)
+                        temp_min = min(data_array.data)
+                        if temp_max > _max:
+                            _max = temp_max
+                        if temp_min < _min:
+                            _min = temp_min
+
+                        self.update_plot_data("y1", i, data_array.data)
+
+                    delta = _max - _min
+                    self.abstract_affiche.ax1.set_ylim(_min - delta * 0.05, _max + delta * 0.05)
+                    self.abstract_affiche.ax1.yaxis.set_label_text(self.abstract_affiche.figure.y1_axe.name_unit)
+
+                else:
+                    _max = self.abstract_affiche.figure.y2_axe.data[0].data[0]
+                    _min = self.abstract_affiche.figure.y2_axe.data[0].data[0]
+
+                    self.abstract_affiche.figure.y2_axe.change_unit(unit)
+                    for i, data_array in enumerate(self.abstract_affiche.figure.y2_axe.data):
+                        temp_max = max(data_array.data)
+                        temp_min = min(data_array.data)
+                        if temp_max > _max:
+                            _max = temp_max
+                        if temp_min < _min:
+                            _min = temp_min
+
+                        self.update_plot_data("y2", i, data_array.data)
+
+                    delta = _max - _min
+                    self.abstract_affiche.ax2.set_ylim(_min - delta * 0.05, _max + delta * 0.05)
+                    self.abstract_affiche.ax2.yaxis.set_label_text(self.abstract_affiche.figure.y2_axe.name_unit)
+
             # on récupére le nouveau nom de l'axe
             new_name = self.edit_w.lineEdit_2.text()
             if new_name != "":
                 # si l'axe édité de x
-                if self.axe_edited == "x":
+                if self.axe_edited == "x" and self.abstract_affiche.figure.x_axe.name != new_name:
                     # on update le graph et la figure
                     self.abstract_affiche.figure.x_axe.name = new_name
-                    self.abstract_affiche.ax1.xaxis.set_label_text(new_name)
+                    self.abstract_affiche.ax1.xaxis.set_label_text(self.abstract_affiche.figure.x_axe.name_unit)
                 # si l'axe édité de y1
-                elif self.axe_edited == "y1":
+                elif self.axe_edited == "y1" and self.abstract_affiche.figure.y1_axe.name != new_name:
                     # on update le graph et la figure
                     self.abstract_affiche.figure.y1_axe.name = new_name
-                    self.abstract_affiche.ax1.yaxis.set_label_text(new_name)
+                    self.abstract_affiche.ax1.yaxis.set_label_text(self.abstract_affiche.figure.y1_axe.name_unit)
                 # si l'axe édité de y2
-                elif self.axe_edited == "y2":
+                elif self.axe_edited == "y2" and self.abstract_affiche.figure.y2_axe.name != new_name:
                     # on update le graph et la figure
                     self.abstract_affiche.figure.y2_axe.name = new_name
-                    self.abstract_affiche.ax2.yaxis.set_label_text(new_name)
+                    self.abstract_affiche.ax2.yaxis.set_label_text(self.abstract_affiche.figure.y2_axe.name_unit)
 
             # nouvelles valeurs de début et fin d'axe
             new_start = self.edit_w.lineEdit_3.text()
@@ -557,6 +637,8 @@ class Figure_plot(QWidget):
                         emit.emit("msg_console", type="msg_console",
                                   str="Data has no positive values, y2 scale set to linear",
                                   foreground_color="red")
+
+
             self.canvas.draw()
 
         self.edit_w.deleteLater()
@@ -607,25 +689,27 @@ class Figure_plot(QWidget):
 
     """---------------------------------------------------------------------------------"""
 
-    def update_plot(self, axe, index, array_x, array_y):
+    def update_plot_data(self, axe, index, array):
         """
         On met à jours les data du plot avec les axes donnée en paramètre
 
         Pas de draw ici, il se fait par ailleurs
 
-        :param axe: Nom de l'axe : y1, y2
+        :param axe: Nom de l'axe : x, y1, y2
         :param index: index d'édition
-        :param array_x: nouvelle array_x
-        :param array_y: nouvelle array_y
+        :param array: nouvel array
         :return: None
         """
 
-        if axe == "y1":
-            self.abstract_affiche.ax1.lines[index].set_xdata(array_x)
-            self.abstract_affiche.ax1.lines[index].set_ydata(array_y)
-        elif axe == "y2":
-            self.abstract_affiche.ax2.lines[index].set_xdata(array_x)
-            self.abstract_affiche.ax2.lines[index].set_ydata(array_y)
+        if axe == "x":
+            if index >= len(self.abstract_affiche.ax1.lines):
+                self.abstract_affiche.ax2.lines[index].set_xdata(array)
+            else:
+                self.abstract_affiche.ax1.lines[index].set_xdata(array)
+        elif axe == "y1":
+            self.abstract_affiche.ax1.lines[index].set_ydata(array)
+        else:
+            self.abstract_affiche.ax2.lines[index].set_ydata(array)
 
     """---------------------------------------------------------------------------------"""
 

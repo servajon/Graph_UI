@@ -1,3 +1,4 @@
+from Console_Objets.DataUnit import Units
 from Resources_file import Resources
 import matplotlib.pyplot as pplot
 import matplotlib.colors as mcolors
@@ -7,8 +8,9 @@ class Data_array:
     """extra_legende gére une légende que l'on veux concerver même quand il y a une tranformation et que la
     légende ne porte plus le nom de la data mais du cycle"""
 
-    def __init__(self, data, name, source, legende, color=None):
-        self._data = data
+    def __init__(self, data_unit, name, source, legende, color=None):
+        # data : Data_unit
+        self._data_unit = data_unit
 
         self._name = name
         """La source est le fichier de provenance de la data"""
@@ -20,8 +22,11 @@ class Data_array:
             self._legend = legende
 
         self._color = color
-        self._unite = None
-        self.extra_info = None
+
+        if data_unit.unit is None:
+            self._unit = None
+        else:
+            self._unit = data_unit.unit
 
         # cette variable référence la position des donnée de self.data par rapport à l'intégralité
         # des données ne sera présente que sur data_array appartenant à X_axe
@@ -43,17 +48,42 @@ class Data_array:
             else:
                 return mcolors.LinearSegmentedColormap.from_list(self._color, colors, N=256)
 
+    def get_data(self):
+        return self._data_unit.data
+
+    def change_unit(self, unit):
+        """
+        si unit est de type str, on la converti en BasicUnit
+
+        :param unit: str / BasicUnit
+        :return:
+        """
+        # si unit est un str, on récupére l'unité correspondante
+        # avec la class Units
+        if isinstance(unit, str):
+            units = Units()
+            unit = units[unit]
+
+        # on met à jours l'unité de self
+        self.unit = unit
+
+        # on convert les données
+        self.data_unit.convert_to(unit)
+
     """                                                  """
     """                      getter                      """
     """                                                  """
 
     @property
-    def data(self):
-        return self._data
+    def data_unit(self):
+        return self._data_unit
 
     @property
     def name(self):
-        return self._name
+        if self.data_unit.unit is None:
+            return self._name
+        else:
+            return self._name
 
     @property
     def source(self):
@@ -85,7 +115,7 @@ class Data_array:
 
     @property
     def unit(self):
-        return self._unite
+        return self._unit
 
     @property
     def visible(self):
@@ -95,13 +125,17 @@ class Data_array:
     def global_index(self):
         return self._global_index
 
+    @property
+    def data(self):
+        return self.data_unit.data
+
     """                                                  """
     """                      setter                      """
     """                                                  """
 
-    @data.setter
-    def data(self, data):
-        self._data = data
+    @data_unit.setter
+    def data_unit(self, data):
+        self._data_unit = data
 
     @name.setter
     def name(self, name):
@@ -133,3 +167,6 @@ class Data_array:
     def global_index(self, global_index):
         self._global_index = global_index
 
+    @unit.setter
+    def unit(self, value):
+        self._unit = value

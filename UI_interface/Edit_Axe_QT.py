@@ -51,9 +51,6 @@ class Edit_Axe(QWidget):
         self.comboBox_19 = QtWidgets.QComboBox(Dialog)
         self.comboBox_19.setMinimumSize(QtCore.QSize(0, 30))
         self.comboBox_19.setObjectName("comboBox_19")
-        self.comboBox_19.addItem("")
-        self.comboBox_19.addItem("")
-        self.comboBox_19.addItem("")
         self.gridLayout.addWidget(self.comboBox_19, 2, 2, 1, 1)
         self.verticalLayout.addLayout(self.gridLayout)
         self.horizontalLayout = QtWidgets.QHBoxLayout()
@@ -112,9 +109,6 @@ class Edit_Axe(QWidget):
         self.comboBox_18.setItemText(1, _translate("Dialog", "log"))
         self.label_17.setText(_translate("Dialog",
                                          "<html><head/><body><p><span style=\" font-size:12pt;\">Unite</span></p></body></html>"))
-        self.comboBox_19.setItemText(0, _translate("Dialog", "test1"))
-        self.comboBox_19.setItemText(1, _translate("Dialog", "test2"))
-        self.comboBox_19.setItemText(2, _translate("Dialog", "test3"))
         self.label_18.setText(_translate("Dialog",
                                          "<html><head/><body><p><span style=\" font-size:12pt;\">Start at :</span></p></body></html>"))
         self.label_19.setText(_translate("Dialog",

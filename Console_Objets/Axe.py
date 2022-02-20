@@ -38,10 +38,7 @@ class Axe:
             self.first_val = None
             self.last_val = None
 
-            # default unit correspond à l'unité des datas du fichiers
-            self._default_unit = None
-            self._unite = None
-
+            # vecteur d'objet data_array
             self.data = []
 
             self._color_map = None
@@ -92,9 +89,17 @@ class Axe:
 
     """----------------------------------------------------------------------------------"""
 
-    def add_unit(self, default_unit, new_unit):
-        self._default_unit = default_unit
-        self._unite = new_unit
+    def change_unit(self, new_unit):
+        """
+        si new_unit est de type str, la fonction data_array la convertira en BasicUnit
+
+        :param new_unit: str ou BasicUnit
+        :return: None
+        """
+
+        # on parcours les data_array et on update l'unité
+        for data_array in self.data:
+            data_array.change_unit(new_unit)
 
     """----------------------------------------------------------------------------------"""
 
@@ -106,9 +111,28 @@ class Axe:
     @property
     def name(self):
         if self.__name is None:
-            self.__name = rename_axe(self.data[0].name)
+            if self.data[0].unit is not None:
+                return rename_axe(self.data[0].name)
+            else:
+                return rename_axe(self.data[0].name)
+        else:
+            if self.data[0].unit is not None:
+                return self.__name
+            else:
+                return self.__name
 
-        return self.__name
+    @property
+    def name_unit(self):
+        if self.__name is None:
+            if self.data[0].unit is not None:
+                return rename_axe(self.data[0].name) + " [" + self.data[0].unit.name + "]"
+            else:
+                return rename_axe(self.data[0].name)
+        else:
+            if self.data[0].unit is not None:
+                return self.__name + " [" + self.data[0].unit.name + "]"
+            else:
+                return self.__name
 
     @property
     def color_map(self):

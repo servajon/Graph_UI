@@ -36,13 +36,8 @@ class Resource_class:
 
         return cls._instance
 
-    def get_time_default_unit(self):
-        return UNITS[self.time]
 
-    def get_courrant_default_unit(self):
-        return UNITS[self.I]
-
-    """"-----------------------------------------------------"""
+"""----------------------------------------------------------------------------------"""
 
 
 def justify(s, width=80):

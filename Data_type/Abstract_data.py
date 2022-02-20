@@ -261,8 +261,10 @@ class Abstract_data(ABC):
             leg1.legend(h, l, borderaxespad=0, loc="upper right")
             leg1.axis("off")
 
-            ax1.set_xlabel(figure.x_axe.name, labelpad=20)
-            ax1.set_ylabel(figure.y1_axe.name, labelpad=20)
+            print(figure.x_axe.name)
+
+            ax1.set_xlabel(figure.x_axe.name_unit, labelpad=20)
+            ax1.set_ylabel(figure.y1_axe.name_unit, labelpad=20)
 
         """----------------------------------------------------------------------------------"""
         """                                        y2                                        """
@@ -328,7 +330,7 @@ class Abstract_data(ABC):
             leg2.legend(h, l, borderaxespad=0, loc="lower right")
             leg2.axis("off")
 
-            ax2.set_ylabel(figure.y2_axe.name, labelpad=20)
+            ax2.set_ylabel(figure.y2_axe.name_unit, labelpad=20)
 
         format_axes_figure(figure, ax1, ax2)
 
