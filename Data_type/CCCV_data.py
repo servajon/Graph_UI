@@ -1,6 +1,7 @@
 import copy
 import scipy.signal
 
+from Console_Objets.DataUnit import Data_unit
 from Console_Objets.Data_array import Data_array
 from Console_Objets.Figure import Figure
 from Data_type.Abstract_data import Abstract_data
@@ -322,10 +323,19 @@ class CCCV_data(Abstract_data):
         data_x = self.current_figure.x_axe.data
         data_y1 = self.current_figure.y1_axe.data
 
+        unit_x = self.current_figure.x_axe.data[0].unit
+        unit_y1 = self.current_figure.y1_axe.data[0].unit
+
+
         if self.current_figure.y2_axe is not None:
             data_y2 = self.current_figure.y2_axe.data
+            unit_y2 = self.current_figure.y2_axe.data[0].unit
         else:
             data_y2 = None
+            unit_y2 = None
+
+        print(unit_x.name)
+        print(unit_y1.name)
 
         for i in range(len(data_y1)):
             if nb_point is None:
@@ -353,23 +363,27 @@ class CCCV_data(Abstract_data):
         new_data_x += new_data_x2
 
         for i in range(len(new_data_y1)):
-            new_figure.add_data_x_Data(Data_array(new_data_x[i], self.current_figure.x_axe.data[0].name + " derive",
+            data_x_unit = Data_unit(new_data_x[i], unit_x)
+            new_figure.add_data_x_Data(Data_array(data_x_unit, self.current_figure.x_axe.data[0].name + " derive",
                                                   self.current_figure.x_axe.data[0].source,
                                                   self.current_figure.x_axe.data[0].legend,
                                                   self.current_figure.x_axe.data[0].color))
 
-            new_figure.add_data_y1_Data(Data_array(new_data_y1[i], self.current_figure.y1_axe.data[i].name + " derive",
+            data_y1_unit = Data_unit(new_data_y1[i], unit_x)
+            new_figure.add_data_y1_Data(Data_array(data_y1_unit, self.current_figure.y1_axe.data[i].name + " derive",
                                                    self.current_figure.y1_axe.data[i].source,
                                                    self.current_figure.y1_axe.data[i].legend,
                                                    self.current_figure.y1_axe.data[i].color))
 
         for i in range(len(new_data_y2)):
+            data_x_unit = Data_unit(new_data_x[len(new_data_y1) + i], unit_x)
             new_figure.add_data_x_Data(
-                Data_array(new_data_x[len(new_data_y1) + i], self.current_figure.x_axe.data[0].name + " derive",
+                Data_array(data_x_unit, self.current_figure.x_axe.data[0].name + " derive",
                            self.current_figure.data_x[0].source, self.current_figure.data_x[0].legend,
                            self.current_figure.data_x[0].color))
 
-            new_figure.add_data_y2_Data(Data_array(new_data_y2[i], self.current_figure.y2_axe.data[i].name + " derive",
+            data_y2_unit = Data_unit(new_data_y2[i], unit_x)
+            new_figure.add_data_y2_Data(Data_array(data_y2_unit, self.current_figure.y2_axe.data[i].name + " derive",
                                                    self.current_figure.y2_axe.data[i].source,
                                                    self.current_figure.y2_axe.data[i].legend,
                                                    self.current_figure.y2_axe.data[i].color))

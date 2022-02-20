@@ -2,8 +2,6 @@ import math
 from abc import ABC, abstractmethod
 
 import numpy as np
-from PyQt5.QtCore import pyqtSignal
-
 from Resources_file import Resources
 
 from Console_Objets import Data_array
@@ -316,9 +314,7 @@ class Classique_affiche(Abstract_objet_affiche):
                 self.finish = True
                 return False
         else:
-            print("???????????????")
             if self.figure.is_data_set() == 1:
-                print("self.figure.is_data_set() == 1:")
                 try:
                     if self.save is not None:
                         self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
@@ -337,7 +333,6 @@ class Classique_affiche(Abstract_objet_affiche):
                     self.finish = True
                     return False
             else:
-                print("else")
                 self.finish = True
                 return False
         return True

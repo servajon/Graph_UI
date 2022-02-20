@@ -24,9 +24,6 @@ def potentio(loop_data, time_data, i_data, mode_data, cycle):
 
     unit_y = units[i_data.unit.fullname]
 
-    print(unit_x)
-    print(unit_y)
-
     # si cycle est None c'est qu'il faut tracer tous les cycles, on créer le vecteur
     if cycle is None:
         cycle_start = None
