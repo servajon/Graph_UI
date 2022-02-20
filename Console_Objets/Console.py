@@ -1,6 +1,3 @@
-from PyQt5.QtCore import pyqtSignal
-
-
 class Console:
     _instance = None
 

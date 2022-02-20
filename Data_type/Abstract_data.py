@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 
 import matplotlib
 import matplotlib.pyplot as pplot
+
 from Resources_file import Resources
 from Resources_file.Emit import Emit
 
@@ -117,6 +118,7 @@ class Abstract_data(ABC):
     def __init__(self):
         self._data = None
         self._name = None
+
         #self._nom_cell = None
         self._nom_cell = "temp"
         self._figures = []
@@ -130,6 +132,8 @@ class Abstract_data(ABC):
         self.resource = Resources.Resource_class()
 
     """----------------------------------------------------------------------------------"""
+    """                                   Methode abstraite                              """
+    """----------------------------------------------------------------------------------"""
 
     @abstractmethod
     def get_operation_available(self):
@@ -139,6 +143,18 @@ class Abstract_data(ABC):
 
     @abstractmethod
     def capa(self):
+        pass
+
+    """----------------------------------------------------------------------------------"""
+
+    @abstractmethod
+    def potentio(self, cycle=None):
+        pass
+
+    """----------------------------------------------------------------------------------"""
+
+    @abstractmethod
+    def derive(self, *args, **kwargs):
         pass
 
     """----------------------------------------------------------------------------------"""
@@ -221,13 +237,15 @@ class Abstract_data(ABC):
                 modulo_y1 = []
 
             for i in range(len(data_y1)):
+                if len(data_x[i].data) != len(data_y1[i].data):
+                    raise ValueError
+
                 if len(modulo_y1) == 0 or (
                         index_modulo_y1 < len(modulo_y1) and i == modulo_y1[index_modulo_y1]):
                     index_modulo_y1 += 1
                     if data_y1[i].color is not None:
                         ax1.plot(data_x[i].data, data_y1[i].data, format_line_y1, markersize=figure.marker_size,
-                                 label=data_y1[i].legend,
-                                 color=data_y1[i].color, visible=data_y1[i].visible)
+                                 label=data_y1[i].legend, color=data_y1[i].color, visible=data_y1[i].visibe)
                     else:
                         ax1.plot(data_x[i].data, data_y1[i].data, format_line_y1, markersize=figure.marker_size,
                                  label=data_y1[i].legend, visible=data_y1[i].visible)
@@ -318,6 +336,7 @@ class Abstract_data(ABC):
             pplot.tight_layout()
             pplot.close(fig)
             fig.savefig(path_save, bbox_inches='tight', dpi=150)
+
 
         return fig, ax1, ax2, value, val_freq, leg1, leg2
 
@@ -612,6 +631,18 @@ class Abstract_data(ABC):
         else:
             return True
 
+    """----------------------------------------------------------------------------------"""
+
+    def create_unit_array(self):
+        if "row_unit" not in self.data:
+            units = []
+            for name in self.data["row_data"]:
+                units.append(Resources.UNITS[name])
+
+            self.data["row_unit"] = units
+
+    """----------------------------------------------------------------------------------"""
+
     @property
     @abstractmethod
     def data(self):
@@ -675,3 +706,5 @@ class Abstract_data(ABC):
     @abstractmethod
     def resource(self, resource):
         pass
+
+

@@ -1,11 +1,10 @@
 import copy
+import scipy.signal
 
+from Console_Objets.Data_array import Data_array
 from Console_Objets.Figure import Figure
 from Data_type.Abstract_data import Abstract_data
-from Resources_file import Resources
 from Data_type.Traitement_cycle import Traitements_cycle_outils, Traitement_cycle_cccv
-
-
 
 
 class CCCV_data(Abstract_data):
@@ -15,6 +14,8 @@ class CCCV_data(Abstract_data):
         self.__name__ = "cccv"
 
     """----------------------------------------------------------------------------------"""
+    """                                   Methode abstraite                              """
+    """----------------------------------------------------------------------------------"""
 
     def get_operation_available(self):
         return ["capa", "potentio", "custom"]
@@ -22,16 +23,7 @@ class CCCV_data(Abstract_data):
     """----------------------------------------------------------------------------------"""
 
     def capa(self):
-        if self.data["mass_electrode"] == -1:
-            print("La masse de l'électrode lue dans le fichier est invalide")
-            val = Resources.get_float("Merci de donner une valeur correct (mg) : >> ")
-        else:
-            print("La masse de l'électrode lue est : " + str(self.data["mass_electrode"]) + " mg")
-            if Resources.get_rep_Y_N("Garder cette masse ? (y/n) >> ") == 0:
-                val = Resources.get_float("Merci de donner une valeur (mg) : >> ")
-            else:
-                val = self.data["mass_electrode"]
-
+        val = self.data["mass_electrode"]
         figure = Figure(self.nom_cell + " capa", 1)
         figure.type = "capa"
 
@@ -216,7 +208,8 @@ class CCCV_data(Abstract_data):
         figure_charge.add_data_y1(copy.copy(val_max_p_v_charge), "Specific capacity (mAh/g)", None, "capa potentio")
 
         figure_decharge.add_data_x(copy.copy(fig_decharge_x), "Cycle Number", None, None)
-        figure_decharge.add_data_y1(copy.copy(val_max_non_p_v_decharge), "Specific capacity (mAh/g)", None, "capa Galvano")
+        figure_decharge.add_data_y1(copy.copy(val_max_non_p_v_decharge), "Specific capacity (mAh/g)", None,
+                                    "capa Galvano")
         figure_decharge.add_data_y1(copy.copy(val_max_p_v_decharge), "Specific capacity (mAh/g)", None, "capa potentio")
 
         for i in range(len(val_max_non_p_v_charge)):
@@ -277,14 +270,12 @@ class CCCV_data(Abstract_data):
         if self.return_create_cycle(cycle) is False:
             return None
 
-        temp = "time/" + self.get_format_time()
 
         new_figure = Traitement_cycle_cccv.potentio(self.data.get("loop_data"),
-                                                    self.data.get(temp), self.data.get(self.resource.I),
-                                                    self.data.get(self.resource.mode), self.get_format_time(), cycle)
+                                                    self.data.get("time/s"), self.data.get(self.resource.I),
+                                                    self.data.get(self.resource.mode), cycle)
 
-        """On modifie le nom de la figure pour être sûr qu'il soit unique"""
-
+        # On modifie le nom de la figure pour être sûr qu'il soit unique
         if name is None:
             new_figure.name = self.unique_name(self.nom_cell + "_" + new_figure.name)
         else:
@@ -293,6 +284,88 @@ class CCCV_data(Abstract_data):
         return new_figure
 
     """----------------------------------------------------------------------------------"""
+
+    def derive(self, nb_point=None, window_length=None, polyorder=None):
+        return self.derivation(nb_point, window_length, polyorder)
+
+    """----------------------------------------------------------------------------------"""
+    """                                   Methode de class                               """
+    """----------------------------------------------------------------------------------"""
+
+    def derivation(self, nb_point, window_length, polyorder):
+        new_figure = Figure(self.current_figure.name + "_derive", 1)
+
+        new_data_x = []
+        new_data_x2 = []
+        new_data_y1 = []
+        new_data_y2 = []
+
+        data_x = self.current_figure.x_axe.data
+        data_y1 = self.current_figure.y1_axe.data
+
+        if self.current_figure.y2_axe is not None:
+            data_y2 = self.current_figure.y2_axe.data
+        else:
+            data_y2 = None
+
+        for i in range(len(data_y1)):
+            if nb_point is None:
+                nb_point = len(data_y1[i].data)
+
+            new_x, new_y = _derive_class(data_x[i].data, data_y1[i].data, nb_point, window_length, polyorder)
+            new_data_x.append(new_x)
+            new_data_y1.append(new_y)
+
+        if data_y2 is not None:
+            for i in range(len(data_y2)):
+                if nb_point is None:
+                    nb_point = len(data_y2[i].data)
+
+                new_x, new_y = _derive_class(data_x[len(data_y1) + i].data, data_y2[i].data, nb_point,
+                                             window_length, polyorder)
+                new_data_x2.append(new_x)
+                new_data_y2.append(new_y)
+
+        if len(new_data_y2) == 0:
+            new_figure.type = "derive_y1"
+        else:
+            new_figure.type = "derive_y1_y2"
+
+        new_data_x += new_data_x2
+
+        for i in range(len(new_data_y1)):
+            new_figure.add_data_x_Data(Data_array(new_data_x[i], self.current_figure.x_axe.data[0].name + " derive",
+                                                  self.current_figure.x_axe.data[0].source,
+                                                  self.current_figure.x_axe.data[0].legend,
+                                                  self.current_figure.x_axe.data[0].color))
+
+            new_figure.add_data_y1_Data(Data_array(new_data_y1[i], self.current_figure.y1_axe.data[i].name + " derive",
+                                                   self.current_figure.y1_axe.data[i].source,
+                                                   self.current_figure.y1_axe.data[i].legend,
+                                                   self.current_figure.y1_axe.data[i].color))
+
+        for i in range(len(new_data_y2)):
+            new_figure.add_data_x_Data(
+                Data_array(new_data_x[len(new_data_y1) + i], self.current_figure.x_axe.data[0].name + " derive",
+                           self.current_figure.data_x[0].source, self.current_figure.data_x[0].legend,
+                           self.current_figure.data_x[0].color))
+
+            new_figure.add_data_y2_Data(Data_array(new_data_y2[i], self.current_figure.y2_axe.data[i].name + " derive",
+                                                   self.current_figure.y2_axe.data[i].source,
+                                                   self.current_figure.y2_axe.data[i].legend,
+                                                   self.current_figure.y2_axe.data[i].color))
+
+        new_figure.format_line_y1 = 'x'
+        new_figure.format_line_y2 = 'x'
+
+        new_figure.created_from = self.current_figure
+
+        new_figure.name = self.unique_name(new_figure.name)
+
+        return new_figure
+
+    """----------------------------------------------------------------------------------"""
+
 
     """                                                  """
     """                      getter                      """
@@ -329,12 +402,12 @@ class CCCV_data(Abstract_data):
     @data.setter
     def data(self, data):
         self._data = data
+        # self.create_unit_array()
 
     @name.setter
     def name(self, name):
         """On replace les espaces par des '_'"""
         self._name = name
-
 
     @nom_cell.setter
     def nom_cell(self, name):
@@ -352,3 +425,69 @@ class CCCV_data(Abstract_data):
     @resource.setter
     def resource(self, resource):
         self._resource = resource
+
+
+""""----------------------------------------------------------------------------------"""
+
+
+def _derive_class(x_object, y_object, nb_point, window_length=None, polyorder=None):
+    delta_y_moyen = 0
+    for i in range(1, len(y_object)):
+        delta_y_moyen += abs(y_object[i - 1] - y_object[i])
+
+    delta_y_moyen /= len(y_object) - 1
+
+    pas = len(y_object) / nb_point * delta_y_moyen
+    newx = []
+    deriv = []
+    index = 0
+    while index < len(y_object):
+        res_deriv = _derive_point(x_object, y_object, index, pas)
+        if res_deriv is not None:
+            if res_deriv[0] is not None:
+                newx.append(res_deriv[1])
+                deriv.append(res_deriv[0])
+                index = res_deriv[2]
+            else:
+                index = res_deriv[2]
+        else:
+            break
+    if window_length is not None and polyorder is not None:
+        deriv = scipy.signal.savgol_filter(deriv, window_length, polyorder)
+
+    return newx, deriv
+
+
+def _derive_point(array_x, array_y, index, pas):
+    start_index = index
+    start = array_y[index]
+    index += 1
+
+    while index < len(array_y) and abs(array_y[index] - start) < pas:
+        index += 1
+    """pb aux borne quand index ne change pas ?, à voir"""
+    if index >= len(array_y) or start_index == index:
+        return None
+
+    milieu_start_y = (array_y[start_index + 1] + array_y[start_index]) / 2
+    milieu_end_y = (array_y[index - 1] + array_y[index]) / 2
+    milieu_start_x = (array_x[start_index + 1] + array_x[start_index]) / 2
+    milieu_end_x = (array_x[index - 1] + array_x[index]) / 2
+
+    new_x = (milieu_end_x + milieu_start_x) / 2
+
+    if milieu_end_x - milieu_start_x == 0:
+        return [None, None, index]
+    else:
+        res1 = (milieu_end_y - milieu_start_y) / (milieu_end_x - milieu_start_x)
+
+    if res1 > 50 or res1 < -50:
+        return [None, None, index]
+    """on return le résulatat de la dérivé et le nouvelle index, qui garde trace du
+    nombre de points que l'on a du avancé pour effectuer le pas"""
+
+    """Ligne dégueu pour faire le miror quand on dériv Q-Qo, & voir si ça ne fait pas de la merde par la suite"""
+    if array_x[index] - array_x[start_index] < 0:
+        return [-res1, new_x, index]
+    else:
+        return [res1, new_x, index]

@@ -150,18 +150,7 @@ def extract_data_cccv(file, format_time=None):
     mot = ''
     for i in range(len(data_data[index])):
         if data_data[index][i] == '\t':
-            if mot == "time/s":
-                if format_time == "s":
-                    data_row.append("time/s")
-                    data["time/s"] = []
-                elif format_time == "min":
-                    data_row.append("time/min")
-                    data["time/min"] = []
-                else:
-                    data_row.append("time/h")
-                    data["time/h"] = []
-                    """Pour un fichier de CV on n'a pas Ecell/V mais Ewe/V, on le remplace par Ecell/V"""
-            elif mot == "Ewe/V":
+            if mot == "Ewe/V":
                 data_row.append("Ecell/V")
                 data["Ecell/V"] = []
             else:
@@ -177,14 +166,13 @@ def extract_data_cccv(file, format_time=None):
 
     data["name"] = name
     data["mass_electrode"] = mass_electrode
+
+
     if "cycle_number" not in data_row and miss_loop:
         data = create_data(data_data[index + 1:], data, data_row, -1)
-        if format_time == "s":
-            res = create_loop(data["time/s"])
-        elif format_time == "min":
-            res = create_loop(data["time/min"])
-        else:
-            res = create_loop(data["time/h"])
+
+        res = create_loop(data["time/s"])
+
         if len(res) == 1:
             emit.emit("msg_console", type="msg_console", str="Fichier invalide, impossible de créer les loops",
                       foreground_color="red")
@@ -876,17 +864,8 @@ def work(args):
         value = ""
         for i in range(len(ligne)):
             if ligne[i] == "\t":
-                if data_row[index] == "time/h":
-                    f = float(value.replace(',', '.'))
-                    f = f / 3600
-                    data.get(data_row[index]).append(f)
-                elif data_row[index] == "time/min":
-                    f = float(value.replace(',', '.'))
-                    f = f / 60
-                    data.get(data_row[index]).append(f)
-                else:
-                    # on remplace , par ., notation différente pour les chiffres
-                    data.get(data_row[index]).append(float(value.replace(',', '.')))
+                # on remplace , par ., notation différente pour les chiffres
+                data.get(data_row[index]).append(float(value.replace(',', '.')))
                 value = ""
                 index += 1
             else:
@@ -914,15 +893,7 @@ def work_loop(args):
         value = ""
         for i in range(len(ligne)):
             if ligne[i] == "\t":
-                if data_row[index] == "time/h":
-                    f = float(value.replace(',', '.'))
-                    f = f / 3600
-                    data.get(data_row[index]).append(f)
-                elif data_row[index] == "time/min":
-                    f = float(value.replace(',', '.'))
-                    f = f / 60
-                    data.get(data_row[index]).append(f)
-                elif data_row[index] == "cycle_number" and int(
+                if data_row[index] == "cycle_number" and int(
                         float(value.replace(',', '.'))) != current_loop:
 
                     if start_loop is None:

@@ -91,7 +91,6 @@ class Ui_MainWindow(object):
         self.comboBox_4.setMinimumSize(QtCore.QSize(103, 41))
         self.comboBox_4.setMaximumSize(QtCore.QSize(103, 41))
         self.comboBox_4.setObjectName("comboBox_4")
-        self.comboBox_4.addItem("")
         self.horizontalLayout_3.addWidget(self.comboBox_4)
         spacerItem3 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_3.addItem(spacerItem3)
@@ -210,7 +209,6 @@ class Ui_MainWindow(object):
                                         "<html><head/><body><p><span style=\" font-size:11pt;\">Current plot : None</span></p></body></html>"))
         self.label_6.setText(_translate("MainWindow",
                                         "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt;\">Action</span></p></body></html>"))
-        self.comboBox_4.setItemText(0, _translate("MainWindow", "Derive"))
         self.pushButton_4.setText(_translate("MainWindow", "Create"))
         self.menuOpen.setTitle(_translate("MainWindow", "Open"))
         self.menumodulo.setTitle(_translate("MainWindow", "modulo"))

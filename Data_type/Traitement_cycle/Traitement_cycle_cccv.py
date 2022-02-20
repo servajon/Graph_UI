@@ -1,11 +1,9 @@
 from Console_Objets.Data_array import Data_array
 from Console_Objets.Figure import Figure
 from Data_type.Traitement_cycle import Traitements_cycle_outils
-import matplotlib.pyplot as pplot
-from Resources_file import Resources
 
 
-def potentio(loop_data, time_data, i_data, mode_data, format_time, cycle):
+def potentio(loop_data, time_data, i_data, mode_data, cycle):
     """
     Prends en paramètre les data des loop, du temps, i, mode et le format du temps des data courrantes
     Return une figure format time est soit h, min ou s, c'est une chaine de caractère
@@ -15,13 +13,10 @@ def potentio(loop_data, time_data, i_data, mode_data, format_time, cycle):
     :param time_data: vecteur du temps
     :param i_data: vecteur courrant
     :param mode_data: vacteur de mode
-    :param format_time: format du temps
     :param cycle: None : tous les cycle, un vecteur d'int ou int1 to int2
     :param color_arg: nom de la color map
     :return: la nouvelle figure créée
     """
-
-    resource = Resources.Resource_class()
 
     # si cycle est None c'est qu'il faut tracer tous les cycles, on créer le vecteur
     if cycle is None:
@@ -36,13 +31,7 @@ def potentio(loop_data, time_data, i_data, mode_data, format_time, cycle):
     # on créer une nouvelle figure
     new_figure = Figure("", 1)
 
-    # conversion à effectuer en fonction du format du temps
-    if format_time == "h":
-        conversion = 60
-    elif format_time == "min":
-        conversion = 1
-    else:
-        conversion = 1 / 60
+    new_figure.type = "cycle"
 
     # variable name qui évoluera en fonction des cycles tracés
     name = ""
@@ -70,7 +59,7 @@ def potentio(loop_data, time_data, i_data, mode_data, format_time, cycle):
                 # Quand on a trouvé la région ou le mod est 2, on créer 2 nouveaux vecteur et on ajoute les
                 # données dans ces derniers
                 while j < val_max and mode_data[j] == 2:
-                    temp_x.append(time_data[j] * conversion)
+                    temp_x.append(time_data[j])
                     temp_y1.append(i_data[j])
                     global_index.append(j)
                     j += 1
@@ -92,7 +81,7 @@ def potentio(loop_data, time_data, i_data, mode_data, format_time, cycle):
             else:
                 j += 1
 
-    # on renome la figure en fonction de si la commande était all
+    # on rename la figure en fonction de si la commande était all
     if cycle_start is None:
         new_figure.name = "potentio_all"
     else:

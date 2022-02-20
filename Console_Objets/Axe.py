@@ -26,7 +26,7 @@ def rename_axe(name):
 class Axe:
     __TYPE = ["x", "y1", "y2", "z1"]
 
-    def __init__(self, type, unite=None):
+    def __init__(self, type):
         if type not in self.__TYPE:
             raise ValueError
         else:
@@ -34,12 +34,13 @@ class Axe:
             self.scale = None
             self.__name = None
 
-            """valeurs auquels l'axes commance et termine"""
+            # valeurs auquels l'axes commance et termine
             self.first_val = None
             self.last_val = None
 
-            """unite : [temps, s] / [temp, min] / [potential, V] etc"""
-            self.unite = unite
+            # default unit correspond à l'unité des datas du fichiers
+            self._default_unit = None
+            self._unite = None
 
             self.data = []
 
@@ -91,6 +92,12 @@ class Axe:
 
     """----------------------------------------------------------------------------------"""
 
+    def add_unit(self, default_unit, new_unit):
+        self._default_unit = default_unit
+        self._unite = new_unit
+
+    """----------------------------------------------------------------------------------"""
+
     def __len__(self):
         return len(self.data)
 
@@ -103,10 +110,6 @@ class Axe:
 
         return self.__name
 
-    @name.setter
-    def name(self, _name):
-        self.__name = _name
-
     @property
     def color_map(self):
         return self._color_map
@@ -117,3 +120,7 @@ class Axe:
             self._color_map = Resources.get_color_map(_color_map)
         else:
             self._color_map = _color_map
+
+    @name.setter
+    def name(self, _name):
+        self.__name = _name

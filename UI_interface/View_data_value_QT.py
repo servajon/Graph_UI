@@ -6,8 +6,10 @@ from PyQt5.QtWidgets import QWidget, QSizePolicy
 class View_data_value(QWidget):
     finish_signal = pyqtSignal(str)
 
-    def __init__(self, array_col, parent=None):
+    def __init__(self, array_col, parent):
         super().__init__(parent)
+        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint)
+
         self.setupUi(self, array_col)
 
     def setupUi(self, Dialog, array_col):

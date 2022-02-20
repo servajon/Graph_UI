@@ -3,11 +3,6 @@ import textwrap
 from os import listdir
 import matplotlib
 import matplotlib.colors as mcolors
-from PyQt5.QtCore import pyqtSignal, QObject
-from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QWidget
-from matplotlib.markers import MarkerStyle
-
 
 class Resource_class:
     _instance = None
@@ -22,7 +17,7 @@ class Resource_class:
             cls.mode = "mode"
             cls.I = "<I>/mA"
             cls.freq = "freq/Hz"
-            cls.time_format = "time/h"
+            cls.time = "time/s"
 
             cls.Ecell_name_format = u"Potential [V] vs Li\u207A/Li"
             cls.Q_charge_format = "Specific Charge [mAh/g]"
@@ -37,7 +32,15 @@ class Resource_class:
             cls.default_size = 12
             cls.default_font = ("Times", cls.default_size)
 
+
+
         return cls._instance
+
+    def get_time_default_unit(self):
+        return UNITS[self.time]
+
+    def get_courrant_default_unit(self):
+        return UNITS[self.I]
 
     """"-----------------------------------------------------"""
 
@@ -444,11 +447,6 @@ def unique_name(array, name):
 
 """----------------------------------------------------------------------------------"""
 
-OK = '\033[92m'  # GREEN
-WORK = '\033[93m'  # YELLOW
-FAIL = '\033[91m'  # RED
-RESET = '\033[0m'  # RESET COLOR
-
 COLOR_MAP = {
     "red": "autumn",
     "yellow": "Wistia",
@@ -571,3 +569,5 @@ MARKERS_PLOT = {
         'P': 'plus_filled',
         'X': 'x_filled'
 }
+
+

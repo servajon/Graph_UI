@@ -84,7 +84,7 @@ class Data_array:
                     return temp
 
     @property
-    def unite(self):
+    def unit(self):
         return self._unite
 
     @property

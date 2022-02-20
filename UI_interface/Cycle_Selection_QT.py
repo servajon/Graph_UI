@@ -12,11 +12,13 @@ class Cycle_Selection(QWidget):
 
     def __init__(self, parent):
         super().__init__(parent)
-        self.setWindowFlags(QtCore.Qt.Window)
+        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint)
 
         self.cycles = None
-        self.setupUi(self)
         self.emit = Emit()
+
+        self.setupUi(self)
+
 
     """----------------------------------------------------------------------------------"""
 
@@ -302,6 +304,10 @@ class Cycle_Selection(QWidget):
         self.finish_signal.emit("cancel")
 
     """----------------------------------------------------------------------------------"""
+
+    def focusOutEvent(self, a0):
+        print(a0)
+        self.activateWindow()
 
 
 class Line_edit(QtWidgets.QLineEdit):

@@ -1,14 +1,19 @@
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtGui import QKeyEvent
+
+from Resources_file.Emit import Emit
+from UI_interface.Line_edit_QT import Line_edit_float, Line_edit_int
 
 
-class Ask_Value_int(QtWidgets.QWidget):
+class Ask_Value(QtWidgets.QWidget):
     finish_signal = pyqtSignal(str)
 
-    def __init__(self, parent):
+    def __init__(self, parent, type):
         super().__init__(parent)
-        self.setWindowFlags(QtCore.Qt.Window)
+        self.value = None
+        self.emit = Emit()
+        self.type = type
+        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint)
         self.setupUi(self)
 
     def setupUi(self, Dialog):
@@ -27,7 +32,12 @@ class Ask_Value_int(QtWidgets.QWidget):
         self.label_2 = QtWidgets.QLabel(Dialog)
         self.label_2.setObjectName("label_2")
         self.horizontalLayout.addWidget(self.label_2)
-        self.lineEdit = Line_edit_int(Dialog)
+
+        if self.type == "int":
+            self.lineEdit = Line_edit_int(Dialog)
+        elif self.type == "float":
+            self.lineEdit = Line_edit_float(Dialog)
+
         self.lineEdit.setObjectName("lineEdit")
         self.horizontalLayout.addWidget(self.lineEdit)
         self.verticalLayout.addLayout(self.horizontalLayout)
@@ -60,26 +70,16 @@ class Ask_Value_int(QtWidgets.QWidget):
         self.pushButton_2.setText(_translate("Dialog", "Cancel"))
 
     def save(self):
-        self.finish_signal.emit("save")
+        try:
+            self.value = self.lineEdit.get_value()
+        except ValueError:
+            self.emit.emit("msg_console", type="msg_console", str="Empty selection",
+                           foreground_color="red")
+        else:
+            self.finish_signal.emit("save")
 
     def cancel(self):
         self.finish_signal.emit("cancel")
 
     def closeEvent(self, event):
         self.finish_signal.emit("cancel")
-
-
-class Line_edit_int(QtWidgets.QLineEdit):
-    _KEYS_STR = ["0", "1", "2", "3", "4", "5", "5", "6", "7", "8", "9"]
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-    def keyPressEvent(self, e: QKeyEvent):
-        if e.text() in self._KEYS_STR:
-            if e.text() == " " and self.text()[-1] == " ":
-                pass
-            else:
-                self.setText(self.text() + e.text())
-        elif e.key() == QtCore.Qt.Key.Key_Backspace:
-            self.setText(self.text()[:-1])

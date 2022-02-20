@@ -32,7 +32,7 @@ class Figure_plot(QWidget):
     def __init__(self, abstract_affiche, parent):
         super().__init__(parent)
 
-        self.setWindowFlags(QtCore.Qt.Window)
+        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint)
 
         self.canvas = None
         self.toolbar = None
@@ -874,7 +874,7 @@ class Figure_plot(QWidget):
         """
 
         self.array_data_displayed = list
-        self.view_data_value = View_data_value(self.array_data_displayed)
+        self.view_data_value = View_data_value(self.array_data_displayed, self)
 
         _translate = QtCore.QCoreApplication.translate
         self.view_data_value.label.setText(_translate("Dialog",

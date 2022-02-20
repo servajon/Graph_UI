@@ -223,7 +223,7 @@ class Classique_affiche(Abstract_objet_affiche):
         if self.pplot_fig is not None:
             pplot.close(self.pplot_fig)
 
-        if "3d" in self.figure.type:
+        if self.figure.type == "3d":
             if self.figure.is_data_set_3d() == 1:
                 try:
                     if self.save is not None:
@@ -244,7 +244,7 @@ class Classique_affiche(Abstract_objet_affiche):
                 self.finish = True
                 return False
 
-        elif "bar" in self.figure.type:
+        elif self.figure.type == "bar":
             if self.figure.is_data_set_bar() == 1:
                 try:
                     if self.save is not None:
@@ -264,7 +264,7 @@ class Classique_affiche(Abstract_objet_affiche):
             else:
                 self.finish = True
                 return False
-        elif "contour" in self.figure.type:
+        elif self.figure.type == "contour":
             if self.figure.is_data_set_contour() == 1:
                 if self.save is not None:
                     self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
@@ -279,7 +279,7 @@ class Classique_affiche(Abstract_objet_affiche):
             else:
                 self.finish = True
                 return False
-        elif "res_diffraction" in self.figure.type:
+        elif self.figure.type == "res_diffraction":
             if self.figure.is_data_set() == 1:
                 if self.save is not None:
                     self.pplot_fig = self.data.load_graph_affichage(self.figure, self.save)
@@ -291,7 +291,7 @@ class Classique_affiche(Abstract_objet_affiche):
             else:
                 self.finish = True
                 return False
-        elif "res_waxs" in self.figure.type:
+        elif self.figure.type == "res_waxs":
             if self.figure.is_data_set() == 1:
                 if self.save is not None:
                     self.pplot_fig = self.data.load_graph_affichage(self.figure, self.save)
@@ -303,7 +303,7 @@ class Classique_affiche(Abstract_objet_affiche):
             else:
                 self.finish = True
                 return False
-        elif "res_saxs" in self.figure.type:
+        elif self.figure.type == "res_saxs":
             if self.figure.is_data_set() == 1:
                 if self.save is not None:
                     self.pplot_fig = self.data.load_graph_affichage(self.figure, self.save)
@@ -316,7 +316,9 @@ class Classique_affiche(Abstract_objet_affiche):
                 self.finish = True
                 return False
         else:
+            print("???????????????")
             if self.figure.is_data_set() == 1:
+                print("self.figure.is_data_set() == 1:")
                 try:
                     if self.save is not None:
                         self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
@@ -327,12 +329,15 @@ class Classique_affiche(Abstract_objet_affiche):
                     else:
                         self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2\
                             = self.data.load_graph(self.figure)
+
                         self.pplot_fig.tight_layout()
                 except ValueError as err:
+                    raise err
                     print(err)
                     self.finish = True
                     return False
             else:
+                print("else")
                 self.finish = True
                 return False
         return True

@@ -20,6 +20,8 @@ from Data_type.CCCV_data import CCCV_data
 from Resources_file import Resources
 from Resources_file.Emit import Emit
 from UI_interface import Threads_UI
+from UI_interface.Ask_Value_QT import Ask_Value
+from UI_interface.Derive_Selection_QT import Derive_Selection
 from UI_interface.Figure_plot_QT import Figure_plot
 from UI_interface.Main_window_QT import Ui_MainWindow
 from UI_interface.Edit_view_data_QT import Edit_view_data
@@ -97,7 +99,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.actionview_data_Current_Plot.triggered.connect(self.view_data_Current_Plot)
 
         self.pushButton_5.clicked.connect(self.create_current_data)
-        self.pushButton_4.clicked.connect(self.create_current_figure)
+        self.pushButton_4.clicked.connect(self.create_figure)
         self.treeWidget.clicked.connect(self.tree_click)
         self.tabWidget.tabCloseRequested.connect(self.close_tab_handler)
         self.tabWidget.name_changed_tab.connect(self.name_changed_tab)
@@ -229,11 +231,19 @@ class Window(QMainWindow, Ui_MainWindow):
             # si current_data is None on affiche un fenêtre d'erreur
             self.current_data_None()
         else:
+            if self.argument_selection_creation_w is not None:
+                self.argument_selection_creation_w.deleteLater()
+                self.argument_selection_creation_w = None
+
             # capa
             if self.comboBox_5.currentText() == "capa":
 
                 if self.console.current_data.data["mass_electrode"] == -1:
-                    pass
+                    self.argument_selection_creation_w = Ask_Value(self, "float")
+                    self.argument_selection_creation_w.finish_signal.connect(
+                        lambda signal: self.callback_create_current_data(signal, "capa"))
+
+                    self.argument_selection_creation_w.show()
                 else:
                     # pas d'utilisation de callback ici, il n'y a pas d'argument à récupérer
                     self.callback_create_current_data({"rep": "save"}, "capa")
@@ -263,6 +273,19 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.argument_selection_creation_w = None
         else:
             if name == "capa":
+                # si argument_selection_creation_w is not None c'est que la mass de l'électrode n'était pas connue
+                # on l'a met à jour
+                if self.argument_selection_creation_w is not None:
+                    self.console.current_data.data["mass_electrode"] = self.argument_selection_creation_w.value
+
+                    # on a récupérer les info, on délect la fenêtre
+                    self.argument_selection_creation_w.deleteLater()
+                    self.argument_selection_creation_w = None
+
+                self.update_console({"str": str(self.console.current_data.data["mass_electrode"]) +
+                                            " mg will be use as for the mass of the  electrode ",
+                                     "foreground_color": "yellow"})
+
                 # on apelle la fonction pour créer les figures et les récupére, c'est un vecteur
                 figures_res = self.console.current_data.capa()
 
@@ -272,37 +295,40 @@ class Window(QMainWindow, Ui_MainWindow):
                     self.treeWidget.add_figure(figure, self.console.current_data.name)
                     self.console.current_data.figures.append(figure)
 
+                self.console.current_data.current_figure = self.console.current_data.figures[-1]
+
             # potentio
             elif name == "potentio":
                 # info de self.argument_selection_creation_w a récupérer ici pour créer la figure
                 cycles = self.argument_selection_creation_w.cycles
 
-                # on apelle la fonction pour créer les figures et les récupére, c'est une figure seul
-                figures_res = self.console.current_data.potentio(cycles)
+                # on a récupérer les info, on délect la fenêtre
+                self.argument_selection_creation_w.deleteLater()
+                self.argument_selection_creation_w = None
 
-                if figures_res is None:
-                    self.argument_selection_creation_w.deleteLater()
-                    self.argument_selection_creation_w = None
-                    return
+                # on apelle la fonction pour créer les figures et les récupére, c'est une figure seul
+                figure_res = self.console.current_data.potentio(cycles)
 
                 # on update le tree widget
                 # on ajoute la figure a current_data
-                self.treeWidget.add_figure(figures_res, self.console.current_data.name)
-                self.console.current_data.figures.append(figures_res)
+                self.treeWidget.add_figure(figure_res, self.console.current_data.name)
+                self.console.current_data.figures.append(figure_res)
 
+                # on passe la figure en figure courante
+                self.console.current_data.current_figure = figure_res
 
-            self.console.current_data.current_figure = self.console.current_data.figures[-1]
             _translate = QtCore.QCoreApplication.translate
             self.label_5.setText(
                 _translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
                                          "Current plot : "
                            + self.console.current_data.current_figure.name + " </span></p></body></html>"))
 
-            if self.argument_selection_creation_w is not None:
-                self.argument_selection_creation_w.deleteLater()
-                self.argument_selection_creation_w = None
+            # on update les actions disponibles pour cette figure
+            self.update_action_combo()
 
-    def create_current_figure(self):
+    """---------------------------------------------------------------------------------"""
+
+    def create_figure(self):
         """
         Methode appellé par le button create de current plot (action)
         Si current_figure is None, on affiche une fenêtre avec un message
@@ -314,7 +340,50 @@ class Window(QMainWindow, Ui_MainWindow):
         if self.console.current_data is None or self.console.current_data.current_figure is None:
             self.current_figure_None()
         else:
-            pass
+            if self.argument_selection_creation_w is not None:
+                self.argument_selection_creation_w.deleteLater()
+                self.argument_selection_creation_w = None
+
+            if self.comboBox_4.currentText() == "derive":
+                self.argument_selection_creation_w = Derive_Selection(self)
+
+                self.argument_selection_creation_w.finish_signal.connect(
+                    lambda event: self.create_figure_callback(event, "derive"))
+
+                self.argument_selection_creation_w.show()
+
+    """---------------------------------------------------------------------------------"""
+
+    def create_figure_callback(self, signal, name):
+        if signal == "cancel":
+            self.select_value_show_w.deleteLater()
+            self.select_value_show_w = None
+        else:
+            if name == "derive":
+                nb_point = self.argument_selection_creation_w.nb_point
+                window_length = self.argument_selection_creation_w.window_length
+                polyorder = self.argument_selection_creation_w.polyorder
+
+                self.argument_selection_creation_w.deleteLater()
+                self.argument_selection_creation_w = None
+
+                figure_res = self.console.current_data.derive(nb_point,
+                                                 window_length,
+                                                 polyorder)
+
+                # on update le tree widget
+                # on ajoute la figure a current_data
+                self.treeWidget.add_figure(figure_res, self.console.current_data.name)
+                self.console.current_data.figures.append(figure_res)
+
+                # on passe la figure en figure courante
+                self.console.current_data.current_figure = figure_res
+
+            _translate = QtCore.QCoreApplication.translate
+            self.label_5.setText(
+                _translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                         "Current plot : "
+                           + self.console.current_data.current_figure.name + " </span></p></body></html>"))
 
     """---------------------------------------------------------------------------------"""
 
@@ -340,7 +409,11 @@ class Window(QMainWindow, Ui_MainWindow):
 
         if self.treeWidget.currentItem().text(1) == "figure":
             # on update current_data de la console on fonction du parent de l'item sélectionné
-            self.console.set_current_data_name(self.treeWidget.selectedItems()[0].parent().text(0))
+            temp_item = self.treeWidget.selectedItems()[0]
+            while temp_item.text(1) == "figure":
+                temp_item = temp_item.parent()
+
+            self.console.set_current_data_name(temp_item.text(0))
 
             # maintenant que current data est update, on parcours les figures de current_data de la console
             for figure in self.console.current_data.figures:
@@ -378,6 +451,8 @@ class Window(QMainWindow, Ui_MainWindow):
                                                              "Current plot : "
                                                + figure_name + " </span></p></body></html>"))
 
+                                # on update les actions disponibles pour cette figure
+                                self.update_action_combo()
                             else:
                                 # update de current tab
                                 self.tabWidget.setCurrentIndex(i)
@@ -418,6 +493,11 @@ class Window(QMainWindow, Ui_MainWindow):
             # on passe le label currrent plot à None
             self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
                                                           "Current plot : None""</span></p></body></html>"))
+            # on clear la box action
+            self.comboBox_4.clear()
+
+            # on passe la current_figure à None
+            self.console.current_data.current_figure = None
 
             # on update current_data de la console
             self.console.set_current_data_name(self.treeWidget.selectedItems()[0].text(0))
@@ -431,7 +511,6 @@ class Window(QMainWindow, Ui_MainWindow):
 
         :return: None
         """
-
         index = 0
         # on parcours les threads de lecture en cours
         while index < len(self.threads):
@@ -522,6 +601,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
                                                               "Current plot : "
                                                 + name + " </span></p></body></html>"))
+
                 break
 
     """---------------------------------------------------------------------------------"""
@@ -668,6 +748,9 @@ class Window(QMainWindow, Ui_MainWindow):
         # update de la figure courrante de la console
         self.console.current_data.set_current_figure_name(signal)
 
+        # on update les actions disponibles pour cette figure
+        self.update_action_combo()
+
         # update du focus du tree widget
         for i in range(self.treeWidget.topLevelItem(0).childCount()):
             if self.treeWidget.topLevelItem(0).child(i).text(0) == signal:
@@ -800,6 +883,9 @@ class Window(QMainWindow, Ui_MainWindow):
                                                       "Current plot : "
                                         + new_name + " </span></p></body></html>"))
 
+        # on update les actions disponibles pour cette figure
+        self.update_action_combo()
+
     """---------------------------------------------------------------------------------"""
 
     def focusInEvent(self, signal):
@@ -835,7 +921,10 @@ class Window(QMainWindow, Ui_MainWindow):
         # on update la figure courrante de la console
         self.console.current_data.set_current_figure_name(new_name)
 
-        # on update l'imte focus par tree widget
+        # on update les actions disponibles pour cette figure
+        self.update_action_combo()
+
+        # on update l'item focus par tree widget
         for i in range(self.treeWidget.topLevelItem(0).childCount()):
             if self.treeWidget.topLevelItem(0).child(i).text(0) == new_name:
                 self.treeWidget.setCurrentItem(self.treeWidget.topLevelItem(0).child(i))
@@ -918,6 +1007,24 @@ class Window(QMainWindow, Ui_MainWindow):
         return None
 
     """---------------------------------------------------------------------------------"""
+
+    def update_action_combo(self):
+        """
+        On update la combobox des actions disponible en fonction de la figure
+        courante
+
+        :return: None
+        """
+
+        # on clear la box
+        self.comboBox_4.clear()
+
+        # on l'update avec les nouvelles actions
+        actions = self.console.current_data.current_figure.get_operation()
+        for action in actions:
+            self.comboBox_4.addItem(action)
+
+    """---------------------------------------------------------------------------------"""
     """                            Edit Current Plot start                              """
     """---------------------------------------------------------------------------------"""
 
@@ -939,7 +1046,7 @@ class Window(QMainWindow, Ui_MainWindow):
             return
         else:
 
-            if "bar" in self.console.current_data.current_figure.type:
+            if self.console.current_data.current_figure.type == "bar":
                 self.update_console({"str": "Bar plot cannot be edited", "foreground_color": "red"})
                 return
 
@@ -994,7 +1101,8 @@ class Window(QMainWindow, Ui_MainWindow):
 
                 _translate = QtCore.QCoreApplication.translate
                 self.edit_plot_w.label_8.setText(_translate("Dialog",
-                                                            "<html><head/><body><p><span style=\" font-size:8pt;\">Color right axis</span></p></body></html>"))
+                                                            "<html><head/><body><p><span style=\" font-size:8pt;\">"
+                                                            "Color right axis</span></p></body></html>"))
 
                 # type line right axis
                 self.edit_plot_w.comboBox_type_line_right = QtWidgets.QComboBox(self.edit_plot_w)
@@ -1010,7 +1118,8 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.edit_plot_w.gridLayout_2.addWidget(self.edit_plot_w.label_9, 4, 0, 1, 1)
 
                 self.edit_plot_w.label_9.setText(_translate("Dialog",
-                                                            "<html><head/><body><p><span style=\" font-size:8pt;\">Style lines right axis</span></p></body></html>"))
+                                                            "<html><head/><body><p><span style=\" font-size:8pt;\">"
+                                                            "Style lines right axis</span></p></body></html>"))
 
                 self.edit_plot_w.comboBox_right.addItem("unchanged")
                 self.edit_plot_w.comboBox_right.addItem("default")

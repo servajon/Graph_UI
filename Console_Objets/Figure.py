@@ -3,6 +3,17 @@ from Console_Objets.Data_array import Data_array
 
 
 class Figure:
+    __TYPE = {
+        "capa": ["shift x"],
+        "potentio": ["derive", "shift x", "shift y"],
+        "bar": [],
+        "custom_y1": ["derive", "cycle", "shift x", "shift y"],
+        "custom_y1_y2": ["derive", "cycle", "shift x"],
+        "cycle": ["derive", "shift x", "shift y"],
+        "derive_y1": ["shift x", "shift y", "derive"],
+        "derive_y1_y2": ["shift x", "derive"]
+        }
+
     def __init__(self, name, dirty=None):
         self.x_axe = None
         self.y1_axe = None
@@ -10,9 +21,9 @@ class Figure:
         self.z1_axe = None
 
         self.__plot_name = ""
-        self._type = []
+        self._type = None
 
-        """pour la normalisation"""
+        # pour la normalisation
         self.aspect = None
 
         self._name = name
@@ -26,7 +37,7 @@ class Figure:
         # margin en %, 0 par défaut
         self._margin = 0
 
-        """SI la figure a était créer depuis une autre figure, on garde l'adresse pour l'afficher"""
+        # Si la figure a était créer depuis une autre figure, on garde l'adresse pour l'afficher
         self._created_from = None
 
     """                                                  """
@@ -116,7 +127,7 @@ class Figure:
 
     @type.setter
     def type(self, type):
-        self._type.append(type)
+        self._type = type
 
     @created_from.setter
     def created_from(self, created_form):
@@ -322,8 +333,8 @@ class Figure:
 
     def is_interact(self):
         """return 1 si la figure est correct pour être interactive, 0 sinon"""
-        if "3d" in self.type or "bar" in self.type or "contour" in self.type\
-                or "res_saxs" in self.type or "res_waxs" in self.type or (self.y2_axe is not None and
+        if self.type == "3d" or self.type == "bar" or self.type == "contour" \
+                or self.type == "res_saxs" or self.type == "res_waxs" or (self.y2_axe is not None and
                                                                           len(self.y2_axe) != 0):
             return 0
         else:
@@ -341,12 +352,30 @@ class Figure:
             while len(self.x_axe) != len(self.y1_axe) + len(self.y2_axe):
                 self.x_axe.append(self.x_axe.data[-1])
 
+    """----------------------------------------------------------------------------------"""
+
     def get_data_yaxe_i(self, index):
+        """
+        On return data_array y1 ou y2 en fonction de l'index donnée en paramètre
+        C'est l'index d'un data_array y1
+
+        :param index:
+        :return: Data_array
+        """
         if index >= len(self.y1_axe):
             return self.y2_axe.data[index - len(self.y1_axe.data)]
         else:
             return self.y1_axe.data[index]
 
+    """----------------------------------------------------------------------------------"""
+
+    def get_operation(self):
+        """
+        On return les oppération disponibles pour ce type de figure
+
+        :return: list
+        """
+        return self.__TYPE[self.type]
 
 
 
