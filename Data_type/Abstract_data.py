@@ -261,8 +261,6 @@ class Abstract_data(ABC):
             leg1.legend(h, l, borderaxespad=0, loc="upper right")
             leg1.axis("off")
 
-            print(figure.x_axe.name)
-
             ax1.set_xlabel(figure.x_axe.name_unit, labelpad=20)
             ax1.set_ylabel(figure.y1_axe.name_unit, labelpad=20)
 
