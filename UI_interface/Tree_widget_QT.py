@@ -39,7 +39,7 @@ class Tree_widget(QtWidgets.QTreeWidget):
 
         # on place l'item comme le focus
         self.setCurrentItem(item)
-        self.resizeColumnsToContents()
+        self.resizeColumnToContents(0)
 
     """---------------------------------------------------------------------------------"""
 
@@ -72,6 +72,7 @@ class Tree_widget(QtWidgets.QTreeWidget):
 
                     # on place le focus sur le dernier ajout
                     self.setCurrentItem(item)
+
                 else:
                     # on créer un array qui liste les "origines" de la figure en parcourant récursivement
                     # created_from de la figure est de ses parents
@@ -98,7 +99,9 @@ class Tree_widget(QtWidgets.QTreeWidget):
 
                     # arbre pysique
                     _item.addChild(item)
-                self.resizeColumnsToContents()
+
+                    self.setCurrentItem(item)
+                self.resizeColumnToContents(0)
                 break
 
     """---------------------------------------------------------------------------------"""
@@ -164,22 +167,23 @@ class Tree_widget(QtWidgets.QTreeWidget):
 
     """---------------------------------------------------------------------------------"""
 
-    def resizeColumnsToContents(self):
-        cCols = self.columnCount()
-        cItems = self.topLevelItemCount()
-        for i in range(cCols):
-            w = self.header().sectionSizeHint(i)
-            if i == 0:
-                indentation = self.indentation() + 5
-            else:
-                indentation = 0
+    def resizeColumnToContent(self):
+        res = []
+        for item in self.items:
+            item.get_name_array(res)
 
-            for j in range(cItems):
-                print(self.topLevelItem(j).text(i))
-                w = max(w, len(self.topLevelItem(j).text(i)) * 7 + indentation)
-            self.header().resizeSection(i, w)
+
+        m = len(res[0]) * 7 + self.indentation()
+        for i, name in enumerate(res[1:]):
+            m = max(m, len(name) * 7 + self.indentation() * (i + 1))
+
+        self.header().resizeSection(0, m)
+
+        print(m)
+        print(res)
 
     """---------------------------------------------------------------------------------"""
+
 
     class Conteneur(ABC):
         """
@@ -230,6 +234,10 @@ class Tree_widget(QtWidgets.QTreeWidget):
         def get_item(self, name):
             pass
 
+        @abstractmethod
+        def get_name_array(self, array):
+            pass
+
 
     class Conteneur_data(Conteneur):
         def __init__(self, name):
@@ -266,6 +274,12 @@ class Tree_widget(QtWidgets.QTreeWidget):
                         res.append(i)
                         return res
 
+        def get_name_array(self, array):
+            array.append(self.name)
+            for item in self.figures_child:
+                item.get_name_array(array)
+
+
     class Conteneur_figure(Conteneur):
         def __init__(self, name):
             super().__init__(name)
@@ -300,3 +314,8 @@ class Tree_widget(QtWidgets.QTreeWidget):
                     if res is not None:
                         res.append(i)
                         return res
+
+        def get_name_array(self, array):
+            array.append(self.name)
+            for item in self.figures_child:
+                item.get_name_array(array)

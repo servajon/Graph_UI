@@ -56,7 +56,7 @@ UNITS = {
     "A": "ampere",
     "V": "volt",
     "mV": "millivolt",
-    "s": "seconds",
+    "s": "secs",
     "min": "minutes",
     "h": "hours",
     "g": "gramme",

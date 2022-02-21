@@ -713,6 +713,26 @@ class Figure_plot(QWidget):
 
     """---------------------------------------------------------------------------------"""
 
+    def update_plot(self, axe, index, array_x, array_y):
+        """
+        On met à jours les data du plot avec les axes donnée en paramètre
+        Pas de draw ici, il se fait par ailleurs
+        :param axe: Nom de l'axe : y1, y2
+        :param index: index d'édition
+        :param array_x: nouvelle array_x
+        :param array_y: nouvelle array_y
+        :return: None
+        """
+
+        if axe == "y1":
+            self.abstract_affiche.ax1.lines[index].set_xdata(array_x)
+            self.abstract_affiche.ax1.lines[index].set_ydata(array_y)
+        elif axe == "y2":
+            self.abstract_affiche.ax2.lines[index].set_xdata(array_x)
+            self.abstract_affiche.ax2.lines[index].set_ydata(array_y)
+
+    """---------------------------------------------------------------------------------"""
+
     def update_color_plot(self, axe):
         """
         Les couleurs de la figure de self.abstract_affiche on était modifié, on

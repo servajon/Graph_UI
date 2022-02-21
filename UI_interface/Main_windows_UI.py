@@ -1359,6 +1359,12 @@ class Window(QMainWindow, Ui_MainWindow):
         # on connect de callback, on utilise lambda pour passer signal comme arg suplémentaire
         self.edit_plot_figure_w.closed.connect(lambda event: self.edit_plot_figure_w_close(event, signal))
 
+        # on passe le plot d'édition en modal
+        self.edit_plot_figure_w.setWindowModality(QtCore.Qt.ApplicationModal)
+
+        # on passe la fenêtre d'édition en non modal
+        self.edit_plot_w.setWindowModality(QtCore.Qt.NonModal)
+
         # on affiche le widget
         self.edit_plot_figure_w.show()
 
@@ -1468,6 +1474,9 @@ class Window(QMainWindow, Ui_MainWindow):
 
         self.edit_plot_figure_w.deleteLater()
         self.edit_plot_figure_w = None
+
+        # on passe la fenêtre de selection en modal
+        self.edit_plot_w.setWindowModality(QtCore.Qt.ApplicationModal)
 
     """---------------------------------------------------------------------------------"""
     """                            Edit Current Plot end                                """

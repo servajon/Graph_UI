@@ -188,3 +188,7 @@ class Data_array:
     @unit.setter
     def unit(self, value):
         self._unit = value
+
+    @data.setter
+    def data(self, data):
+        self.data_unit.data = data
