@@ -1,11 +1,12 @@
 import copy
 import scipy.signal
 
-from Console_Objets.DataUnit import Data_unit
+from Console_Objets.Data_Unit import Data_unit, Units
 from Console_Objets.Data_array import Data_array
 from Console_Objets.Figure import Figure
 from Data_type.Abstract_data import Abstract_data
 from Data_type.Traitement_cycle import Traitements_cycle_outils, Traitement_cycle_cccv
+from Resources_file.Emit import Emit
 
 
 class CCCV_data(Abstract_data):
@@ -32,6 +33,8 @@ class CCCV_data(Abstract_data):
 
         :return: None
         """
+
+        units = Units()
 
         # on répére la masse de l'électode
         val = self.data["mass_electrode"]
@@ -82,16 +85,25 @@ class CCCV_data(Abstract_data):
             new_data_x3.append(i)
             new_data_y2.append(val_max_3)
 
-        figure.add_data_x(new_data_x1, "Cycle Number", None, None)
-        figure.add_data_y1(new_data_y10, "Q_charge/mA.h", None, None)
+        data_unit_x = Data_unit(new_data_x1, None)
+        data_unit_y = Data_unit(new_data_y10, units.get_unit("mA.h"))
 
-        figure.add_data_x(new_data_x2, "Cycle Number", None, None)
-        figure.add_data_y1(new_data_y11, "Q_discharge/mA.h", None, None)
+        figure.add_data_x(data_unit_x, "Cycle Number", None, None)
+        figure.add_data_y1(data_unit_y, "Q charge", None, None)
 
-        figure.add_data_x(new_data_x3, "Cycle Number", None, None)
-        figure.add_data_y2(new_data_y2, "Coulombic Efficiency[%]", None, None)
+        data_unit_x = Data_unit(new_data_x2, None)
+        data_unit_y = Data_unit(new_data_y11, units.get_unit("mA.h"))
 
-        figure.name_axes_y1 = "Specific charge (mAh/g)"
+        figure.add_data_x(data_unit_x, "Cycle Number", None, None)
+        figure.add_data_y1(data_unit_y, "Q discharge", None, None)
+
+        data_unit_x = Data_unit(new_data_x3, None)
+        data_unit_y = Data_unit(new_data_y2, units.get_unit("%"))
+
+        figure.add_data_x(data_unit_x, "Cycle Number", None, None)
+        figure.add_data_y2(data_unit_y, "Coulombic Efficiency %", None, None)
+
+        # figure.name_axes_y1 = "Specific charge"
 
         # tricheur :/
         # on change les valeurs de début et de fin de la figure
@@ -223,14 +235,22 @@ class CCCV_data(Abstract_data):
             val_max_non_p_v_decharge.append(val_max_non_p_decharge / val * 1000)
             val_max_p_v_decharge.append(val_max_p_decharge / val * 1000)
 
-        figure_charge.add_data_x(copy.copy(fig_charge_x), "Cycle Number", None, None)
-        figure_charge.add_data_y1(copy.copy(val_max_non_p_v_charge), "Specific capacity (mAh/g)", None, "capa Galvano")
-        figure_charge.add_data_y1(copy.copy(val_max_p_v_charge), "Specific capacity (mAh/g)", None, "capa potentio")
+        data_unit_x = Data_unit(copy.copy(fig_charge_x), None)
+        data_unit_y1_1 = Data_unit(copy.copy(val_max_non_p_v_charge), units.get_unit("mA.h/g"))
+        data_unit_y1_2 = Data_unit(copy.copy(val_max_p_v_charge), units.get_unit("mA.h/g"))
 
-        figure_decharge.add_data_x(copy.copy(fig_decharge_x), "Cycle Number", None, None)
-        figure_decharge.add_data_y1(copy.copy(val_max_non_p_v_decharge), "Specific capacity (mAh/g)", None,
-                                    "capa Galvano")
-        figure_decharge.add_data_y1(copy.copy(val_max_p_v_decharge), "Specific capacity (mAh/g)", None, "capa potentio")
+        figure_charge.add_data_x(data_unit_x, "Cycle Number", None, None)
+        figure_charge.add_data_y1(data_unit_y1_1, "Specific capacity", None, "capa Galvano")
+        figure_charge.add_data_y1(data_unit_y1_2, "Specific capacity", None, "capa potentio")
+
+
+        data_unit_x = Data_unit(copy.copy(fig_decharge_x), None)
+        data_unit_y1_1 = Data_unit(copy.copy(val_max_non_p_v_decharge), units.get_unit("mA.h/g"))
+        data_unit_y1_2 = Data_unit(copy.copy(val_max_p_v_decharge), units.get_unit("mA.h/g"))
+
+        figure_decharge.add_data_x(data_unit_x, "Cycle Number", None, None)
+        figure_decharge.add_data_y1(data_unit_y1_1, "Specific capacity", None, "capa Galvano")
+        figure_decharge.add_data_y1(data_unit_y1_2, "Specific capacity", None, "capa potentio")
 
         for i in range(len(val_max_non_p_v_charge)):
             if new_data_y10[i] == 0:
@@ -253,13 +273,21 @@ class CCCV_data(Abstract_data):
             else:
                 val_max_p_v_decharge[i] = val_max_p_v_decharge[i] / new_data_y11[i] * 100
 
-        figure_charge_pc.add_data_x(fig_charge_x, "Cycle Number", None, None)
-        figure_charge_pc.add_data_y1(val_max_non_p_v_charge, "Specific capacity (%)", None, "capa Galvano")
-        figure_charge_pc.add_data_y1(val_max_p_v_charge, "Specific capacity (%)", None, "capa potentio")
+        data_unit_x = Data_unit(fig_charge_x, None)
+        data_unit_y1_1 = Data_unit(val_max_non_p_v_charge, units.get_unit("%"))
+        data_unit_y1_2 = Data_unit(val_max_p_v_charge, units.get_unit("%"))
 
-        figure_decharge_pc.add_data_x(fig_decharge_x, "Cycle Number", None, None)
-        figure_decharge_pc.add_data_y1(val_max_non_p_v_decharge, "Specific capacity (%)", None, "capa Galvano")
-        figure_decharge_pc.add_data_y1(val_max_p_v_decharge, "Specific capacity (%)", None, "capa potentio")
+        figure_charge_pc.add_data_x(data_unit_x, "Cycle Number", None, None)
+        figure_charge_pc.add_data_y1(data_unit_y1_1, "Specific capacity", None, "capa Galvano")
+        figure_charge_pc.add_data_y1(data_unit_y1_2, "Specific capacity", None, "capa potentio")
+
+        data_unit_x = Data_unit(fig_decharge_x, None)
+        data_unit_y1_1 = Data_unit(val_max_non_p_v_decharge, units.get_unit("%"))
+        data_unit_y1_2 = Data_unit(val_max_p_v_decharge, units.get_unit("%"))
+
+        figure_decharge_pc.add_data_x(data_unit_x, "Cycle Number", None, None)
+        figure_decharge_pc.add_data_y1(data_unit_y1_1, "Specific capacity", None, "capa Galvano")
+        figure_decharge_pc.add_data_y1(data_unit_y1_2, "Specific capacity", None, "capa potentio")
 
         figure_charge_pc.name = self.unique_name(figure_charge_pc.name)
         figure_decharge_pc.name = self.unique_name(figure_decharge_pc.name)
@@ -334,23 +362,20 @@ class CCCV_data(Abstract_data):
             data_y2 = None
             unit_y2 = None
 
-        print(unit_x.name)
-        print(unit_y1.name)
-
         for i in range(len(data_y1)):
             if nb_point is None:
-                nb_point = len(data_y1[i].data)
+                _nb_point = len(data_y1[i].data)
 
-            new_x, new_y = _derive_class(data_x[i].data, data_y1[i].data, nb_point, window_length, polyorder)
+            new_x, new_y = _derive_class(data_x[i].data, data_y1[i].data, _nb_point, window_length, polyorder)
             new_data_x.append(new_x)
             new_data_y1.append(new_y)
 
         if data_y2 is not None:
             for i in range(len(data_y2)):
                 if nb_point is None:
-                    nb_point = len(data_y2[i].data)
+                    _nb_point = len(data_y2[i].data)
 
-                new_x, new_y = _derive_class(data_x[len(data_y1) + i].data, data_y2[i].data, nb_point,
+                new_x, new_y = _derive_class(data_x[len(data_y1) + i].data, data_y2[i].data, _nb_point,
                                              window_length, polyorder)
                 new_data_x2.append(new_x)
                 new_data_y2.append(new_y)
@@ -369,7 +394,7 @@ class CCCV_data(Abstract_data):
                                                   self.current_figure.x_axe.data[0].legend,
                                                   self.current_figure.x_axe.data[0].color))
 
-            data_y1_unit = Data_unit(new_data_y1[i], unit_x)
+            data_y1_unit = Data_unit(new_data_y1[i], unit_y1)
             new_figure.add_data_y1_Data(Data_array(data_y1_unit, self.current_figure.y1_axe.data[i].name + " derive",
                                                    self.current_figure.y1_axe.data[i].source,
                                                    self.current_figure.y1_axe.data[i].legend,
@@ -382,7 +407,7 @@ class CCCV_data(Abstract_data):
                            self.current_figure.data_x[0].source, self.current_figure.data_x[0].legend,
                            self.current_figure.data_x[0].color))
 
-            data_y2_unit = Data_unit(new_data_y2[i], unit_x)
+            data_y2_unit = Data_unit(new_data_y2[i], unit_y2)
             new_figure.add_data_y2_Data(Data_array(data_y2_unit, self.current_figure.y2_axe.data[i].name + " derive",
                                                    self.current_figure.y2_axe.data[i].source,
                                                    self.current_figure.y2_axe.data[i].legend,
@@ -399,6 +424,53 @@ class CCCV_data(Abstract_data):
 
     """----------------------------------------------------------------------------------"""
 
+    def shift_axe(self, axe, val):
+        """
+        On effectue un shift sur un axe
+        Si l'axe est x :
+
+
+        :param axe: x, y
+        :param val: float
+        :return: None
+        """
+
+        if axe == "x":
+            new_figure = self.current_figure.copy()
+
+            for i in range(len(new_figure.x_axe.data)):
+                for j in range(len(new_figure.x_axe.data[i].data)):
+                    new_figure.x_axe.data[i].data[j] += val
+
+            new_figure.name = self.unique_name(new_figure.name)
+
+        if axe == "y":
+            if self.current_figure.y2_axe is not None:
+                emit = Emit()
+                emit.emit("msg_console", type="msg_console", str="y2 axis must be empty", foreground_color="red")
+                return
+
+            new_figure = self.current_figure.copy()
+
+            new_figure.add_data_x_Data(copy.deepcopy(new_figure.x_axe.data[0]))
+
+            new_figure.add_data_y2_Data(copy.deepcopy(new_figure.y1_axe.data[0]))
+
+            new_figure.y2_axe.data[0].visible = False
+            new_figure.y2_axe.legend = False
+
+            for i in range(len(new_figure.y2_axe.data[0].data)):
+                new_figure.y2_axe.data[0].data[i] += val
+
+            new_figure.name += "_shift_y1"
+
+            new_figure.name = self.unique_name(new_figure.name)
+
+        new_figure.created_from = self.current_figure
+
+        return new_figure
+
+    """----------------------------------------------------------------------------------"""
 
     """                                                  """
     """                      getter                      """
@@ -470,7 +542,11 @@ def _derive_class(x_object, y_object, nb_point, window_length=None, polyorder=No
 
     delta_y_moyen /= len(y_object) - 1
 
-    pas = len(y_object) / nb_point * delta_y_moyen
+    if nb_point == len(x_object):
+        pas = delta_y_moyen
+    else:
+        pas = len(y_object) / nb_point * delta_y_moyen
+
     newx = []
     deriv = []
     index = 0

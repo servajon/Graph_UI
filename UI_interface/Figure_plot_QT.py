@@ -30,9 +30,9 @@ class Figure_plot(QWidget):
     focus_in = pyqtSignal(str)
 
     def __init__(self, abstract_affiche, parent):
-        super().__init__(parent)
+        super().__init__()
 
-        self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint)
+        # self.setWindowFlags(QtCore.Qt.Dialog)
 
         self.canvas = None
         self.toolbar = None

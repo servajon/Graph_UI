@@ -4,7 +4,7 @@ import os
 
 import Resources_file.Resources as R
 from Console_Objets.Affiche_objet import Array_Abstract_objet_affiche
-from Console_Objets.DataUnit import Data_unit, UNITS, Units
+from Console_Objets.Data_Unit import Data_unit, UNITS, Units
 from Resources_file.Emit import Emit
 
 

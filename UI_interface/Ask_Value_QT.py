@@ -8,12 +8,17 @@ from UI_interface.Line_edit_QT import Line_edit_float, Line_edit_int
 class Ask_Value(QtWidgets.QWidget):
     finish_signal = pyqtSignal(str)
 
-    def __init__(self, parent, type):
+    def __init__(self, parent, type, title_name, dialog_name):
         super().__init__(parent)
         self.value = None
         self.emit = Emit()
         self.type = type
+        self.title_name = title_name
+        self.dialog_name = dialog_name
         self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint)
+
+        self.setWindowModality(QtCore.Qt.ApplicationModal)
+
         self.setupUi(self)
 
     def setupUi(self, Dialog):
@@ -63,9 +68,9 @@ class Ask_Value(QtWidgets.QWidget):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
         self.label.setText(_translate("Dialog",
-                                      "<html><head/><body><p><span style=\" font-size:12pt;\">Invalide mass Electode</span></p></body></html>"))
+                                      "<html><head/><body><p><span style=\" font-size:12pt;\">" + self.title_name + "</span></p></body></html>"))
         self.label_2.setText(_translate("Dialog",
-                                        "<html><head/><body><p><span style=\" font-size:12pt;\">New Mass (mg) : </span></p></body></html>"))
+                                        "<html><head/><body><p><span style=\" font-size:12pt;\">" + self.dialog_name + "</span></p></body></html>"))
         self.pushButton.setText(_translate("Dialog", "Save"))
         self.pushButton_2.setText(_translate("Dialog", "Cancel"))
 
@@ -73,7 +78,7 @@ class Ask_Value(QtWidgets.QWidget):
         try:
             self.value = self.lineEdit.get_value()
         except ValueError:
-            self.emit.emit("msg_console", type="msg_console", str="Empty selection",
+            self.emit.emit("msg_console", type="msg_console", str="Wrong selection",
                            foreground_color="red")
         else:
             self.finish_signal.emit("save")

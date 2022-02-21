@@ -39,6 +39,7 @@ class Tree_widget(QtWidgets.QTreeWidget):
 
         # on place l'item comme le focus
         self.setCurrentItem(item)
+        self.resizeColumnsToContents()
 
     """---------------------------------------------------------------------------------"""
 
@@ -85,18 +86,19 @@ class Tree_widget(QtWidgets.QTreeWidget):
 
                     # _item lui parcous l'arbre "physique"
                     _item = self.topLevelItem(i)
-                    for i, name in enumerate(array_created_from):
+                    for name in array_created_from:
                         # ou parcours l'arbre en utilisant les noms obtenus par get_array_created_from
                         obj, index = obj.get_child(name)
                         _item = _item.child(index)
 
-                    # on est au bonne endroit de l'arbre logique et physique pour ajouter litem
+                    # on est au bon endroit de l'arbre logique et physique pour ajouter l'item
                     # arbre logique
                     new_item = self.Conteneur_figure(figure.name)
                     obj.append(new_item)
 
                     # arbre pysique
                     _item.addChild(item)
+                self.resizeColumnsToContents()
                 break
 
     """---------------------------------------------------------------------------------"""
@@ -127,6 +129,55 @@ class Tree_widget(QtWidgets.QTreeWidget):
         """
         for conteneur in self.items:
             conteneur.get_name(0)
+
+    """---------------------------------------------------------------------------------"""
+
+    def get_item(self, name):
+        """
+        return le QTreeWidgetItem portant le nom name
+        :param name: nom de widget que l'on cherche
+        :return: QTreeWidgetItem
+        """
+        for i, conteneur in enumerate(self.items):
+            res = conteneur.get_item(name)
+            if res is not None:
+                res.append(i)
+                break
+
+        res = res[1:]
+        res.reverse()
+
+        item = self.topLevelItem(res[0])
+        for index in res[1:]:
+            item = item.child(index)
+
+        return item
+
+    """---------------------------------------------------------------------------------"""
+
+    def get_top_item(self, name):
+        for i, conteneur in enumerate(self.items):
+            res = conteneur.get_item(name)
+            if res is not None:
+                return self.topLevelItem(i)
+        raise ValueError
+
+    """---------------------------------------------------------------------------------"""
+
+    def resizeColumnsToContents(self):
+        cCols = self.columnCount()
+        cItems = self.topLevelItemCount()
+        for i in range(cCols):
+            w = self.header().sectionSizeHint(i)
+            if i == 0:
+                indentation = self.indentation() + 5
+            else:
+                indentation = 0
+
+            for j in range(cItems):
+                print(self.topLevelItem(j).text(i))
+                w = max(w, len(self.topLevelItem(j).text(i)) * 7 + indentation)
+            self.header().resizeSection(i, w)
 
     """---------------------------------------------------------------------------------"""
 
@@ -175,6 +226,11 @@ class Tree_widget(QtWidgets.QTreeWidget):
             """
             pass
 
+        @abstractmethod
+        def get_item(self, name):
+            pass
+
+
     class Conteneur_data(Conteneur):
         def __init__(self, name):
             super().__init__(name)
@@ -200,6 +256,16 @@ class Tree_widget(QtWidgets.QTreeWidget):
         def append(self, item):
             self.figures_child.append(item)
 
+        def get_item(self, name):
+            if self.name == name:
+                return [0]
+            else:
+                for i, item in enumerate(self.figures_child):
+                    res = item.get_item(name)
+                    if res is not None:
+                        res.append(i)
+                        return res
+
     class Conteneur_figure(Conteneur):
         def __init__(self, name):
             super().__init__(name)
@@ -224,3 +290,13 @@ class Tree_widget(QtWidgets.QTreeWidget):
 
         def append(self, item):
             self.figures_child.append(item)
+
+        def get_item(self, name):
+            if self.name == name:
+                return [0]
+            else:
+                for i, item in enumerate(self.figures_child):
+                    res = item.get_item(name)
+                    if res is not None:
+                        res.append(i)
+                        return res

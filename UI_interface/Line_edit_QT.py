@@ -4,7 +4,7 @@ from PyQt5.QtGui import QKeyEvent
 
 
 class Line_edit_float(QtWidgets.QLineEdit):
-    _KEYS_STR = ["0", "1", "2", "3", "4", "5", "5", "6", "7", "8", "9", ".", ","]
+    _KEYS_STR = ["0", "1", "2", "3", "4", "5", "5", "6", "7", "8", "9", ".", ",", "-"]
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -29,8 +29,9 @@ class Line_edit_float(QtWidgets.QLineEdit):
         return float(self.text().replace(",", "."))
 
 
+
 class Line_edit_int(QtWidgets.QLineEdit):
-    _KEYS_STR = ["0", "1", "2", "3", "4", "5", "5", "6", "7", "8", "9"]
+    _KEYS_STR = ["0", "1", "2", "3", "4", "5", "5", "6", "7", "8", "9", "-"]
 
     def __init__(self, parent=None):
         super().__init__(parent)

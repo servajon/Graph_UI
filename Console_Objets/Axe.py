@@ -1,3 +1,4 @@
+from Console_Objets.Data_array import Data_array
 from Resources_file import Resources
 
 
@@ -42,6 +43,8 @@ class Axe:
             self.data = []
 
             self._color_map = None
+
+            self._legend = True
 
     """----------------------------------------------------------------------------------"""
 
@@ -113,18 +116,24 @@ class Axe:
 
     """----------------------------------------------------------------------------------"""
 
+    def copy(self):
+        new_axe = Axe(self.type)
+
+        for att, value in self.__dict__.items():
+            if not isinstance(value, list):
+                new_axe.__setattr__(att, value)
+            else:
+                for i in range(len(value)):
+                    new_axe.data.append(value[i].copy())
+        return new_axe
+
+
+
+
+
     @property
     def name(self):
-        if self.__name is None:
-            if self.data[0].unit is not None:
-                return rename_axe(self.data[0].name)
-            else:
-                return rename_axe(self.data[0].name)
-        else:
-            if self.data[0].unit is not None:
-                return self.__name
-            else:
-                return self.__name
+        return self.__name
 
     @property
     def name_unit(self):
@@ -143,6 +152,10 @@ class Axe:
     def color_map(self):
         return self._color_map
 
+    @property
+    def legend(self):
+        return self._legend
+
     @color_map.setter
     def color_map(self, _color_map):
         if type(_color_map) == str:
@@ -153,3 +166,7 @@ class Axe:
     @name.setter
     def name(self, _name):
         self.__name = _name
+
+    @legend.setter
+    def legend(self, legend):
+        self._legend = legend

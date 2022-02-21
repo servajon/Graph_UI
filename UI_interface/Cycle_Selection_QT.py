@@ -14,6 +14,8 @@ class Cycle_Selection(QWidget):
         super().__init__(parent)
         self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint)
 
+        self.setWindowModality(QtCore.Qt.ApplicationModal)
+
         self.cycles = None
         self.emit = Emit()
 

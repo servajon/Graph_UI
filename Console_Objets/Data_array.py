@@ -1,4 +1,6 @@
-from Console_Objets.DataUnit import Units
+import copy
+
+from Console_Objets.Data_Unit import Units
 from Resources_file import Resources
 import matplotlib.pyplot as pplot
 import matplotlib.colors as mcolors
@@ -69,6 +71,22 @@ class Data_array:
 
         # on convert les données
         self.data_unit.convert_to(unit)
+
+    def copy(self):
+        new_data_unit = self.data_unit.copy()
+
+        new_data_array = Data_array(new_data_unit, self.name, self.source, self.legend)
+
+        if new_data_unit.unit is None:
+            new_data_array.unit = None
+        else:
+            new_data_array.unit = new_data_unit.unit
+
+        new_data_array.color = self.color
+        new_data_array.global_index = copy.copy(self.global_index)
+        new_data_array.visible = self.visible
+
+        return new_data_array
 
     """                                                  """
     """                      getter                      """

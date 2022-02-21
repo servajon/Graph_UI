@@ -12,6 +12,8 @@ class Derive_Selection(QtWidgets.QWidget):
         super().__init__(parent)
         self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint)
 
+        self.setWindowModality(QtCore.Qt.ApplicationModal)
+
         self.emit = Emit()
         self.nb_point = None
         self.window_length = None

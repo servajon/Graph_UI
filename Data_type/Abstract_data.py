@@ -3,6 +3,8 @@ from abc import ABC, abstractmethod
 import matplotlib
 import matplotlib.pyplot as pplot
 
+from Console_Objets.Axe import Axe
+from Console_Objets.Figure import Figure
 from Resources_file import Resources
 from Resources_file.Emit import Emit
 
@@ -159,6 +161,10 @@ class Abstract_data(ABC):
 
     """----------------------------------------------------------------------------------"""
 
+    @abstractmethod
+    def shift_axe(self, *args, **kwargs):
+        pass
+
     def unique_name(self, name):
         """Parcours le nom des figures enregistrées et regarde si le nom donné en paramettre est unique, si il ne
         l'est pas on renvoie le même nom avec (1), (2) etc, si le nom est unique on renvoie jsute le nom """
@@ -194,6 +200,8 @@ class Abstract_data(ABC):
         fig, (ax1, leg1) = pplot.subplots(ncols=2, gridspec_kw={"width_ratios": [10, 1]})
         value = leg1.twinx()
         value.axis("off")
+
+        leg1.set_visible(figure.y1_axe.legend)
 
         if figure.type == "impedance":
             val_freq = value.twinx()
@@ -245,7 +253,7 @@ class Abstract_data(ABC):
                     index_modulo_y1 += 1
                     if data_y1[i].color is not None:
                         ax1.plot(data_x[i].data, data_y1[i].data, format_line_y1, markersize=figure.marker_size,
-                                 label=data_y1[i].legend, color=data_y1[i].color, visible=data_y1[i].visibe)
+                                 label=data_y1[i].legend, color=data_y1[i].color, visible=data_y1[i].visible)
                     else:
                         ax1.plot(data_x[i].data, data_y1[i].data, format_line_y1, markersize=figure.marker_size,
                                  label=data_y1[i].legend, visible=data_y1[i].visible)
@@ -275,6 +283,8 @@ class Abstract_data(ABC):
 
             ax2 = ax1.twinx()
             leg2 = leg1.twinx()
+
+            leg2.set_visible(figure.y2_axe.legend)
 
             if figure.y1_axe is None:
                 len_y1 = 0
@@ -435,8 +445,8 @@ class Abstract_data(ABC):
             leg1.legend(h, l, borderaxespad=0, loc="upper right")
             leg1.axis("off")
 
-            ax1.set_xlabel(figure.x_axe.name, labelpad=20)
-            ax1.set_ylabel(figure.y1_axe.name, labelpad=20)
+            ax1.set_xlabel(figure.x_axe.name_unit, labelpad=20)
+            ax1.set_ylabel(figure.y1_axe.name_unit, labelpad=20)
 
             format_axes_figure(figure, ax1, None)
 
@@ -642,6 +652,7 @@ class Abstract_data(ABC):
             self.data["row_unit"] = units
 
     """----------------------------------------------------------------------------------"""
+
 
     @property
     @abstractmethod

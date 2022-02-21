@@ -1,5 +1,5 @@
 from Console_Objets.Axe import Axe
-from Console_Objets.DataUnit import Data_unit
+from Console_Objets.Data_Unit import Data_unit
 from Console_Objets.Data_array import Data_array
 
 
@@ -172,14 +172,18 @@ class Figure:
         # créer l'axe x si il n'existe pas encore
         if self.x_axe is None:
             self.x_axe = Axe("x")
+            self.x_axe.name = name
 
         # si data_x est une list, on créer un objet data_unit
         # son unité sera None, aucune conversion possible
-        if isinstance(data_x, list):
+        if not isinstance(data_x, Data_unit):
             data_x = Data_unit(data_x)
 
         # créer un objet Data_array et l'ajoute à l'axe
         data = Data_array(data_x, name, source, legend)
+
+        """# on passe les unité de l'obj data_array comme étant celle de l'obj data_unit
+        data.unit = data_x.unit"""
 
         # on ajoute l'ojet data_array
         self.x_axe.append(data)
@@ -198,6 +202,7 @@ class Figure:
         # créer l'axe x si il n'existe pas encore
         if self.x_axe is None:
             self.x_axe = Axe("x")
+            self.x_axe.name = data.name
 
         # On ajoute l'objet data_array à l'axe x
         self.x_axe.append(data)
@@ -226,10 +231,11 @@ class Figure:
         # créer l'axe x si il n'existe pas encore
         if self.x_axe is None:
             self.x_axe = Axe("x")
+            self.x_axe.name = name
 
         # si data_x est une list, on créer un objet data_unit
         # son unité sera None, aucune conversion possible
-        if isinstance(data_x, list):
+        if not isinstance(data_x, Data_unit):
             data_x = Data_unit(data_x)
 
         # clear l'ancien data_x, créer et ajoute un nouvel objet Data_array
@@ -237,6 +243,10 @@ class Figure:
 
         # créer un objet Data_array et l'ajoute à l'axe
         data = Data_array(data_x, name, source, legend)
+
+        """# on passe les unité de l'obj data_array comme étant celle de l'obj data_unit
+        data.unit = data_x.unit"""
+
         self.x_axe.append(data)
 
     """----------------------------------------------------------------------------------"""
@@ -261,14 +271,19 @@ class Figure:
         # créer l'axe y1 si il n'existe pas encore
         if self.y1_axe is None:
             self.y1_axe = Axe("y1")
+            self.y1_axe.name = name
 
         # si data_y est une list, on créer un objet data_unit
         # son unité sera None, aucune conversion possible
-        if isinstance(data_y, list):
+        if not isinstance(data_y, Data_unit):
             data_y = Data_unit(data_y)
 
         # créer un objet Data_array et l'ajoute à l'axe
         data = Data_array(data_y, name, source, legend, color)
+
+        """# on passe les unité de l'obj data_array comme étant celle de l'obj data_unit
+        data.unit = data_y.unit"""
+
         self.y1_axe.append(data)
 
     """----------------------------------------------------------------------------------"""
@@ -285,6 +300,7 @@ class Figure:
         # créer l'axe y1 si il n'existe pas encore
         if self.y1_axe is None:
             self.y1_axe = Axe("y1")
+            self.y1_axe.name = data.name
 
         # ajoute un nouvel objet Data_array à data_y1
         self.y1_axe.append(data)
@@ -311,14 +327,19 @@ class Figure:
         # créer l'axe y2 si il n'existe pas encore
         if self.y2_axe is None:
             self.y2_axe = Axe("y2")
+            self.y2_axe.name = name
 
         # si data_y est une list, on créer un objet data_unit
         # son unité sera None, aucune conversion possible
-        if isinstance(data_y, list):
+        if not isinstance(data_y, Data_unit):
             data_y = Data_unit(data_y)
 
         # créer et ajoute un nouvel objet Data_array à data_y2
         data = Data_array(data_y, name, source, legende, color)
+
+        """# on passe les unité de l'obj data_array comme étant celle de l'obj data_unit
+        data.unit = data_y.unit"""
+
         self.y2_axe.append(data)
 
     """----------------------------------------------------------------------------------"""
@@ -335,6 +356,7 @@ class Figure:
         # créer l'axe y2 si il n'existe pas encore
         if self.y2_axe is None:
             self.y2_axe = Axe("y2")
+            self.y2_axe.name = data.name
 
         # ajoute un nouvel objet Data_array à data_y2
         self.y2_axe.append(data)
@@ -364,11 +386,15 @@ class Figure:
 
         # si data_y est une list, on créer un objet data_unit
         # son unité sera None, aucune conversion possible
-        if isinstance(data_z, list):
+        if not isinstance(data_z, Data_unit):
             data_z = Data_unit(data_z)
 
         # créer et ajoute un nouvel objet Data_array à data_z1
         data = Data_array(data_z, name, source, legende)
+
+        """# on passe les unité de l'obj data_array comme étant celle de l'obj data_unit
+        data.unit = data_z.unit"""
+
         self.z1_axe.append(data)
 
     """----------------------------------------------------------------------------------"""
@@ -526,10 +552,16 @@ class Figure:
         return self.__TYPE[self.type]
 
 
+    def copy(self):
+        new_figure = Figure(self.name + "_copy", self.dirty)
 
+        for att, value in self.__dict__.items():
+            if not isinstance(value, Axe):
+                new_figure.__setattr__(att, value)
+            else:
+                new_figure.__setattr__(att, value.copy())
 
-
-
+        return new_figure
 
 
 

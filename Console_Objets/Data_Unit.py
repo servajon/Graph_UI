@@ -1,3 +1,4 @@
+import copy
 import math
 
 UNITS = {
@@ -10,22 +11,21 @@ UNITS = {
     "counter_inc.": None,
     "Ns": None,
     "time/h": "hours",
-    "dq/mA.h": None,
-    "(Q-Qo)/mA.h": None,
-    "control/V/mA": None,
+    "dq/mA.h": "milliampere_heure",
+    "(Q-Qo)/mA.h": "milliampere_heure",
+    "control/V/mA": "volt_par_milliampere",
     "Ecell/V": "volt",
     "I_Range": None,
     "<I>/mA": "milliampere",
     "x": None,
-    "Q_discharge/mA.h": None,
-    "Q_charge/mA.h": None,
-    "Capacity/mA.h": None,
-    "Efficiency/%": None,
+    "Q_discharge/mA.h": "milliampere_heure",
+    "Q_charge/mA.h": "milliampere_heure",
+    "Capacity/mA.h": "milliampere_heure",
+    "Efficiency/%": "pourcentage",
     "control/V": "volt",
     "control/mA": "milliampere",
     "cycle_number": None,
     "P/W": None,
-
 
     # nom complet de toutes les unitées
     "centimeters": "cm",
@@ -40,12 +40,38 @@ UNITS = {
     "millivolt": "millivolt",
     "ampere": "ampere",
     "milliampere": "milliampere",
-    
-    
+    "pourcentage": "pourcentage",
+    "milliampere_heure": "milliampere_heure",
+    "volt_par_milliampere": "volt_par_milliampere",
+    "milliampere_heure_par_gramme": "milliampere_heure_par_gramme",
+    "coulomb_par_gramme": "coulomb_par_gramme",
+    "coulomb": "coulomb",
+
+
     # nom court des unitée
     "cm": "cm",
     "inch": "inch",
     "hertz": "hertz",
+    "mA": "milliampere",
+    "A": "ampere",
+    "V": "volt",
+    "mV": "millivolt",
+    "s": "seconds",
+    "min": "minutes",
+    "h": "hours",
+    "g": "gramme",
+    "kg": "killogramme",
+    "mA.h/g": "milliampere_heure_par_gramme",
+    "mAh/g": "milliampere_heure_par_gramme",
+    "C": "coulomb",
+    "C/g": "coulomb_par_gramme",
+    "mA.h": "milliampere_heure",
+    # nom des unitées sans conversion
+
+    "%": "pourcentage"
+
+
+
 
 }
 
@@ -70,16 +96,45 @@ class BasicUnit:
     def get_conversion_fn(self, unit):
         return self.conversions[unit]
 
-    def convert_value_to(self, value, unit):
-        conversion_fn = self.conversions[unit]
-        ret = conversion_fn(value)
-        return ret
+    def get_conversion(self, unit):
+        return self.conversions[unit]
 
     def get_unit(self):
         return self
 
     def get_units_available(self):
         return [key for key in self.conversions.keys()]
+
+class CompositeUnit:
+    def __init__(self, unit1, facteur, unit2, name, fullname=None):
+        self.name = name
+        if fullname is None:
+            fullname = name
+        self.fullname = fullname
+
+        self.unit1 = unit1
+        self.unit2 = unit2
+
+        self.facteur = facteur
+
+        self.conversions_unit1 = dict()
+        self.conversions_unit2 = dict()
+
+        for key, func in unit1.conversions.items():
+            self.conversions_unit1[key] = func
+
+        for key, func in unit2.conversions.items():
+            self.conversions_unit2[key] = func
+
+    def get_conversion(self, unit):
+        try:
+            conversion_fn = self.conversions_unit1[unit]
+        except KeyError:
+            conversion_fn2 = self.conversions_unit2[unit]
+
+            conversion_fn = lambda x: conversion_fn2(x)
+
+        return conversion_fn
 
 
 class Units:
@@ -102,6 +157,10 @@ class Units:
             return self.units[name]
         else:
             raise TypeError('Invalid argument type: {}'.format(type(item)))
+
+    def get_unit(self, name):
+        name = UNITS[name]
+        return self.units[name]
 
     def create_units(self):
 
@@ -158,6 +217,37 @@ class Units:
         milliampere.add_conversion_factor(ampere, 1 / 1000.0)
         ampere.add_conversion_factor(milliampere, 1000.0)
 
+        """--------------------------------------------------"""
+
+        gramme = BasicUnit('g', 'gramme')
+        killogramme = BasicUnit('kg', 'killogramme')
+
+        gramme.add_conversion_factor(killogramme, 1 / 1000.0)
+        killogramme.add_conversion_factor(gramme, 1000.0)
+
+        """--------------------------------------------------"""
+
+        milliampere_heure = BasicUnit('mA.h', 'mA.h')
+        coulomb = BasicUnit('C', 'coulomb')
+
+        milliampere_heure.add_conversion_factor(coulomb, 1 / 3.6)
+        coulomb.add_conversion_factor(milliampere_heure, 3.6)
+
+        """--------------------------------------------------"""
+
+        milliampere_heure_par_gramme = BasicUnit('mAh/g', 'mAh/g')
+        coulomb_par_gramme = BasicUnit('C/g', 'C/g')
+
+        milliampere_heure_par_gramme.add_conversion_factor(coulomb_par_gramme, 1 / 3.6)
+        coulomb_par_gramme.add_conversion_factor(milliampere_heure_par_gramme, 3.6)
+
+        """--------------------------------------------------"""
+
+        # déclaration des unitées non convertibles
+        pourcentage = BasicUnit('%', 'pourcentage')
+        volt_par_milliampere = BasicUnit('V/mA', 'V/mA')
+
+
         # définition des unités
         self.units["cm"] = cm
         self.units["inch"] = inch
@@ -172,6 +262,20 @@ class Units:
 
         self.units["ampere"] = ampere
         self.units["milliampere"] = milliampere
+
+        self.units["gramme"] = gramme
+        self.units["killogramme"] = killogramme
+
+        self.units["milliampere_heure"] = milliampere_heure
+        self.units["coulomb"] = coulomb
+
+        self.units["milliampere_heure_par_gramme"] = milliampere_heure_par_gramme
+        self.units["coulomb_par_gramme"] = coulomb_par_gramme
+
+        self.units["pourcentage"] = pourcentage
+
+        self.units["volt_par_milliampere"] = volt_par_milliampere
+
 
 
 class Data_unit(list):
@@ -191,7 +295,7 @@ class Data_unit(list):
             return
 
         try:
-            func = self.unit.conversions[unit]
+            func = self.unit.get_conversion(unit)
             self.data = [func(value) for value in self.data]
             self._unit = unit
         except KeyError:
@@ -242,6 +346,14 @@ class Data_unit(list):
     def __repr__(self):
         return str(self.data) + " in " + self._unit.name
 
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            setattr(result, k, copy.deepcopy(v, memo))
+        return result
+
     def append(self, obj):
         if not isinstance(obj, float) and not isinstance(obj, int):
             raise ValueError
@@ -251,7 +363,17 @@ class Data_unit(list):
     def set_units(self):
         if isinstance(self.unit, str):
             u = Units()
-            self.unit = u[self.unit]
+            self.unit = u.get_unit(self.unit)
+
+    def copy(self):
+        new_data_unit = Data_unit()
+
+        new_data_unit.data = copy.copy(self.data)
+
+        units = Units()
+        new_data_unit.unit = units.get_unit(self.unit.name)
+
+        return new_data_unit
 
     @property
     def unit(self):
@@ -271,28 +393,13 @@ class Data_unit(list):
 
 
 if __name__ == '__main__':
-    data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    from Console_Objets.Figure import Figure
+    f1 = Figure("f1")
 
-    units = Units()
 
-    data_test = Data_unit(data, units["cm"])
-    data_test2 = Data_unit(data, units["cm"])
+    data = [1, 2, 3, 4, 5]
+    f1.add_data_x(data, None, None, None)
 
-    print(data_test2.unit.name)
 
-    data_test.extend(data_test2)
+    print(f1.__dict__)
 
-    print(data_test)
-
-    if 1.2 in data_test:
-        print("ok")
-
-    del data_test[2]
-
-    data_test.convert_to(units["inch"])
-
-    for value in data_test:
-        print(value)
-
-    print(UNITS["time/h"])
-    print(UNITS["cycle_number"])

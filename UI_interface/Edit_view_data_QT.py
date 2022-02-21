@@ -10,6 +10,9 @@ class Edit_view_data(QWidget):
     def __init__(self, parent):
         super().__init__(parent)
         self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint)
+
+        self.setWindowModality(QtCore.Qt.ApplicationModal)
+
         self.setupUi(self)
         self.names_selected = []
 

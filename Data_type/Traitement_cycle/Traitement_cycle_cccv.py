@@ -1,4 +1,4 @@
-from Console_Objets.DataUnit import Data_unit, Units
+from Console_Objets.Data_Unit import Data_unit, Units
 from Console_Objets.Data_array import Data_array
 from Console_Objets.Figure import Figure
 from Data_type.Traitement_cycle import Traitements_cycle_outils
@@ -91,7 +91,7 @@ def potentio(loop_data, time_data, i_data, mode_data, cycle):
                 data_unit_y = Data_unit(temp_y1, unit_y)
 
                 # on ajoute data_array à new_figure
-                new_figure.add_data_y1_Data(Data_array(data_unit_y, "<I>", None, "cycle " + str(cycle[i] + 1)))
+                new_figure.add_data_y1_Data(Data_array(data_unit_y, "Current", None, "cycle " + str(cycle[i] + 1)))
 
             else:
                 j += 1

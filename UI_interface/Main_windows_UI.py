@@ -239,7 +239,7 @@ class Window(QMainWindow, Ui_MainWindow):
             if self.comboBox_5.currentText() == "capa":
 
                 if self.console.current_data.data["mass_electrode"] == -1:
-                    self.argument_selection_creation_w = Ask_Value(self, "float")
+                    self.argument_selection_creation_w = Ask_Value(self, "float", "Invalide mass Electode", "New Mass (mg) : ")
                     self.argument_selection_creation_w.finish_signal.connect(
                         lambda signal: self.callback_create_current_data(signal, "capa"))
 
@@ -346,18 +346,27 @@ class Window(QMainWindow, Ui_MainWindow):
 
             if self.comboBox_4.currentText() == "derive":
                 self.argument_selection_creation_w = Derive_Selection(self)
-
                 self.argument_selection_creation_w.finish_signal.connect(
                     lambda event: self.create_figure_callback(event, "derive"))
 
-                self.argument_selection_creation_w.show()
+            elif self.comboBox_4.currentText() == "shift x":
+                self.argument_selection_creation_w = Ask_Value(self, "float", "Shift X axis",
+                                                               "Value : ")
+                self.argument_selection_creation_w.finish_signal.connect(
+                    lambda event: self.create_figure_callback(event, "shift x"))
+            elif self.comboBox_4.currentText() == "shift y":
+                self.argument_selection_creation_w = Ask_Value(self, "float", "Shift Y axis",
+                                                               "Value : ")
+                self.argument_selection_creation_w.finish_signal.connect(
+                    lambda event: self.create_figure_callback(event, "shift y"))
 
+            self.argument_selection_creation_w.show()
     """---------------------------------------------------------------------------------"""
 
     def create_figure_callback(self, signal, name):
         if signal == "cancel":
-            self.select_value_show_w.deleteLater()
-            self.select_value_show_w = None
+            self.argument_selection_creation_w.deleteLater()
+            self.argument_selection_creation_w = None
         else:
             if name == "derive":
                 nb_point = self.argument_selection_creation_w.nb_point
@@ -370,6 +379,27 @@ class Window(QMainWindow, Ui_MainWindow):
                 figure_res = self.console.current_data.derive(nb_point,
                                                  window_length,
                                                  polyorder)
+
+                # on update le tree widget
+                # on ajoute la figure a current_data
+                self.treeWidget.add_figure(figure_res, self.console.current_data.name)
+                self.console.current_data.figures.append(figure_res)
+
+                # on passe la figure en figure courante
+                self.console.current_data.current_figure = figure_res
+
+            elif name == "shift x" or name == "shift y":
+                value = self.argument_selection_creation_w.value
+                self.argument_selection_creation_w.deleteLater()
+                self.argument_selection_creation_w = None
+
+                if name == "shift x":
+                    figure_res = self.console.current_data.shift_axe("x", value)
+                else:
+                    figure_res = self.console.current_data.shift_axe("y", value)
+
+                if figure_res is None:
+                    return
 
                 # on update le tree widget
                 # on ajoute la figure a current_data
@@ -421,6 +451,8 @@ class Window(QMainWindow, Ui_MainWindow):
                 # quand on a touvé la figure
                 if figure.name == self.treeWidget.currentItem().text(0):
 
+                    current_index = self.tabWidget.currentIndex()
+
                     # check si la tab est déja ouverte
                     for i in range(self.tabWidget.count()):
 
@@ -430,8 +462,6 @@ class Window(QMainWindow, Ui_MainWindow):
                             # on récupére le current index de tab pour regarder si il sera effectivemeent modifié
                             # si oui l'update de current_figure et des label se fera dans le changement de tab
                             # sinon on le fait là
-
-                            current_index = self.tabWidget.currentIndex()
 
                             if i == current_index:
                                 # on update current data avec self.console.current_data,info update plus haut
@@ -462,10 +492,7 @@ class Window(QMainWindow, Ui_MainWindow):
                             return
 
                     # check si la figure est ouverte en fenêtre
-                    if not self.on_top_plot_w(figure.name):
-                        # si elle est pas ouverte comme fenêtre, toutes les fenêtre plots sont passé en lower
-                        self.lower_plot_w()
-                    else:
+                    if self.on_top_plot_w(figure.name):
                         return
 
                     # à ce point de la fonction, le plot n'existe pas, il faut le créer
@@ -849,18 +876,14 @@ class Window(QMainWindow, Ui_MainWindow):
 
         new_name = self.tabWidget.tabText(signal)
 
-        parent = None
-        # on update l'élément focus par le tree widget
-        for i in range(self.treeWidget.topLevelItem(0).childCount()):
-            if self.treeWidget.topLevelItem(0).child(i).text(0) == new_name:
-                self.treeWidget.setCurrentItem(self.treeWidget.topLevelItem(0).child(i))
+        parent = self.treeWidget.get_top_item(new_name)
 
-                # on récupére le parent
-                parent = self.treeWidget.topLevelItem(0).child(i).parent()
-                break
-
-        if parent is None:
-            return
+        # on reset la selection du treewidget
+        self.treeWidget.clearSelection()
+        # on récupére l'item
+        item = self.treeWidget.get_item(new_name)
+        # on set le focus sur lui
+        item.setSelected(True)
 
         # on update current data de la console en premier
         self.console.set_current_data_name(parent.text(0))
@@ -904,13 +927,21 @@ class Window(QMainWindow, Ui_MainWindow):
         # pour ne pas déclancher des erreurs à la création de la fenêtre
         # si current_index == -1 c'est qu'il n'y a plus de tab parce qu'elle a été détachée
         # on update pas les lable et la console dans ce cas
-        if self.console.current_data is None or self.console.current_data.current_figure is None or self.tabWidget.currentIndex() == -1:
+        if self.console.current_data is None or self.console.current_data.current_figure is None or \
+                self.tabWidget.currentIndex() == -1:
             return
 
-        _translate = QtCore.QCoreApplication.translate
+
 
         # le nom de la figure courrante est donc celui de la tab courrante
         new_name = self.tabWidget.tabText(self.tabWidget.currentIndex())
+
+        # si le nom est le même que celui de la figure courante, il est inutile d'update quoi que ce soit
+        # rien n'a été modifié, c'est jsute un clique sur l'interface
+        if new_name == self.console.current_data.current_figure.name:
+            return
+
+        _translate = QtCore.QCoreApplication.translate
 
         # on update le label current plot
         self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
