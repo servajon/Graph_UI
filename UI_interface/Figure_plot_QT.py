@@ -29,7 +29,7 @@ class Figure_plot(QWidget):
     # utilisé quand le plot est sous la forme d'une fenêtre et qu'il est en focus
     focus_in = pyqtSignal(str)
 
-    def __init__(self, abstract_affiche, parent):
+    def __init__(self, abstract_affiche, parent=None):
         super().__init__()
 
         # self.setWindowFlags(QtCore.Qt.Dialog)
@@ -325,9 +325,11 @@ class Figure_plot(QWidget):
         old_name = self.abstract_affiche.pplot_fig._suptitle.get_text()
         name = QInputDialog.getText(self, "Name change", "New name ?", QLineEdit.Normal, old_name)
         if name[1] and name[0] != "":
-            self.abstract_affiche.pplot_fig._suptitle.set_text(name[0])
-            self.abstract_affiche.figure.name = name[0]
-            self.name_changed.emit([old_name, name[0]])
+
+            name = self.abstract_affiche.data.unique_name(name[0])
+            self.abstract_affiche.pplot_fig._suptitle.set_text(name)
+            self.abstract_affiche.figure.name = name
+            self.name_changed.emit([old_name, name])
             self.canvas.draw()
 
     """---------------------------------------------------------------------------------"""
@@ -855,7 +857,7 @@ class Figure_plot(QWidget):
 
         elif axe == "y2":
             index = 0
-            for i in range(len(self.abstract_affiche.figure.y2_axe.data)):
+            for i in reversed(range(len(self.abstract_affiche.figure.y2_axe.data))):
                 if index == len(colors):
                     index = 0
                 self.abstract_affiche.ax2.lines[i].set_color(colors[index])
@@ -878,7 +880,7 @@ class Figure_plot(QWidget):
 
                 # on parcours les légendes pour update la couleur
                 index = 0
-                for i in range(len(self.abstract_affiche.leg2.get_legend().get_lines())):
+                for i in reversed(range(len(self.abstract_affiche.leg2.get_legend().get_lines()))):
                     if index == len(colors):
                         index = 0
                     color = colors[index]
@@ -887,7 +889,7 @@ class Figure_plot(QWidget):
             else:
                 # on parcours les légendes pour update la couleur
                 index = 0
-                for i in range(len(self.abstract_affiche.leg2.get_legend().get_lines())):
+                for i in reversed(range(len(self.abstract_affiche.leg2.get_legend().get_lines()))):
                     if index == len(colors):
                         index = 0
                     color = colors[index]

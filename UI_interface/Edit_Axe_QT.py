@@ -20,7 +20,7 @@ class Edit_Axe(QWidget):
         self.verticalLayout = QtWidgets.QVBoxLayout(Dialog)
         self.verticalLayout.setObjectName("verticalLayout")
         self.label = QtWidgets.QLabel(Dialog)
-        self.label.setMaximumSize(QtCore.QSize(16777215, 19))
+        self.label.setMaximumSize(QtCore.QSize(16777215, 21))
         self.label.setObjectName("label")
         self.verticalLayout.addWidget(self.label)
         self.gridLayout = QtWidgets.QGridLayout()

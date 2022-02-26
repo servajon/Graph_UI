@@ -141,28 +141,28 @@ class Abstract_data(ABC):
     def get_operation_available(self):
         pass
 
-    """----------------------------------------------------------------------------------"""
-
     @abstractmethod
     def capa(self):
         pass
 
-    """----------------------------------------------------------------------------------"""
-
     @abstractmethod
-    def potentio(self, cycle=None):
+    def potentio(self, cycle):
         pass
-
-    """----------------------------------------------------------------------------------"""
 
     @abstractmethod
     def derive(self, *args, **kwargs):
         pass
 
-    """----------------------------------------------------------------------------------"""
-
     @abstractmethod
     def shift_axe(self, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def create_figure_cycle(self, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def get_dics(self):
         pass
 
     def unique_name(self, name):
@@ -286,10 +286,7 @@ class Abstract_data(ABC):
 
             leg2.set_visible(figure.y2_axe.legend)
 
-            if figure.y1_axe is None:
-                len_y1 = 0
-            else:
-                len_y1 = len(figure.y1_axe)
+            len_y1 = len(figure.y1_axe)
 
             data_y2 = figure.y2_axe.data
 
@@ -303,6 +300,7 @@ class Abstract_data(ABC):
                 if data_y2[i].legend is not None and data_y2[i].visible:
                     nb_y2 += 1
             index_modulo_y2 = 0
+
             if nb_y2 > figure.nb_legende:
                 modulo_y2 = []
                 for i in range(figure.nb_legende):
@@ -316,6 +314,7 @@ class Abstract_data(ABC):
             for i in range(len(data_y2)):
                 if index_color == len(couleur):
                     index_color = 0
+
                 if len(modulo_y2) == 0 or (
                         index_modulo_y2 < len(modulo_y2) and i == modulo_y2[index_modulo_y2]):
                     index_modulo_y2 += 1
@@ -324,15 +323,16 @@ class Abstract_data(ABC):
                                  label=data_y2[i].legend,
                                  color=data_y2[i].color, visible=data_y2[i].visible)
                     else:
-                        ax2.plot(data_x[i+ len_y1].data, data_y2[i].data, format_line_y2, markersize=figure.marker_size,
+                        ax2.plot(data_x[i + len_y1].data, data_y2[i].data, format_line_y2, markersize=figure.marker_size,
                                  color=couleur[index_color], label=data_y2[i].legend, visible=data_y2[i].visible)
                 else:
                     if data_y2[i].color is not None:
                         ax2.plot(data_x[i + len_y1].data, data_y2[i].data, format_line_y2, markersize=figure.marker_size,
                                  color=data_y2[i].color, visible=data_y2[i].visible)
                     else:
-                        ax2.plot(data_x[i+ len_y1].data, data_y2[i].data, format_line_y2, markersize=figure.marker_size,
+                        ax2.plot(data_x[i + len_y1].data, data_y2[i].data, format_line_y2, markersize=figure.marker_size,
                                  color=couleur[index_color], visible=data_y2[i].visible)
+                index_color += 1
 
             h, l = ax2.get_legend_handles_labels()
             leg2.legend(h, l, borderaxespad=0, loc="lower right")
@@ -459,108 +459,6 @@ class Abstract_data(ABC):
 
     """----------------------------------------------------------------------------------"""
 
-    def format_figure(self, figure):
-        if figure.name_axes_y1 == "":
-            if figure.data_y1[0].name == "Ecell/V":
-                #figure.data_y1[i].name = self.resource.Ecell_name_format
-                figure.name_axes_y1 = self.resource.Ecell_name_format
-
-            elif figure.data_y1[0].name == "<I>/mA":
-                # figure.data_y1[i].name = self.resource.I_format
-                figure.name_axes_y1 = self.resource.I_format
-
-            elif figure.data_y1[0].name == "time/h":
-                #figure.data_y1[i].name = self.resource.time_h_format
-                figure.name_axes_y1 = self.resource.time_h_format
-
-            elif figure.data_y1[0].name == "time/s":
-                #figure.data_y1[i].name = self.resource.time_s_format
-                figure.name_axes_y1 = self.resource.time_s_format
-
-            elif figure.data_y1[0].name == "time/min":
-                #figure.data_y1[i].name = self.resource.time_min_format
-                figure.name_axes_y1 = self.resource.time_min_format
-
-            elif figure.data_y1[0].name == "Q_charge/mA.h":
-                #figure.data_y1[i].name = self.resource.Q_charge_format
-                figure.name_axes_y1 = self.resource.Q_charge_format
-
-            elif figure.data_y1[0].name == "(Q-Qo)/mA.h derive":
-                #figure.data_y1[i].name = "dQ / dE"
-                figure.name_axes_y1 = "dQ / dE"
-
-            elif figure.data_y1[0].name == "Ecell/V derive":
-                #figure.data_y1[i].name = self.resource.Ecell_name_format
-                figure.name_axes_y1 = self.resource.Ecell_name_format
-
-        if figure.name_axes_y2 == "":
-            if figure.data_y2[0].name == "Ecell/V":
-                #figure.data_y2[i].name = self.resource.Ecell_name_format
-                figure.name_axes_y2 = self.resource.Ecell_name_format
-
-            elif figure.data_y2[0].name == "<I>/mA":
-                #figure.data_y2[i].name = self.resource.I_format
-                figure.name_axes_y2 = self.resource.I_format
-
-            elif figure.data_y2[0].name == "time/h":
-                #figure.data_y2[i].name = self.resource.time_h_format
-                figure.name_axes_y2 = self.resource.time_h_format
-
-            elif figure.data_y2[0].name == "time/s":
-                #figure.data_y2[i].name = self.resource.time_s_format
-                figure.name_axes_y2 = self.resource.time_s_format
-
-            elif figure.data_y2[0].name == "time/min":
-                #figure.data_y2[i].name = self.resource.time_min_format
-                figure.name_axes_y2 = self.resource.time_min_format
-
-            elif figure.data_y2[0].name == "Q_charge/mA.h":
-                #figure.data_y2[i].name = self.resource.Q_charge_format
-                figure.name_axes_y2 = self.resource.Q_charge_format
-
-            elif figure.data_y2[0].name == "(Q-Qo)/mA.h derive":
-                #figure.data_y2[i].name = "dQ / dE"
-                figure.name_axes_y2 = "dQ / dE"
-
-            elif figure.data_y2[0].name == "Ecell/V derive":
-                #figure.data_y2[i].name = self.resource.Ecell_name_format
-                figure.name_axes_y2 = self.resource.Ecell_name_format
-
-        if figure.name_axes_x == "":
-            if figure.data_x[0].name == "Ecell/V":
-                #figure.data_x[0].name = self.resource.Ecell_name_format
-                figure.name_axes_x = self.resource.Ecell_name_format
-
-            elif figure.data_x[0].name == "<I>/mA":
-                #figure.data_x[0].name = self.resource.I_format
-                figure.name_axes_x = self.resource.I_format
-
-            elif figure.data_x[0].name == "time/h":
-                #figure.data_x[0].name = self.resource.time_h_format
-                figure.name_axes_x = self.resource.time_h_format
-
-            elif figure.data_x[0].name == "time/s":
-                #figure.data_x[0].name = self.resource.time_s_format
-                figure.name_axes_x = self.resource.time_s_format
-
-            elif figure.data_x[0].name == "time/min":
-                #figure.data_x[0].name = self.resource.time_min_format
-                figure.name_axes_x = self.resource.time_min_format
-
-            elif figure.data_x[0].name == "Q_charge/mA.h":
-                #figure.data_x[0].name = self.resource.Q_charge_format
-                figure.name_axes_x = self.resource.Q_charge_format
-
-            elif figure.data_x[0].name == "(Q-Qo)/mA.h derive":
-                #figure.data_x[0].name = "dQ / dE"
-                figure.name_axes_x = "dQ / dE"
-
-            elif figure.data_x[0].name == "Ecell/V derive":
-                #figure.data_x[0].name = self.resource.Ecell_name_format
-                figure.name_axes_x = self.resource.Ecell_name_format
-
-    """----------------------------------------------------------------------------------"""
-
     def format_axes(self, axe, type, name):
         if type is not None and "3d" in type:
             if axe is not None:
@@ -620,26 +518,36 @@ class Abstract_data(ABC):
 
     """----------------------------------------------------------------------------------"""
 
-    def return_create_cycle(self, cycle):
-        if cycle is not None:
-            if len(cycle) == 3:
-                if cycle[1] == "to":
-                    if cycle[2] < len(self.data["loop_data"]) and cycle[0] != 0 and cycle[2] != 0:
-                        return True
+    def return_create_cycle(self, loop_data):
+        """
+
+        :param cycle: list de cycle : None, => all
+
+        :return:
+        """
+        if loop_data is not None:
+            if len(loop_data) == 3:
+                if loop_data[1] == "to":
+                    if loop_data[2] < len(self.data["loop_data"]) and loop_data[0] != 0 and loop_data[2] != 0:
+                        loop_data = self.create_cycle_to(loop_data[0], loop_data[2])
                     else:
-                        return False
-            for i in cycle:
-                if i > len(self.data["loop_data"]) or i == 0:
+                        return
+            else:
+                for i in range(len(loop_data)):
+                    loop_data[i] -= 1
+
+            for i in loop_data:
+                if i > len(self.data["loop_data"]) or i < 0:
                     emit = Emit()
                     emit.emit("msg_console", type="msg_console", str="Numéro de cycle " + str(i) + " invalide",
                               foreground_color="red")
                     emit.emit("msg_console", type="msg_console", str="Cycle compris entre 1 et " +
                                                                      str(len(self.data["loop_data"])),
                               foreground_color="red")
-                    return False
-            return True
+                    return None
+            return loop_data
         else:
-            return True
+            return [i for i in range(len(self.data["loop_data"]))]
 
     """----------------------------------------------------------------------------------"""
 
@@ -653,6 +561,48 @@ class Abstract_data(ABC):
 
     """----------------------------------------------------------------------------------"""
 
+    def get_unit_name(self, unit_name):
+        for unit in self.data["row_unit"]:
+            if unit.name == unit_name:
+                return unit
+        raise ValueError
+
+    """----------------------------------------------------------------------------------"""
+
+    def create_cycle_to(self, min, max):
+        if min > max:
+            raise ValueError
+        return_array = []
+        for i in range(min - 1, max):
+            return_array.append(i)
+        return return_array
+
+    """----------------------------------------------------------------------------------"""
+
+    def create_array_cycle_all(self, loop_data):
+        """
+        On créer un array contenant tous les cycle, 0 => cycle1, 1 => cycle2 etc...
+        En input loop data est un dictionaire, la fonction suivante fait pareil mais avec un array en input
+        Un dictionnaire en entrèe car l'on cherche le plus petit nombre de loop contenue dedans. Utilisé quand
+        on traite des loop de fichier différents
+
+        :param loop_data: dictionaire ayant pour clé le nom d'un fichier de donnée ouvert et pour value
+                          une list contenant les index des loop du fichier ec_lab correspondant
+
+        :return: list contenant les numéros de cycles associé au dictionaire loop_data
+        """
+
+        return_array = []
+        m = 0
+        for i, j in enumerate(loop_data):
+            m = min(m, len(loop_data[j]))
+
+        for i in range(m):
+            return_array.append(i)
+
+        return return_array
+
+    """----------------------------------------------------------------------------------"""
 
     @property
     @abstractmethod

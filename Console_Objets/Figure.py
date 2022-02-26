@@ -10,7 +10,8 @@ class Figure:
         "bar": [],
         "custom_y1": ["derive", "cycle", "shift x", "shift y"],
         "custom_y1_y2": ["derive", "cycle", "shift x"],
-        "cycle": ["derive", "shift x", "shift y"],
+        "cycle_y1": ["derive", "shift x", "shift y"],
+        "cycle_y1_y2": ["derive", "shift x"],
         "derive_y1": ["shift x", "shift y", "derive"],
         "derive_y1_y2": ["shift x", "derive"]
         }

@@ -276,6 +276,21 @@ class Units:
 
         self.units["volt_par_milliampere"] = volt_par_milliampere
 
+    def add_unit(self, name):
+        """
+        On ajoute une unité à self.units
+        Utilise pour la no'malisation, l'unité aura un nom mais aucune conversion ne sera
+        disponible
+
+        :param name: nom de la nouvelle unité
+        :return: None
+        """
+        if name in self.units:
+            return
+
+        UNITS[name] = name
+        unit = BasicUnit(name)
+        self.units[name] = unit
 
 
 class Data_unit(list):
@@ -344,7 +359,10 @@ class Data_unit(list):
             del self.data[index]
 
     def __repr__(self):
-        return str(self.data) + " in " + self._unit.name
+        if self._unit is None:
+            return str(self.data) + " in None"
+        else:
+            return str(self.data) + " in " + self._unit.name
 
     def __deepcopy__(self, memo):
         cls = self.__class__

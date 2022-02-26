@@ -158,6 +158,48 @@ class Tree_widget(QtWidgets.QTreeWidget):
 
     """---------------------------------------------------------------------------------"""
 
+    def rename_item(self, old_name, new_name, col):
+        """
+        On renome l'élément pourtant le nom old_name par new_name
+        col correspond au numéro de la colone que l'on souhaite renomer
+        On update l'arbre phisique et logique
+
+        :param old_name: ancien nom
+        :param new_name: nouveau nom
+        :param col: numéro de la colonne, 0 tout le temps, je suppose
+        :return: None
+        """
+
+        res = None
+        for i, conteneur in enumerate(self.items):
+            res = conteneur.get_item(old_name)
+            if res is not None:
+                res.append(i)
+                break
+
+        if res is None:
+            raise ValueError
+
+        res = res[1:]
+        res.reverse()
+
+        item = self.topLevelItem(res[0])
+        for index in res[1:]:
+            item = item.child(index)
+
+        item.setText(col, new_name)
+
+        item = self.items[res[0]]
+        for index in res[1:]:
+            item = item.get(index)
+        item.name = new_name
+
+
+        self.info()
+
+
+    """---------------------------------------------------------------------------------"""
+
     def get_top_item(self, name):
         for i, conteneur in enumerate(self.items):
             res = conteneur.get_item(name)
@@ -178,9 +220,6 @@ class Tree_widget(QtWidgets.QTreeWidget):
             m = max(m, len(name) * 7 + self.indentation() * (i + 1))
 
         self.header().resizeSection(0, m)
-
-        print(m)
-        print(res)
 
     """---------------------------------------------------------------------------------"""
 
@@ -238,6 +277,10 @@ class Tree_widget(QtWidgets.QTreeWidget):
         def get_name_array(self, array):
             pass
 
+        @abstractmethod
+        def get(self, index):
+            pass
+
 
     class Conteneur_data(Conteneur):
         def __init__(self, name):
@@ -279,6 +322,9 @@ class Tree_widget(QtWidgets.QTreeWidget):
             for item in self.figures_child:
                 item.get_name_array(array)
 
+        def get(self, index):
+            return self.figures_child[index]
+
 
     class Conteneur_figure(Conteneur):
         def __init__(self, name):
@@ -319,3 +365,6 @@ class Tree_widget(QtWidgets.QTreeWidget):
             array.append(self.name)
             for item in self.figures_child:
                 item.get_name_array(array)
+
+        def get(self, index):
+            return self.figures_child[index]

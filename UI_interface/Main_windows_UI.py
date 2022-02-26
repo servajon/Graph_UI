@@ -13,6 +13,7 @@ from PyQt5.QtWidgets import (
 import matplotlib.pyplot as pplot
 from Console_Objets.Affiche_objet import Classique_affiche, Edit_affiche
 from Console_Objets.Console import Console
+from Console_Objets.Data_Unit import Data_unit
 from Console_Objets.Data_array import Data_array
 from Console_Objets.Figure import Figure
 from Data_type import Abstract_data
@@ -21,6 +22,8 @@ from Resources_file import Resources
 from Resources_file.Emit import Emit
 from UI_interface import Threads_UI
 from UI_interface.Ask_Value_QT import Ask_Value
+from UI_interface.Create_figure import Create_figure
+from UI_interface.Cycle_selection_creation import Cycle_selection_creation
 from UI_interface.Derive_Selection_QT import Derive_Selection
 from UI_interface.Figure_plot_QT import Figure_plot
 from UI_interface.Main_window_QT import Ui_MainWindow
@@ -239,7 +242,8 @@ class Window(QMainWindow, Ui_MainWindow):
             if self.comboBox_5.currentText() == "capa":
 
                 if self.console.current_data.data["mass_electrode"] == -1:
-                    self.argument_selection_creation_w = Ask_Value(self, "float", "Invalide mass Electode", "New Mass (mg) : ")
+                    self.argument_selection_creation_w = Ask_Value(self, "float", "Invalide mass Electode",
+                                                                   "New Mass (mg) : ")
                     self.argument_selection_creation_w.finish_signal.connect(
                         lambda signal: self.callback_create_current_data(signal, "capa"))
 
@@ -253,13 +257,36 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.argument_selection_creation_w = Cycle_Selection(self)
                 self.argument_selection_creation_w.finish_signal.connect(
                     lambda signal: self.callback_create_current_data(signal, "potentio"))
-
                 self.argument_selection_creation_w.show()
+
+
+            elif self.comboBox_5.currentText() == "custom":
+                self.argument_selection_creation_w = Create_figure(self)
+                self.argument_selection_creation_w.finish_signal.connect(
+                    lambda signal: self.callback_create_current_data(signal, "custom"))
+                # on ajoute le nom de toute les ligne récupéré dans le fichier ec_lab
+
+                max_size = 0
+                index = 0
+                for data in self.console.datas:
+                    for row_name in data.data["row_data"]:
+                        self.argument_selection_creation_w.listWidget.addItem(data.name + "\t" + row_name)
+                        self.argument_selection_creation_w.listWidget_3.addItem(data.name + "\t" + row_name)
+                        self.argument_selection_creation_w.listWidget_4.addItem(data.name + "\t" + row_name)
+                        max_size = max(max_size,
+                                       self.argument_selection_creation_w.listWidget.sizeHintForRow(index),
+                                       self.argument_selection_creation_w.listWidget_3.sizeHintForRow(index),
+                                       self.argument_selection_creation_w.listWidget_4.sizeHintForRow(index))
+                        index += 1
+                self.argument_selection_creation_w.resize(max_size * 10 +100, 400)
+                self.argument_selection_creation_w.show()
+
 
     """---------------------------------------------------------------------------------"""
 
     def callback_create_current_data(self, event, name):
         """
+        Fonction callback de
 
         :param event: save / cancel
         :param name: capa / potentio / custom ...
@@ -309,6 +336,10 @@ class Window(QMainWindow, Ui_MainWindow):
                 # on apelle la fonction pour créer les figures et les récupére, c'est une figure seul
                 figure_res = self.console.current_data.potentio(cycles)
 
+                # la figure n'a pas été créée, on return juste
+                if figure_res is None:
+                    return
+
                 # on update le tree widget
                 # on ajoute la figure a current_data
                 self.treeWidget.add_figure(figure_res, self.console.current_data.name)
@@ -316,6 +347,67 @@ class Window(QMainWindow, Ui_MainWindow):
 
                 # on passe la figure en figure courante
                 self.console.current_data.current_figure = figure_res
+
+            elif name == "custom":
+                # on récupére la sélection de la fenêtre de création
+                x_items = self.argument_selection_creation_w.x_items
+                scale_x = self.argument_selection_creation_w.comboBox_21.currentText()
+
+                y1_items = self.argument_selection_creation_w.y1_items
+                scale_y1 = self.argument_selection_creation_w.comboBox_19.currentText()
+
+                y2_items = self.argument_selection_creation_w.y2_items
+                scale_y2 = self.argument_selection_creation_w.comboBox_22.currentText()
+
+                name = self.argument_selection_creation_w.lineEdit.text()
+
+                name = self.console.current_data.unique_name(name)
+
+                # on a récupérer les info, on délect la fenêtre
+                self.argument_selection_creation_w.deleteLater()
+                self.argument_selection_creation_w = None
+
+                # on créer une nouvelle figure
+                figure = Figure(name)
+
+                # on ajoute les données correspondantes aux sélections
+                res = x_items[0].split("\t")
+                data_unit = self.console.create_data_unit(res[0], res[1])
+                figure.add_data_x_Data(Data_array(data_unit, res[1], res[0], res[1]))
+
+                # on ajoute pour y1
+                for i in range(len(y1_items)):
+                    res = y1_items[i].split("\t")
+                    data_unit = self.console.create_data_unit(res[0], res[1])
+                    figure.add_data_y1_Data(Data_array(data_unit, res[1], res[0], res[1]))
+
+                # on ajoute pour y2
+                for i in range(len(y2_items)):
+                    res = y2_items[i].split("\t")
+                    print(res)
+                    data_unit = self.console.create_data_unit(res[0], res[1])
+                    figure.add_data_y2_Data(Data_array(data_unit, res[1], res[0], res[1]))
+
+                # on set le type de la figure en fonction de si y2_items est vide ou pas
+                # on set le scale des axes également
+                if len(y2_items) == 0:
+                    figure.x_axe.scale = scale_x
+                    figure.y1_axe.scale = scale_y1
+                    figure.type = "custom_y1"
+                else:
+                    figure.x_axe.scale = scale_x
+                    figure.y1_axe.scale = scale_y1
+                    figure.y2_axe.scale = scale_y2
+                    figure.type = "custom_y1_y2"
+
+                # on update le tree widget
+                # on ajoute la figure a current_data
+                self.treeWidget.add_figure(figure, self.console.current_data.name)
+                self.console.current_data.figures.append(figure)
+
+                # on passe la figure en figure courante
+                self.console.current_data.current_figure = figure
+
 
             _translate = QtCore.QCoreApplication.translate
             self.label_5.setText(
@@ -359,8 +451,13 @@ class Window(QMainWindow, Ui_MainWindow):
                                                                "Value : ")
                 self.argument_selection_creation_w.finish_signal.connect(
                     lambda event: self.create_figure_callback(event, "shift y"))
+            elif self.comboBox_4.currentText() == "cycle":
+                self.argument_selection_creation_w = Cycle_selection_creation(self)
+                self.argument_selection_creation_w.finish_signal.connect(
+                    lambda event: self.create_figure_callback(event, "cycle"))
 
             self.argument_selection_creation_w.show()
+
     """---------------------------------------------------------------------------------"""
 
     def create_figure_callback(self, signal, name):
@@ -389,7 +486,10 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.console.current_data.current_figure = figure_res
 
             elif name == "shift x" or name == "shift y":
+                # on récupére les données
                 value = self.argument_selection_creation_w.value
+
+                # delet de la fenêtre
                 self.argument_selection_creation_w.deleteLater()
                 self.argument_selection_creation_w = None
 
@@ -397,6 +497,30 @@ class Window(QMainWindow, Ui_MainWindow):
                     figure_res = self.console.current_data.shift_axe("x", value)
                 else:
                     figure_res = self.console.current_data.shift_axe("y", value)
+
+                if figure_res is None:
+                    return
+
+                # on update le tree widget
+                # on ajoute la figure a current_data
+                self.treeWidget.add_figure(figure_res, self.console.current_data.name)
+                self.console.current_data.figures.append(figure_res)
+
+                # on passe la figure en figure courante
+                self.console.current_data.current_figure = figure_res
+
+            elif name == "cycle":
+                # on récupére les cycles sélectionnée
+                cycles = self.argument_selection_creation_w.cycles
+                cycle_type = self.argument_selection_creation_w.comboBox.currentText()
+
+                # delet de la fenêtre
+                self.argument_selection_creation_w.deleteLater()
+                self.argument_selection_creation_w = None
+
+                dict = self.console.create_dictioanaries_loop()
+
+                figure_res = self.console.current_data.create_figure_cycle(dict=dict, type=cycle_type, cycles=cycles)
 
                 if figure_res is None:
                     return
@@ -604,30 +728,32 @@ class Window(QMainWindow, Ui_MainWindow):
         :return: None
         """
 
+        old_name = signal[0]
+        new_name = self.console.current_data.unique_name(signal[1])
+
+        print(signal)
+
         # on cherche la figure portant l'ancien nom
         for figure in self.console.current_data.figures:
-            if figure.name == signal:
+            if figure.name == old_name:
 
                 # le nouveau nom est celui de la tab
-                name = self.tabWidget.tabText(self.tabWidget.currentIndex())
+                self.tabWidget.setTabText(self.tabWidget.currentIndex(), new_name)
 
                 # on update le nom de la figure dans la console
-                figure.name = name
+                figure.name = new_name
 
                 # on update le nom de l'item de tree widget
-                for i in range(self.treeWidget.topLevelItem(0).childCount()):
-                    if self.treeWidget.topLevelItem(0).child(i).text(0) == signal:
-                        self.treeWidget.topLevelItem(0).child(i).setText(0, name)
-                        break
+                self.treeWidget.rename_item(old_name, new_name, 0)
 
                 # on update le nom du plot associé à la tab
-                self.tabWidget.currentWidget().update_title_plot(name)
+                self.tabWidget.currentWidget().update_title_plot(new_name)
 
                 # on update current plot
                 _translate = QtCore.QCoreApplication.translate
                 self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
                                                               "Current plot : "
-                                                + name + " </span></p></body></html>"))
+                                                + new_name + " </span></p></body></html>"))
 
                 break
 
@@ -651,6 +777,8 @@ class Window(QMainWindow, Ui_MainWindow):
     def name_changed_plot(self, signal):
         """
         Déclenchée quand le nom du plot est changé, on update le nom
+        Le unique name se fait par la plot
+
         de current_figure de la console
         On update le nom de la tab associée avec le nouveau nom
         On update tree widget on conséquence
@@ -670,10 +798,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.tabWidget.setTabText(self.tabWidget.currentIndex(), new_name)
 
         # update du nom de l'item associé dans tree widget
-        for i in range(self.treeWidget.topLevelItem(0).childCount()):
-            if self.treeWidget.topLevelItem(0).child(i).text(0) == old_name:
-                self.treeWidget.topLevelItem(0).child(i).setText(0, new_name)
-                break
+        self.treeWidget.rename_item(old_name, new_name, 0)
 
         # on update le label current plot
         _translate = QtCore.QCoreApplication.translate
@@ -790,6 +915,8 @@ class Window(QMainWindow, Ui_MainWindow):
         """
         Déclenché quand le nom du plot est modifiée sur une
         fenêtre
+        Le unique name se fait par la plot
+
         Update des infommations de la fenêtre principal pour la cohérence
         Update de la console
 
@@ -804,10 +931,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.console.current_data.current_figure.name = new_name
 
         # update du nom du tree widget associé
-        for i in range(self.treeWidget.topLevelItem(0).childCount()):
-            if self.treeWidget.topLevelItem(0).child(i).text(0) == old_name:
-                self.treeWidget.topLevelItem(0).child(i).setText(0, new_name)
-                break
+        item = self.treeWidget.get_item(old_name)
+        item.setText(0, new_name)
 
         # on update le label current plot
         _translate = QtCore.QCoreApplication.translate

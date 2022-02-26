@@ -1,3 +1,6 @@
+from Console_Objets.Data_Unit import Units, Data_unit
+
+
 class Console:
     _instance = None
 
@@ -59,3 +62,52 @@ class Console:
             print("\n----------------------------")
 
     """----------------------------------------------------------------------------------"""
+
+    def create_data_unit(self, data_name, row_name):
+        for data in self.datas:
+            if data.name == data_name:
+                units = Units()
+                unit = units.get_unit(row_name)
+                array = data.data[row_name]
+                data_unit = Data_unit(array, unit)
+                return data_unit
+        raise ValueError
+
+    """----------------------------------------------------------------------------------"""
+
+    def create_dictioanaries_loop(self):
+        """
+        On créer le dictionnaire d'information utile pour la création de cycles
+        pour le type de fichier en current_data
+
+        :return: dictionnaire utilisable par les traitements de cycles
+        """
+
+        # on récupére la list des donnée que le traitement cycle du fichier de donnée va utiliser
+        array = self.current_data.get_dics()
+
+        data_get = {}
+        for arg in array:
+            data_get[arg] = {}
+        data_get["vieillissement_info_data"] = {}
+
+        # On regarde l'origine des différentes data de la figure qui va être traité
+        # On récupére les information des loops et des modes sur les fichiers correspondant
+        for i in self.current_data.current_figure.x_axe.data:
+            if i.source not in data_get["loop_data"].keys():
+                j = 0
+                while j < len(self.datas) and i.source != self.datas[j].name:
+                    j += 1
+                if i.source != self.datas[j].name:
+                    print("Fichier introuvable")
+                    raise ValueError
+                else:
+                    for k in data_get.keys():
+                        if type(self.datas[j]).__name__ == "Modulo_bat_vieillissement":
+                            data_get[k][i.source] = self.datas[j].vieillissement.get(k)
+                        else:
+                            data_get[k][i.source] = self.datas[j].data.get(k)
+                    if type(self.datas[j]).__name__ == "Modulo_bat_vieillissement":
+                        data_get["vieillissement_info_data"][i.source] = self.datas[j].vieillissement_info_data
+        print(data_get.keys())
+        return data_get

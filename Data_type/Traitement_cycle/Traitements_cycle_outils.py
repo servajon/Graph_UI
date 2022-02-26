@@ -2,37 +2,7 @@ import matplotlib
 import numpy as np
 
 
-def create_array_cycle_all(loop_data):
-    """On créer un array contenant tous les cycle, 0 => cycle1, 1 => cycle2 etc..."""
-    """En input loop data est un dictionaire, la fonction suivante fait pareil mais avec un array en input
-    Un dictionnaire en entrèe car l'on cherche le plus grand nombre de loop contenue dedans. Utilisé quand
-    on traite des loop de fichier différents"""
-    return_array = []
-    max = 0
-    for i, j in enumerate(loop_data):
-        if len(loop_data[j]) > max:
-            max = len(loop_data[j])
-
-    for i in range(max):
-        return_array.append(i)
-
-    return return_array
-
-
 """---------------------------------------------------------------------------------------------"""
-
-
-def create_cycle_to(min, max):
-    if min > max:
-        raise ValueError
-    return_array = []
-    for i in range(min, max + 1):
-        return_array.append(i)
-    return return_array
-
-
-"""---------------------------------------------------------------------------------------------"""
-
 
 def is_array_croissant(array):
     """   Return 0 sinon l'array n'est pas strictement croissant, 1 si il l'est
@@ -130,14 +100,7 @@ def start_0(array):
         val_min = array[0]
     else:
         return
-        """Si array n'est pas stictement croissant, on cherche la plus petite valeur pour la soustraire"""
-        """Si le vecteur n'est pas croissant, pas besoin de le mettre à 0"""
-        """ val_min = array[0]
-        for i in range(len(array)):
-        if array[i] < val_min:
-        val_min = array[i]"""
 
-    """On soustrait val_min au vecteur"""
     for i in range(len(array)):
         array[i] = (array[i] - val_min)
 

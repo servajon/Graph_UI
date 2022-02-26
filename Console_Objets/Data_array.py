@@ -7,9 +7,6 @@ import matplotlib.colors as mcolors
 
 
 class Data_array:
-    """extra_legende gére une légende que l'on veux concerver même quand il y a une tranformation et que la
-    légende ne porte plus le nom de la data mais du cycle"""
-
     def __init__(self, data_unit, name, source, legende, color=None):
         # data : Data_unit
         self._data_unit = data_unit

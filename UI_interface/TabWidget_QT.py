@@ -6,7 +6,7 @@ from Resources_file import Resources
 
 
 class TabWidget(QtWidgets.QTabWidget):
-    name_changed_tab = pyqtSignal(str)
+    name_changed_tab = pyqtSignal(list)
     break_tab = pyqtSignal(int)
     change_current = pyqtSignal(int)
 
@@ -40,14 +40,7 @@ class TabWidget(QtWidgets.QTabWidget):
         name = QInputDialog.getText(self, "Name change", "New name ?", QLineEdit.Normal)
         if name[1] and name[0] != '':
             old_name = self.tabText(self.currentIndex())
-            names = []
-            for i in range(0, self.count()):
-                if i != self.currentIndex():
-                    names.append(self.tabText(i))
-
-            new_name = Resources.unique_name(names, name[0])
-            self.setTabText(self.currentIndex(), new_name)
-            self.name_changed_tab.emit(old_name)
+            self.name_changed_tab.emit([old_name, name[0]])
 
     def mousePressEvent(self, event):
         self.start_drag_y = event.y()

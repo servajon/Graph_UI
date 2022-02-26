@@ -23,13 +23,13 @@ class Ask_Value(QtWidgets.QWidget):
 
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
-        Dialog.resize(291, 136)
+        """Dialog.resize(291, 136)"""
         Dialog.setMaximumSize(QtCore.QSize(16777215, 16777215))
         self.verticalLayout = QtWidgets.QVBoxLayout(Dialog)
         self.verticalLayout.setObjectName("verticalLayout")
         self.label = QtWidgets.QLabel(Dialog)
-        self.label.setMinimumSize(QtCore.QSize(269, 41))
-        self.label.setMaximumSize(QtCore.QSize(269, 41))
+        """self.label.setMinimumSize(QtCore.QSize(269, 41))
+        self.label.setMaximumSize(QtCore.QSize(269, 41))"""
         self.label.setObjectName("label")
         self.verticalLayout.addWidget(self.label)
         self.horizontalLayout = QtWidgets.QHBoxLayout()

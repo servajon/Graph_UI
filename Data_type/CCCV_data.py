@@ -304,20 +304,23 @@ class CCCV_data(Abstract_data):
 
     """----------------------------------------------------------------------------------"""
 
-    def potentio(self, cycle=None):
+    def potentio(self, cycle):
         if self.data.get("mode") is None:
             print("ImpossibLe de tracer le graphique potentio pour ce fichier")
             return None
 
+        # on créer le nom de la figure
         if cycle is not None and len(cycle) == 3 and cycle[1] == "to":
             name = str(cycle[0]) + "_to_" + str(cycle[2])
-            cycle = Traitements_cycle_outils.create_cycle_to(cycle[0], cycle[2])
+        elif cycle is None:
+            name = "all"
         else:
             name = None
 
-        if self.return_create_cycle(cycle) is False:
-            return None
+        cycle = self.return_create_cycle(cycle)
 
+        if cycle is None:
+            return
 
         new_figure = Traitement_cycle_cccv.potentio(self.data.get("loop_data"),
                                                     self.data.get("time/h"), self.data.get(self.resource.I),
@@ -333,8 +336,90 @@ class CCCV_data(Abstract_data):
 
     """----------------------------------------------------------------------------------"""
 
+    def create_figure_cycle(self, *args, **kwargs):
+        """
+        La création de cycle passe par cette methode, en fonction du type de cycle
+        on appelle la methode de création correspondante
+
+        :param args:
+        :param kwargs:
+        :return:
+        """
+        dict = kwargs["dict"]
+        cycle_type = kwargs["type"]
+        cycle = kwargs["cycles"]
+
+        # on créer le nom de la figure
+        if cycle is not None and len(cycle) == 3 and cycle[1] == "to":
+            name = str(cycle[0]) + "_to_" + str(cycle[2])
+        elif cycle is None:
+            name = "all"
+        else:
+            name = None
+
+        cycle = self.return_create_cycle(cycle)
+
+        if cycle is None:
+            return
+
+        if cycle_type == "Cycle":
+            figure = self.cycle(dict, cycle)
+        elif cycle_type == "Cycle norm":
+            figure = self.cycle_norm(dict, cycle)
+        elif cycle_type == "Cycle miror":
+            figure = self.cycle_miror(dict, cycle)
+        else:
+            raise ValueError
+
+        if figure is None:
+            return
+
+        # On modifie le nom de la figure pour être sûr qu'il soit unique
+        if name is None:
+            figure.name = self.unique_name(self.nom_cell + "_" + figure.name)
+        else:
+            figure.name = self.unique_name(self.nom_cell + "_cycle_" + name)
+
+        return figure
+
+    """----------------------------------------------------------------------------------"""
+
+    def cycle(self, dict, cycle):
+
+        loop_data = dict["loop_data"]
+        mode_data = dict[self.resource.mode]
+        i_data = dict[self.resource.I]
+        ecell_data = dict[self.resource.Ecell_name]
+
+        return Traitement_cycle_cccv.cycle_cccv(self.current_figure, loop_data, mode_data, i_data, ecell_data, cycle)
+
+    """----------------------------------------------------------------------------------"""
+
+    def cycle_norm(self, dict, cycle):
+
+        loop_data = dict["loop_data"]
+        mode_data = dict[self.resource.mode]
+        i_data = dict[self.resource.I]
+        ecell_data = dict[self.resource.Ecell_name]
+
+        return Traitement_cycle_cccv.cycle_norm_cccv(self.current_figure, loop_data, mode_data, i_data, ecell_data, cycle)
+
+    """----------------------------------------------------------------------------------"""
+
+    def cycle_miror(self, dict, cycle):
+
+        loop_data = dict["loop_data"]
+        mode_data = dict[self.resource.mode]
+        i_data = dict[self.resource.I]
+        ecell_data = dict[self.resource.Ecell_name]
+
+        return Traitement_cycle_cccv.cycle_miror_cccv(self.current_figure, loop_data, mode_data, i_data, ecell_data, cycle)
+
+    """----------------------------------------------------------------------------------"""
+
     def derive(self, nb_point=None, window_length=None, polyorder=None):
         return self.derivation(nb_point, window_length, polyorder)
+
 
     """----------------------------------------------------------------------------------"""
     """                                   Methode de class                               """
@@ -404,8 +489,8 @@ class CCCV_data(Abstract_data):
             data_x_unit = Data_unit(new_data_x[len(new_data_y1) + i], unit_x)
             new_figure.add_data_x_Data(
                 Data_array(data_x_unit, self.current_figure.x_axe.data[0].name + " derive",
-                           self.current_figure.data_x[0].source, self.current_figure.data_x[0].legend,
-                           self.current_figure.data_x[0].color))
+                           self.current_figure.x_axe.data[0].source, self.current_figure.x_axe.data[0].legend,
+                           self.current_figure.x_axe.data[0].color))
 
             data_y2_unit = Data_unit(new_data_y2[i], unit_y2)
             new_figure.add_data_y2_Data(Data_array(data_y2_unit, self.current_figure.y2_axe.data[i].name + " derive",
@@ -442,6 +527,8 @@ class CCCV_data(Abstract_data):
                 for j in range(len(new_figure.x_axe.data[i].data)):
                     new_figure.x_axe.data[i].data[j] += val
 
+            new_figure.name += "_shift_x"
+
             new_figure.name = self.unique_name(new_figure.name)
 
         if axe == "y":
@@ -469,6 +556,11 @@ class CCCV_data(Abstract_data):
         new_figure.created_from = self.current_figure
 
         return new_figure
+
+    """----------------------------------------------------------------------------------"""
+
+    def get_dics(self):
+        return "loop_data", self.resource.mode, self.resource.Ecell_name, self.resource.I
 
     """----------------------------------------------------------------------------------"""
 
