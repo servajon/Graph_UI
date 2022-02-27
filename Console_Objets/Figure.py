@@ -13,7 +13,9 @@ class Figure:
         "cycle_y1": ["derive", "shift x", "shift y"],
         "cycle_y1_y2": ["derive", "shift x"],
         "derive_y1": ["shift x", "shift y", "derive"],
-        "derive_y1_y2": ["shift x", "derive"]
+        "derive_y1_y2": ["shift x", "derive"],
+        "diffraction": ["cycle", "calc", "fitting"],
+        "diffraction_cycle": ["calc", "fitting"]
         }
 
     def __init__(self, name, dirty=None):
@@ -514,18 +516,6 @@ class Figure:
             return 0
         else:
             return 1
-
-    """----------------------------------------------------------------------------------"""
-
-    def format_x_axe(self):
-        """on ajoute les data_array manquant à l'axe x
-        si ils sont manquant c'est que la figure a été faire par l'utilisateur"""
-        if self.y2_axe is None:
-            while len(self.x_axe) != len(self.y1_axe):
-                self.x_axe.append(self.x_axe.data[0])
-        else:
-            while len(self.x_axe) != len(self.y1_axe) + len(self.y2_axe):
-                self.x_axe.append(self.x_axe.data[-1])
 
     """----------------------------------------------------------------------------------"""
 

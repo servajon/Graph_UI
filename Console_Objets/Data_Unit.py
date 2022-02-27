@@ -31,7 +31,7 @@ UNITS = {
     "centimeters": "cm",
     "inches": "inch",
     "radians": "radians",
-    "degrees": "deg",
+    "degrees": "degrees",
     "Hertz": "hertz",
     "seconds": "secs",
     "minutes": "minutes",
@@ -66,10 +66,11 @@ UNITS = {
     "C": "coulomb",
     "C/g": "coulomb_par_gramme",
     "mA.h": "milliampere_heure",
+    "°": "degrees",
     # nom des unitées sans conversion
 
-    "%": "pourcentage"
-
+    "%": "pourcentage",
+    "ua": "ua"
 
 
 
@@ -173,7 +174,7 @@ class Units:
         """--------------------------------------------------"""
 
         radians = BasicUnit('rad', 'radians')
-        degrees = BasicUnit('deg', 'degrees')
+        degrees = BasicUnit('°', 'degrees')
 
         radians.add_conversion_factor(degrees, 180.0 / math.pi)
         degrees.add_conversion_factor(radians, math.pi / 180.0)
@@ -246,6 +247,7 @@ class Units:
         # déclaration des unitées non convertibles
         pourcentage = BasicUnit('%', 'pourcentage')
         volt_par_milliampere = BasicUnit('V/mA', 'V/mA')
+        ua = BasicUnit("ua", "Arbitrary Unit")
 
 
         # définition des unités
@@ -266,6 +268,9 @@ class Units:
         self.units["gramme"] = gramme
         self.units["killogramme"] = killogramme
 
+        self.units["degrees"] = degrees
+        self.units["radians"] = radians
+
         self.units["milliampere_heure"] = milliampere_heure
         self.units["coulomb"] = coulomb
 
@@ -275,6 +280,8 @@ class Units:
         self.units["pourcentage"] = pourcentage
 
         self.units["volt_par_milliampere"] = volt_par_milliampere
+        self.units["ua"] = ua
+
 
     def add_unit(self, name):
         """

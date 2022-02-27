@@ -9,10 +9,12 @@ from Resources_file.Emit import Emit
 
 
 class Lecteur_thread:
-    def open(path, file_type, format_time=None):
+    def open(path, file_type):
+        emit = Emit()
         """return data si le fichier a été touvé, raise value error sinon"""
         if type(path) != str:
-            print("Un chemin d'accès au fichier est demandé")
+            emit.emit("msg_console", type="msg_console", str="Un chemin d'accès au fichier est demandé",
+                      foreground_color="red")
             raise ValueError
         if not os.path.exists(path):
             if len(path) > 3 and path[len(path) - 3] != '.':
@@ -22,32 +24,36 @@ class Lecteur_thread:
                     if not os.path.exists(path):
                         path = path[0:len(path) - 4] + ".mpr"
                         if not os.path.exists(path):
-                            print("Fichier introuvable", "fail")
+                            emit.emit("msg_console", type="msg_console", str="Fichier introuvable",
+                                      foreground_color="red")
                             raise ValueError
             else:
-                print("Fichier introuvable")
+                emit.emit("msg_console", type="msg_console", str="Fichier introuvable",
+                          foreground_color="red")
                 raise ValueError
         else:
             if not os.path.isfile(path):
-                print("La ressource n'est pas un fichier")
+                emit.emit("msg_console", type="msg_console", str="La ressource n'est pas un fichier",
+                          foreground_color="red")
                 raise ValueError
 
         if path[len(path) - 4: len(path)] == ".mpt" or path[len(path) - 4: len(path)] == ".txt":
             file = open(path)
             if file_type == "cccv" or file_type == "cv":
-                return extract_data_cccv(file, format_time)
+                return extract_data_cccv(file)
             elif file_type == "gitt":
-                return extract_data_gitt(file, format_time)
+                return extract_data_gitt(file)
             elif file_type == "impedance":
-                return extract_data_impedance(file, format_time)
+                return extract_data_impedance(file)
             elif file_type == "cp":
-                return extract_data_cp(file, format_time)
+                return extract_data_cp(file)
             elif file_type == "modulo_v":
-                return extract_data_modulo_v(file, format_time)
+                return extract_data_modulo_v(file)
             else:
                 raise ValueError
         elif path[len(path) - 4: len(path)] == ".mpr":
-            print("Merci de convertir votre fichier EC-lab en fichier texte")
+            emit.emit("msg_console", type="msg_console", str="Merci de convertir votre fichier EC-lab en fichier texte",
+                      foreground_color="red")
             raise ValueError
             if file_type == "cccv" or file_type == "cv" or file_type == "gitt" or file_type == "cp" or \
                     file_type == "modulo_v":
@@ -59,7 +65,7 @@ class Lecteur_thread:
             raise ValueError
 
 
-def extract_data_cccv(file, format_time=None):
+def extract_data_cccv(file):
     emit = Emit()
     emit.emit("msg_console", type="msg_console", str="Lecture du fichier en cours", foreground_color="yellow")
 

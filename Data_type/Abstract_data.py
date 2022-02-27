@@ -165,6 +165,14 @@ class Abstract_data(ABC):
     def get_dics(self):
         pass
 
+    @abstractmethod
+    def create_diffraction(self):
+        pass
+
+    @abstractmethod
+    def get_cycle_available(self):
+        pass
+
     def unique_name(self, name):
         """Parcours le nom des figures enregistrées et regarde si le nom donné en paramettre est unique, si il ne
         l'est pas on renvoie le même nom avec (1), (2) etc, si le nom est unique on renvoie jsute le nom """
@@ -192,9 +200,6 @@ class Abstract_data(ABC):
     """----------------------------------------------------------------------------------"""
 
     def load_graph(self, figure, path_save=None):
-        """on s'assure que la figure est le même nombre de data sur l'axe des x que des y1 + y2"""
-        figure.format_x_axe()
-
         pplot.rcParams.update({'font.size': 18})
 
         fig, (ax1, leg1) = pplot.subplots(ncols=2, gridspec_kw={"width_ratios": [10, 1]})
@@ -353,9 +358,6 @@ class Abstract_data(ABC):
     """----------------------------------------------------------------------------------"""
 
     def load_graph_bar(self, figure, path_save=None):
-        """on s'assure que la figure est le même nombre de data sur l'axe des x que des y1 + y2"""
-        figure.format_x_axe()
-
         pplot.rcParams.update({'font.size': 18})
 
         fig, (ax1, leg1) = pplot.subplots(ncols=2, gridspec_kw={"width_ratios": [10, 1]})

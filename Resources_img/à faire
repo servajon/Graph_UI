@@ -3,3 +3,10 @@ dans     def edit_current_plot(self):
 mettre des places older plutôt que quelque chose en brut
 
 self.edit_plot_w.lineEdit.setText(self.console.current_data.current_figure.name)
+
+faire quelque chose pour renomer les fichiers
+en penssant a update l'origine de TOUTES les figures
+
+continuer la diffraction
+
+création des figures dans des threads

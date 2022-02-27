@@ -18,12 +18,13 @@ from Resources_file.Emit import Emit
 class Cycle_selection_creation(QtWidgets.QWidget):
     finish_signal = pyqtSignal(str)
 
-    def __init__(self, parent):
+    def __init__(self, list_cycle, parent):
         super(Cycle_selection_creation, self).__init__(parent)
         self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint)
         self.setWindowModality(QtCore.Qt.ApplicationModal)
 
         self.emit = Emit()
+        self.list_cycle = list_cycle
 
         self.setupUi(self)
 
@@ -42,11 +43,10 @@ class Cycle_selection_creation(QtWidgets.QWidget):
         self.horizontalLayout_2.addItem(spacerItem)
         self.comboBox = QtWidgets.QComboBox(Dialog)
         self.comboBox.setObjectName("comboBox")
-        self.comboBox.addItem("")
-        self.comboBox.addItem("")
-        self.comboBox.addItem("")
-        self.comboBox.addItem("")
-        self.comboBox.addItem("")
+
+        for cycle in self.list_cycle:
+            self.comboBox.addItem(cycle)
+
         self.horizontalLayout_2.addWidget(self.comboBox)
         spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_2.addItem(spacerItem1)
@@ -107,11 +107,6 @@ class Cycle_selection_creation(QtWidgets.QWidget):
         Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
         self.label_2.setText(_translate("Dialog",
                                         "<html><head/><body><p><span style=\" font-size:12pt;\">Traitement type :</span></p></body></html>"))
-        self.comboBox.setItemText(0, _translate("Dialog", "Cycle"))
-        self.comboBox.setItemText(1, _translate("Dialog", "Cycle norm"))
-        self.comboBox.setItemText(2, _translate("Dialog", "Cycle miror"))
-        self.comboBox.setItemText(3, _translate("Dialog", "Cycle split"))
-        self.comboBox.setItemText(4, _translate("Dialog", "Cycle split norm"))
         self.label.setText(_translate("Dialog",
                                       "<html><head/><body><p><span style=\" font-size:12pt;\">Cycle Selection</span></p></body></html>"))
         self.radioButton.setText(_translate("Dialog", "All"))

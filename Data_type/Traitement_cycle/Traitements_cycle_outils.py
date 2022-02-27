@@ -25,13 +25,13 @@ def is_array_croissant(array):
 """---------------------------------------------------------------------------------------------"""
 
 
-def mode_del(array_x, array_y, val_min, val_max, mode_data, mode, centre=None):
+def mode_del(array_x, array_y, global_index, val_min, val_max, mode_data, mode, centre=None):
     if mode_data is None:
-        return [array_x, array_y]
+        return [array_x, array_y, global_index]
 
-    """Si le mode que l'on cherche a suprimer est au milier du cycle, on return dans rien faire"""
+    """Si le mode que l'on cherche a suprimer est au milieux du cycle, on return dans rien faire"""
     if mode_data[val_min] != mode and mode_data[val_max] != mode:
-        return [array_x, array_y]
+        return [array_x, array_y, global_index]
 
     """on suprime le mode mode, utilisé pour retirer les plateaux, correspondant au mode 2
     Mode_data sert à déterminer le mode de chaque point"""
@@ -39,20 +39,22 @@ def mode_del(array_x, array_y, val_min, val_max, mode_data, mode, centre=None):
     nb_avant_centre = 0
     array_return_x = []
     array_return_y = []
+    global_index_return = []
     for i in range(len(array_x)):
         if mode_data[val_min + i] != mode:
             array_return_x.append(array_x[i])
             array_return_y.append(array_y[i])
+            global_index_return.append(global_index[i])
         elif centre is not None:
             if i < centre:
                 nb_avant_centre += 1
 
     """On return deux nouveaux array résultat"""
     if centre is None:
-        return [array_return_x, array_return_y]
+        return [array_return_x, array_return_y, global_index_return]
 
     else:
-        return [array_return_x, array_return_y, nb_avant_centre]
+        return [array_return_x, array_return_y, global_index_return, nb_avant_centre]
 
 
 """---------------------------------------------------------------------------------------------"""

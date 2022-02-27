@@ -645,22 +645,6 @@ class Edit_affiche(Abstract_objet_affiche):
                 index_x, index_y = Resources.index_array(self.figure, [self.pos_x, self.pos_y])
 
                 self.index = [index_x, index_y]
-                count = 0
-                for ax in self.pplot_fig.axes:
-                    for line in ax.lines:
-                        if "#" in line.get_color():
-                            if count != self.index[0][1]:
-                                color = line.get_color()
-                                color = str(color)
-                                color += "50"
-                                line.set_color(color)
-                        elif len(line.get_color()) == 4:
-                            if count != self.index[0][1]:
-                                hex_color = matplotlib.colors.to_hex(line.get_color())
-                                color = str(hex_color)
-                                color += "50"
-                                line.set_color(color)
-                        count += 1
 
             if self.index[0] != -1:
                 xtickslocs = str(self.ax1.get_xticks()[1])
@@ -778,22 +762,6 @@ class Edit_affiche(Abstract_objet_affiche):
 
     """----------------------------------------------------------------------------------"""
 
-    def reset_color(self):
-        for ax in self.pplot_fig.axes:
-            for line in ax.lines:
-                if "#" in line.get_color():
-                    color = line.get_color()
-                    if len(str(color)) == 9:
-                        color = str(color)
-                        color = color[0:7]
-                        line.set_color(color)
-
-        texts = self.leg1.get_legend().get_texts()
-        for text in texts:
-            text.set_c("black")
-
-    """----------------------------------------------------------------------------------"""
-
     def on_move(self, event):
         self.pos_x = event.xdata
         self.pos_y = event.ydata
@@ -830,7 +798,6 @@ class Edit_affiche(Abstract_objet_affiche):
                 pass
             self.ligne2 = None
 
-        self.reset_color()
         self.pplot_fig.canvas.draw()
 
     """----------------------------------------------------------------------------------"""
@@ -888,6 +855,7 @@ class Edit_affiche(Abstract_objet_affiche):
         new_data_x = np.delete(new_data_x, self.res)
         new_data_y = np.delete(new_data_y, self.res)
 
+
         self.ax1.lines[0].set_xdata(new_data_x)
         self.ax1.lines[0].set_ydata(new_data_y)
 
@@ -896,8 +864,12 @@ class Edit_affiche(Abstract_objet_affiche):
 
         self.figure.x_axe.data[0].data = new_data_x
         self.figure.y1_axe.data[0].data = new_data_y
+        self.figure.x_axe.data[0].global_index.pop(self.res)
 
         self.pplot_fig.canvas.draw()
+
+    def reset_color(self):
+        pass
 
 
 

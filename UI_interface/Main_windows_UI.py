@@ -18,6 +18,7 @@ from Console_Objets.Data_array import Data_array
 from Console_Objets.Figure import Figure
 from Data_type import Abstract_data
 from Data_type.CCCV_data import CCCV_data
+from Data_type.Diffraction_data import Diffraction_data
 from Resources_file import Resources
 from Resources_file.Emit import Emit
 from UI_interface import Threads_UI
@@ -98,6 +99,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.actioncccv.triggered.connect(self.open_cccv)
         self.actioncv.triggered.connect(self.open_cv)
         self.actiongitt.triggered.connect(self.open_gitt)
+        self.actiondiffracion.triggered.connect(self.open_diffraction)
         self.actionEdit_Current_Plot.triggered.connect(self.edit_current_plot)
         self.actionview_data_Current_Plot.triggered.connect(self.view_data_Current_Plot)
 
@@ -220,6 +222,39 @@ class Window(QMainWindow, Ui_MainWindow):
 
     """---------------------------------------------------------------------------------"""
 
+    def open_diffraction(self):
+        # création de l'objet QFileDialog
+        dialog = QFileDialog()
+        # si il y a une sauvegarde d'état elle est utilisée
+        if self.save_state_dialog is not None:
+            dialog.restoreState(self.save_state_dialog)
+
+        dialog.setWindowTitle('Open diffraction folder')
+        dialog.setFileMode(QFileDialog.DirectoryOnly)
+
+        if dialog.exec_() == QDialog.Accepted:
+            folder_name = dialog.selectedFiles()[0]
+            folder_name = r"C:\Users\Maxime\Desktop\diffraction_calc"
+
+            # création d'un nouveau thread
+            t = QThread()
+
+            # création du worker
+            worker = Threads_UI.Open_file_diffraction(folder_name)
+            worker.moveToThread(t)
+
+            # connection
+            t.started.connect(worker.run)
+            worker.finished.connect(self.fin_thread_lecture)
+
+            self.threads.append([t, worker])
+            t.start()
+
+            # on sauvegarde l'état de la fenêtre d'ouverture de fichiers
+            self.save_state_dialog = dialog.saveState()
+
+    """---------------------------------------------------------------------------------"""
+
     def create_current_data(self):
         """
         Methode appellé par le button create de current data (new plot)
@@ -268,25 +303,30 @@ class Window(QMainWindow, Ui_MainWindow):
 
                 max_size = 0
                 index = 0
+                name_current_data = self.console.current_data.__name__
                 for data in self.console.datas:
-                    for row_name in data.data["row_data"]:
-                        self.argument_selection_creation_w.listWidget.addItem(data.name + "\t" + row_name)
-                        self.argument_selection_creation_w.listWidget_3.addItem(data.name + "\t" + row_name)
-                        self.argument_selection_creation_w.listWidget_4.addItem(data.name + "\t" + row_name)
-                        max_size = max(max_size,
-                                       self.argument_selection_creation_w.listWidget.sizeHintForRow(index),
-                                       self.argument_selection_creation_w.listWidget_3.sizeHintForRow(index),
-                                       self.argument_selection_creation_w.listWidget_4.sizeHintForRow(index))
-                        index += 1
+                    if data.__name__ == name_current_data:
+                        for row_name in data.data["row_data"]:
+                            self.argument_selection_creation_w.listWidget.addItem(data.name + "\t" + row_name)
+                            self.argument_selection_creation_w.listWidget_3.addItem(data.name + "\t" + row_name)
+                            self.argument_selection_creation_w.listWidget_4.addItem(data.name + "\t" + row_name)
+                            max_size = max(max_size,
+                                           self.argument_selection_creation_w.listWidget.sizeHintForRow(index),
+                                           self.argument_selection_creation_w.listWidget_3.sizeHintForRow(index),
+                                           self.argument_selection_creation_w.listWidget_4.sizeHintForRow(index))
+                            index += 1
                 self.argument_selection_creation_w.resize(max_size * 10 +100, 400)
                 self.argument_selection_creation_w.show()
+
+            elif self.comboBox_5.currentText() == "Diffraction":
+                self.callback_create_current_data("save", "Diffraction")
 
 
     """---------------------------------------------------------------------------------"""
 
     def callback_create_current_data(self, event, name):
         """
-        Fonction callback de
+        Fonction callback de create_current_data
 
         :param event: save / cancel
         :param name: capa / potentio / custom ...
@@ -372,21 +412,31 @@ class Window(QMainWindow, Ui_MainWindow):
 
                 # on ajoute les données correspondantes aux sélections
                 res = x_items[0].split("\t")
-                data_unit = self.console.create_data_unit(res[0], res[1])
-                figure.add_data_x_Data(Data_array(data_unit, res[1], res[0], res[1]))
+
+                for i in range(len(y1_items) + len(y2_items)):
+                    data_unit = self.console.create_data_unit(res[0], res[1])
+                    data_array_x = Data_array(data_unit, res[1], res[0], res[1])
+                    data_array_x.global_index = [index for index in range(len(data_unit.data))]
+
+                    figure.add_data_x_Data(data_array_x)
 
                 # on ajoute pour y1
                 for i in range(len(y1_items)):
                     res = y1_items[i].split("\t")
                     data_unit = self.console.create_data_unit(res[0], res[1])
-                    figure.add_data_y1_Data(Data_array(data_unit, res[1], res[0], res[1]))
+                    data_array_y1 = Data_array(data_unit, res[1], res[0], res[1])
+                    data_array_y1.global_index = [index for index in range(len(data_unit.data))]
+
+                    figure.add_data_y1_Data(data_array_y1)
 
                 # on ajoute pour y2
                 for i in range(len(y2_items)):
                     res = y2_items[i].split("\t")
-                    print(res)
                     data_unit = self.console.create_data_unit(res[0], res[1])
-                    figure.add_data_y2_Data(Data_array(data_unit, res[1], res[0], res[1]))
+                    data_array_y2 = Data_array(data_unit, res[1], res[0], res[1])
+                    data_array_y2.global_index = [index for index in range(len(data_unit.data))]
+
+                    figure.add_data_y2_Data(data_array_y2)
 
                 # on set le type de la figure en fonction de si y2_items est vide ou pas
                 # on set le scale des axes également
@@ -408,6 +458,16 @@ class Window(QMainWindow, Ui_MainWindow):
                 # on passe la figure en figure courante
                 self.console.current_data.current_figure = figure
 
+            elif name == "Diffraction":
+                new_figure = self.console.current_data.create_diffraction()
+
+                # on update le tree widget
+                # on ajoute la figure a current_data
+                self.treeWidget.add_figure(new_figure, self.console.current_data.name)
+                self.console.current_data.figures.append(new_figure)
+
+                # on passe la figure en figure courante
+                self.console.current_data.current_figure = new_figure
 
             _translate = QtCore.QCoreApplication.translate
             self.label_5.setText(
@@ -452,9 +512,13 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.argument_selection_creation_w.finish_signal.connect(
                     lambda event: self.create_figure_callback(event, "shift y"))
             elif self.comboBox_4.currentText() == "cycle":
-                self.argument_selection_creation_w = Cycle_selection_creation(self)
+                self.argument_selection_creation_w = Cycle_selection_creation\
+                    (self.console.current_data.get_cycle_available(), self)
+
                 self.argument_selection_creation_w.finish_signal.connect(
                     lambda event: self.create_figure_callback(event, "cycle"))
+            elif self.comboBox_4.currentText() == "fitting":
+                pass
 
             self.argument_selection_creation_w.show()
 
@@ -520,24 +584,40 @@ class Window(QMainWindow, Ui_MainWindow):
 
                 dict = self.console.create_dictioanaries_loop()
 
-                figure_res = self.console.current_data.create_figure_cycle(dict=dict, type=cycle_type, cycles=cycles)
-
-                if figure_res is None:
+                try:
+                    figure_res = self.console.current_data.create_figure_cycle\
+                        (dict=dict, type=cycle_type, cycles=cycles)
+                except ValueError:
                     return
 
-                # on update le tree widget
-                # on ajoute la figure a current_data
-                self.treeWidget.add_figure(figure_res, self.console.current_data.name)
-                self.console.current_data.figures.append(figure_res)
+                # si plusieurs figure ont été crée
+                if isinstance(figure_res, list):
+                    for figure in figure_res:
+                        print(figure.name)
+                        # on update le tree widget
+                        # on ajoute la figure a current_data
+                        self.treeWidget.add_figure(figure, self.console.current_data.name)
+                        self.console.current_data.figures.append(figure)
 
-                # on passe la figure en figure courante
-                self.console.current_data.current_figure = figure_res
+                        # on passe la figure en figure courante
+                        self.console.current_data.current_figure = figure
+                else:
+                    # on update le tree widget
+                    # on ajoute la figure a current_data
+                    self.treeWidget.add_figure(figure_res, self.console.current_data.name)
+                    self.console.current_data.figures.append(figure_res)
+
+                    # on passe la figure en figure courante
+                    self.console.current_data.current_figure = figure_res
 
             _translate = QtCore.QCoreApplication.translate
             self.label_5.setText(
                 _translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
                                          "Current plot : "
                            + self.console.current_data.current_figure.name + " </span></p></body></html>"))
+
+            # on update les actions disponibles pour cette figure
+            self.update_action_combo()
 
     """---------------------------------------------------------------------------------"""
 
@@ -653,6 +733,9 @@ class Window(QMainWindow, Ui_MainWindow):
             # on update current_data de la console
             self.console.set_current_data_name(self.treeWidget.selectedItems()[0].text(0))
 
+            # on update la combobox new plot
+            self.update_new_plot_combo()
+
     """---------------------------------------------------------------------------------"""
 
     def fin_thread_lecture(self):
@@ -701,11 +784,34 @@ class Window(QMainWindow, Ui_MainWindow):
 
                         self.update_console({"str": "Done", "foreground_color": "green"})
 
+                    elif type(self.threads[index][1]).__name__ == "Open_file_diffraction":
+                        # on créer un objet data cccv
+                        obj_data = Diffraction_data()
+
+                        # on lui ajoute les data lu par le thread
+                        obj_data.data = self.threads[index][1].data
+
+                        # créer son nom
+                        obj_data.name = obj_data.data["name"]
+
+                        # on ajoute l'objet data à la console
+                        self.console.add_data(obj_data)
+
+                        # on update le tree widget
+                        self.treeWidget.add_data("diffraction", obj_data.name)
+
+                        # on update current data avec ne nom du nouveau fichier
+                        _translate = QtCore.QCoreApplication.translate
+                        self.label.setText(
+                            _translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                                     "Current data : "
+                                       + obj_data.name + " </span></p></body></html>"))
+
+                        self.update_console({"str": "Done", "foreground_color": "green"})
+
                     # on récupére les actions disponibles pour ce type de fichier pour update
                     # current data comboBox_5
-                    self.comboBox_5.clear()
-                    for action in self.console.current_data.get_operation_available():
-                        self.comboBox_5.addItem(action)
+                    self.update_new_plot_combo()
 
                 # on termine le thread
                 self.threads[index][0].terminate()
@@ -730,8 +836,6 @@ class Window(QMainWindow, Ui_MainWindow):
 
         old_name = signal[0]
         new_name = self.console.current_data.unique_name(signal[1])
-
-        print(signal)
 
         # on cherche la figure portant l'ancien nom
         for figure in self.console.current_data.figures:
@@ -1015,8 +1119,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         # si le type de fichier a changé, il faut update les actions disponibles
         if parent.text(1) != self.console.current_data.__name__:
-            for action in self.console.current_data.get_operation_available():
-                self.comboBox_5.addItem(action)
+            self.update_new_plot_combo()
 
         # on update current data avec le nom du parant
         self.label.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
@@ -1179,6 +1282,18 @@ class Window(QMainWindow, Ui_MainWindow):
         actions = self.console.current_data.current_figure.get_operation()
         for action in actions:
             self.comboBox_4.addItem(action)
+
+    """---------------------------------------------------------------------------------"""
+
+    def update_new_plot_combo(self):
+        """
+        On update la combobox des actions disponible en fonction de current_data
+
+        :return: None
+        """
+        self.comboBox_5.clear()
+        for action in self.console.current_data.get_operation_available():
+            self.comboBox_5.addItem(action)
 
     """---------------------------------------------------------------------------------"""
     """                            Edit Current Plot start                              """

@@ -2,7 +2,7 @@ from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import pyqtSignal
 
 from Resources_file.Emit import Emit
-from UI_interface.Line_edit_QT import Line_edit_float, Line_edit_int
+from UI_interface.Line_edit_QT import Line_edit_float, Line_edit_int, Line_edit_str
 
 
 class Ask_Value(QtWidgets.QWidget):
@@ -42,6 +42,8 @@ class Ask_Value(QtWidgets.QWidget):
             self.lineEdit = Line_edit_int(Dialog)
         elif self.type == "float":
             self.lineEdit = Line_edit_float(Dialog)
+        elif self.type == "str":
+            self.lineEdit = Line_edit_str(Dialog)
 
         self.lineEdit.setObjectName("lineEdit")
         self.horizontalLayout.addWidget(self.lineEdit)

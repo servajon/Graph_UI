@@ -355,7 +355,10 @@ class CCCV_data(Abstract_data):
         elif cycle is None:
             name = "all"
         else:
-            name = None
+            s = ""
+            for i in cycle:
+                s += str(i) + " "
+            name = s[0:-1]
 
         cycle = self.return_create_cycle(cycle)
 
@@ -368,17 +371,19 @@ class CCCV_data(Abstract_data):
             figure = self.cycle_norm(dict, cycle)
         elif cycle_type == "Cycle miror":
             figure = self.cycle_miror(dict, cycle)
+        elif cycle_type == "Cycle split":
+            figure = self.cycle_split(dict, cycle)
+        elif cycle_type == "Cycle split norm":
+            figure = self.cycle_split_norm(dict, cycle)
         else:
             raise ValueError
 
-        if figure is None:
-            return
-
         # On modifie le nom de la figure pour être sûr qu'il soit unique
-        if name is None:
-            figure.name = self.unique_name(self.nom_cell + "_" + figure.name)
+        if isinstance(figure, list):
+            for f in figure:
+                f.name = self.unique_name(self.nom_cell + " cycle " + name + f.name)
         else:
-            figure.name = self.unique_name(self.nom_cell + "_cycle_" + name)
+            figure.name = self.unique_name(self.nom_cell + " cycle " + name + figure.name)
 
         return figure
 
@@ -391,7 +396,8 @@ class CCCV_data(Abstract_data):
         i_data = dict[self.resource.I]
         ecell_data = dict[self.resource.Ecell_name]
 
-        return Traitement_cycle_cccv.cycle_cccv(self.current_figure, loop_data, mode_data, i_data, ecell_data, cycle)
+        return Traitement_cycle_cccv.cycle_cccv(
+            self.current_figure, loop_data, mode_data, i_data, ecell_data, cycle)
 
     """----------------------------------------------------------------------------------"""
 
@@ -402,7 +408,8 @@ class CCCV_data(Abstract_data):
         i_data = dict[self.resource.I]
         ecell_data = dict[self.resource.Ecell_name]
 
-        return Traitement_cycle_cccv.cycle_norm_cccv(self.current_figure, loop_data, mode_data, i_data, ecell_data, cycle)
+        return Traitement_cycle_cccv.cycle_norm_cccv(
+            self.current_figure, loop_data, mode_data, i_data, ecell_data, cycle)
 
     """----------------------------------------------------------------------------------"""
 
@@ -413,7 +420,32 @@ class CCCV_data(Abstract_data):
         i_data = dict[self.resource.I]
         ecell_data = dict[self.resource.Ecell_name]
 
-        return Traitement_cycle_cccv.cycle_miror_cccv(self.current_figure, loop_data, mode_data, i_data, ecell_data, cycle)
+        return Traitement_cycle_cccv.cycle_miror_cccv(
+            self.current_figure, loop_data, mode_data, i_data, ecell_data, cycle)
+
+    """----------------------------------------------------------------------------------"""
+
+    def cycle_split(self, dict, cycle):
+
+        loop_data = dict["loop_data"]
+        mode_data = dict[self.resource.mode]
+        i_data = dict[self.resource.I]
+        ecell_data = dict[self.resource.Ecell_name]
+
+        return Traitement_cycle_cccv.cycle_split_cccv(
+            self.current_figure, loop_data, mode_data, i_data, ecell_data, cycle)
+
+    """----------------------------------------------------------------------------------"""
+
+    def cycle_split_norm(self, dict, cycle):
+
+        loop_data = dict["loop_data"]
+        mode_data = dict[self.resource.mode]
+        i_data = dict[self.resource.I]
+        ecell_data = dict[self.resource.Ecell_name]
+
+        return Traitement_cycle_cccv.cycle_split_cccv(
+            self.current_figure, loop_data, mode_data, i_data, ecell_data, cycle, 1)
 
     """----------------------------------------------------------------------------------"""
 
@@ -446,6 +478,9 @@ class CCCV_data(Abstract_data):
         else:
             data_y2 = None
             unit_y2 = None
+
+        if nb_point is not None:
+            _nb_point = nb_point
 
         for i in range(len(data_y1)):
             if nb_point is None:
@@ -531,7 +566,7 @@ class CCCV_data(Abstract_data):
 
             new_figure.name = self.unique_name(new_figure.name)
 
-        if axe == "y":
+        elif axe == "y":
             if self.current_figure.y2_axe is not None:
                 emit = Emit()
                 emit.emit("msg_console", type="msg_console", str="y2 axis must be empty", foreground_color="red")
@@ -552,6 +587,8 @@ class CCCV_data(Abstract_data):
             new_figure.name += "_shift_y1"
 
             new_figure.name = self.unique_name(new_figure.name)
+        else:
+            raise ValueError
 
         new_figure.created_from = self.current_figure
 
@@ -561,6 +598,11 @@ class CCCV_data(Abstract_data):
 
     def get_dics(self):
         return "loop_data", self.resource.mode, self.resource.Ecell_name, self.resource.I
+
+    """----------------------------------------------------------------------------------"""
+
+    def get_cycle_available(self):
+        return ["Cycle", "Cycle norm", "Cycle miror", "Cycle split", "Cycle split norm"]
 
     """----------------------------------------------------------------------------------"""
 
@@ -622,6 +664,9 @@ class CCCV_data(Abstract_data):
     @resource.setter
     def resource(self, resource):
         self._resource = resource
+
+    def create_diffraction(self):
+        raise ValueError
 
 
 """"----------------------------------------------------------------------------------"""

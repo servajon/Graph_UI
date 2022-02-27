@@ -128,9 +128,6 @@ class Axe:
         return new_axe
 
 
-
-
-
     @property
     def name(self):
         return self.__name
