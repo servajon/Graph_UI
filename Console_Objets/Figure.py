@@ -5,18 +5,18 @@ from Console_Objets.Data_array import Data_array
 
 class Figure:
     __TYPE = {
-        "capa": ["shift x"],
-        "potentio": ["derive", "shift x", "shift y"],
-        "bar": [],
-        "custom_y1": ["derive", "cycle", "shift x", "shift y"],
-        "custom_y1_y2": ["derive", "cycle", "shift x"],
-        "cycle_y1": ["derive", "shift x", "shift y"],
-        "cycle_y1_y2": ["derive", "shift x"],
-        "derive_y1": ["shift x", "shift y", "derive"],
-        "derive_y1_y2": ["shift x", "derive"],
-        "diffraction": ["cycle", "calc", "fitting"],
-        "diffraction_cycle": ["calc", "fitting"]
-        }
+        "capa": ["shift x"],  # figure du traitement capa
+        "potentio": ["derive", "shift x", "shift y"],  # figure du traitement potentio
+        "bar": [],  # graph bar de la capa
+        "custom_y1": ["derive", "cycle", "shift x", "shift y"],  # random figure avec uniquement quelque chose en y1
+        "custom_y1_y2": ["derive", "cycle", "shift x"],  # random figure avec axe y1 ET y2
+        "cycle_y1": ["derive", "shift x", "shift y"],   # figure issus d'un traitement de cycle avec quelque chose en y1
+        "cycle_y1_y2": ["derive", "shift x"],   # figure issus d'un traitement de cycle avec quelque chose en y1 ET y2
+        "derive_y1": ["shift x", "shift y", "derive"],  # figure issus d'une dérivée avec data en y1
+        "derive_y1_y2": ["shift x", "derive"],  # figure issus d'une dérivée avec data en y1 ET y2
+        "diffraction": ["cycle", "calc", "fitting"],    # figure du traitement diffraction
+        "diffraction_cycle": ["calc", "fitting"]    # figure issus d'une selection de cycle d'une figure de diffraction
+    }
 
     def __init__(self, name, dirty=None):
         self.x_axe = None
@@ -146,6 +146,7 @@ class Figure:
     @created_from.setter
     def created_from(self, created_form):
         self._created_from = created_form
+
     """                                                             """
     """                      methodes de class                      """
     """                                                             """
@@ -154,7 +155,7 @@ class Figure:
     """                      methodes add vecteur de data                      """
     """                                                                        """
 
-    def add_data_x(self, data_x, name,  source, legend=None):
+    def add_data_x(self, data_x, name, source, legend=None):
         """
         On ajoute à l'axe x de la figure data_x. data_x est soit une list
         soit un objet Data_unit
@@ -212,7 +213,7 @@ class Figure:
 
     """----------------------------------------------------------------------------------"""
 
-    def set_data_x(self, data_x, name,  source, legend=None):
+    def set_data_x(self, data_x, name, source, legend=None):
         """
         On ajoute à l'axe x de la figure data_x. data_x est soit une list
         soit un objet Data_unit
@@ -254,7 +255,7 @@ class Figure:
 
     """----------------------------------------------------------------------------------"""
 
-    def add_data_y1(self, data_y, name,  source, legend=None, color=None):
+    def add_data_y1(self, data_y, name, source, legend=None, color=None):
         """
         On ajoute à l'axe y1 de la figure data_y. data_y est soit une list
         soit un objet Data_unit
@@ -310,7 +311,7 @@ class Figure:
 
     """----------------------------------------------------------------------------------"""
 
-    def add_data_y2(self, data_y, name,  source, legende=None, color=None):
+    def add_data_y2(self, data_y, name, source, legende=None, color=None):
         """
         On ajoute à l'axe y2 de la figure data_y. data_y est soit une list
         soit un objet Data_unit
@@ -366,7 +367,7 @@ class Figure:
 
     """----------------------------------------------------------------------------------"""
 
-    def add_data_z1(self, data_z, name,  source, legende=None):
+    def add_data_z1(self, data_z, name, source, legende=None):
         """
         On ajoute à l'axe z1 de la figure data_z. data_z est soit une list
         soit un objet Data_unit
@@ -444,7 +445,8 @@ class Figure:
             for i in range(len(self.data_y1)):
                 if self.data_y1[i].name is not None:
                     if type(self.data_y1[i].color) == type(str):
-                        print("Données chargées en y1 : " + self.data_y1[i].name + " couleur : " + self.data_y1[i].color)
+                        print(
+                            "Données chargées en y1 : " + self.data_y1[i].name + " couleur : " + self.data_y1[i].color)
                     else:
                         print("Donnéss chargées en y1 : " + self.data_y1[i].name)
 
@@ -454,7 +456,8 @@ class Figure:
             for i in range(len(self.data_z1)):
                 if self.data_z1[i].name is not None:
                     if type(self.data_z1[i].color) == type(str):
-                        print("Données chargées en z1 : " + self.data_z1[i].name + " couleur : " + self.data_z1[i].color)
+                        print(
+                            "Données chargées en z1 : " + self.data_z1[i].name + " couleur : " + self.data_z1[i].color)
                     else:
                         print("Données chargées en z1 : " + self.data_z1[i].name)
 
@@ -464,7 +467,8 @@ class Figure:
             for i in range(len(self.data_y2)):
                 if self.data_y2[i].name is not None:
                     if type(self.data_y2[i].color) == type(str):
-                        print("Données chargées en y2 : " + self.data_y2[i].name + " couleur : " + self.data_y2[i].color)
+                        print(
+                            "Données chargées en y2 : " + self.data_y2[i].name + " couleur : " + self.data_y2[i].color)
                     else:
                         print("Données chargées en y2 : " + self.data_y2[i].name)
 
@@ -542,7 +546,6 @@ class Figure:
         """
         return self.__TYPE[self.type]
 
-
     def copy(self):
         new_figure = Figure(self.name + "_copy", self.dirty)
 
@@ -553,18 +556,3 @@ class Figure:
                 new_figure.__setattr__(att, value.copy())
 
         return new_figure
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
