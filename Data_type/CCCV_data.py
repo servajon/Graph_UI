@@ -606,6 +606,9 @@ class CCCV_data(Abstract_data):
 
     """----------------------------------------------------------------------------------"""
 
+    def diffraction_contour_temperature(self):
+        pass
+
     """                                                  """
     """                      getter                      """
     """                                                  """

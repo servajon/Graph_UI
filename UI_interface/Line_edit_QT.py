@@ -53,7 +53,7 @@ class Line_edit_int(QtWidgets.QLineEdit):
                 self.setText(self.text()[0:start_select] + self.text()[end_select:])
 
     def get_value(self):
-        return int(self.text().replace(",", "."))
+        return int(self.text())
 
 
 class Line_edit_str(QtWidgets.QLineEdit):

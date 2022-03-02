@@ -1,5 +1,6 @@
 import copy
 import sys
+import time
 
 import matplotlib
 
@@ -11,14 +12,18 @@ from PyQt5.QtWidgets import (
 )
 
 import matplotlib.pyplot as pplot
-from Console_Objets.Affiche_objet import Classique_affiche, Edit_affiche
+
+import Console_Objets.Figure
+from Console_Objets.Affiche_objet import Classique_affiche, Edit_affiche, Pic_selection
 from Console_Objets.Console import Console
-from Console_Objets.Data_Unit import Data_unit
+from Console_Objets.Data_Unit import Data_unit, Units
 from Console_Objets.Data_array import Data_array
 from Console_Objets.Figure import Figure
 from Data_type import Abstract_data
 from Data_type.CCCV_data import CCCV_data
 from Data_type.Diffraction_data import Diffraction_data
+from Data_type.Ihch_1501 import Ihch_1501
+from Math.Fitting import Fitting
 from Resources_file import Resources
 from Resources_file.Emit import Emit
 from UI_interface import Threads_UI
@@ -26,6 +31,7 @@ from UI_interface.Ask_Value_QT import Ask_Value
 from UI_interface.Create_figure import Create_figure
 from UI_interface.Cycle_selection_creation import Cycle_selection_creation
 from UI_interface.Derive_Selection_QT import Derive_Selection
+from UI_interface.Edit_plot_contour import Edit_plot_contour
 from UI_interface.Figure_plot_QT import Figure_plot
 from UI_interface.Main_window_QT import Ui_MainWindow
 from UI_interface.Edit_view_data_QT import Edit_view_data
@@ -35,6 +41,7 @@ from UI_interface.Edit_plot_QT import Edit_plot
 """----------------------------------------------------------------------------------"""
 """                                   Main window                                    """
 """----------------------------------------------------------------------------------"""
+
 
 
 class Window(QMainWindow, Ui_MainWindow):
@@ -102,6 +109,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.actiondiffracion.triggered.connect(self.open_diffraction)
         self.actionEdit_Current_Plot.triggered.connect(self.edit_current_plot)
         self.actionview_data_Current_Plot.triggered.connect(self.view_data_Current_Plot)
+        self.actionIhch_1501.triggered.connect(self.open_ihch_1501)
 
         self.pushButton_5.clicked.connect(self.create_current_data)
         self.pushButton_4.clicked.connect(self.create_figure)
@@ -234,13 +242,46 @@ class Window(QMainWindow, Ui_MainWindow):
 
         if dialog.exec_() == QDialog.Accepted:
             folder_name = dialog.selectedFiles()[0]
-            folder_name = r"C:\Users\Maxime\Desktop\diffraction_calc"
+            folder_name = r"C:\Users\Maxime\Desktop\diffraction_test"
 
             # création d'un nouveau thread
             t = QThread()
 
             # création du worker
             worker = Threads_UI.Open_file_diffraction(folder_name)
+            worker.moveToThread(t)
+
+            # connection
+            t.started.connect(worker.run)
+            worker.finished.connect(self.fin_thread_lecture)
+
+            self.threads.append([t, worker])
+            t.start()
+
+            # on sauvegarde l'état de la fenêtre d'ouverture de fichiers
+            self.save_state_dialog = dialog.saveState()
+
+    """---------------------------------------------------------------------------------"""
+
+    def open_ihch_1501(self):
+        # création de l'objet QFileDialog
+        dialog = QFileDialog()
+        # si il y a une sauvegarde d'état elle est utilisée
+        if self.save_state_dialog is not None:
+            dialog.restoreState(self.save_state_dialog)
+
+        dialog.setWindowTitle('Open diffraction folder')
+        dialog.setFileMode(QFileDialog.DirectoryOnly)
+
+        if dialog.exec_() == QDialog.Accepted:
+            folder_name = dialog.selectedFiles()[0]
+            folder_name = r"C:\Users\Maxime\Desktop\Diffraction_marta_test"
+
+            # création d'un nouveau thread
+            t = QThread()
+
+            # création du worker
+            worker = Threads_UI.Open_file_ihch_1501(folder_name)
             worker.moveToThread(t)
 
             # connection
@@ -321,6 +362,8 @@ class Window(QMainWindow, Ui_MainWindow):
             elif self.comboBox_5.currentText() == "Diffraction":
                 self.callback_create_current_data("save", "Diffraction")
 
+            elif self.comboBox_5.currentText() == "Contour":
+                self.callback_create_current_data("save", "Contour")
 
     """---------------------------------------------------------------------------------"""
 
@@ -469,6 +512,18 @@ class Window(QMainWindow, Ui_MainWindow):
                 # on passe la figure en figure courante
                 self.console.current_data.current_figure = new_figure
 
+            elif name == "Contour":
+                new_figure = self.console.current_data.diffraction_contour_temperature()
+
+                # on update le tree widget
+                # on ajoute la figure a current_data
+                for figure in new_figure:
+                    self.treeWidget.add_figure(figure, self.console.current_data.name)
+                    self.console.current_data.figures.append(figure)
+
+                # on passe la figure en figure courante
+                self.console.current_data.current_figure = new_figure[0]
+
             _translate = QtCore.QCoreApplication.translate
             self.label_5.setText(
                 _translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
@@ -517,10 +572,12 @@ class Window(QMainWindow, Ui_MainWindow):
 
                 self.argument_selection_creation_w.finish_signal.connect(
                     lambda event: self.create_figure_callback(event, "cycle"))
-            elif self.comboBox_4.currentText() == "fitting":
-                pass
+            elif self.comboBox_4.currentText() == "fit":
+                self.create_figure_callback("save", "fit")
 
-            self.argument_selection_creation_w.show()
+            # il n'y a pas toujours de fenêtre de selection de paramètre, on check si elle est None ou pas
+            if self.argument_selection_creation_w is not None:
+                self.argument_selection_creation_w.show()
 
     """---------------------------------------------------------------------------------"""
 
@@ -549,6 +606,12 @@ class Window(QMainWindow, Ui_MainWindow):
                 # on passe la figure en figure courante
                 self.console.current_data.current_figure = figure_res
 
+                # on update le label avec le nouveau nom de la figure
+                self.update_figure_name()
+
+                # on update les actions disponibles pour cette figure
+                self.update_action_combo()
+
             elif name == "shift x" or name == "shift y":
                 # on récupére les données
                 value = self.argument_selection_creation_w.value
@@ -572,6 +635,12 @@ class Window(QMainWindow, Ui_MainWindow):
 
                 # on passe la figure en figure courante
                 self.console.current_data.current_figure = figure_res
+
+                # on update le label avec le nouveau nom de la figure
+                self.update_figure_name()
+
+                # on update les actions disponibles pour cette figure
+                self.update_action_combo()
 
             elif name == "cycle":
                 # on récupére les cycles sélectionnée
@@ -601,6 +670,12 @@ class Window(QMainWindow, Ui_MainWindow):
 
                         # on passe la figure en figure courante
                         self.console.current_data.current_figure = figure
+
+                    # on update le label avec le nouveau nom de la figure
+                    self.update_figure_name()
+
+                    # on update les actions disponibles pour cette figure
+                    self.update_action_combo()
                 else:
                     # on update le tree widget
                     # on ajoute la figure a current_data
@@ -610,14 +685,41 @@ class Window(QMainWindow, Ui_MainWindow):
                     # on passe la figure en figure courante
                     self.console.current_data.current_figure = figure_res
 
-            _translate = QtCore.QCoreApplication.translate
-            self.label_5.setText(
-                _translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
-                                         "Current plot : "
-                           + self.console.current_data.current_figure.name + " </span></p></body></html>"))
+                    # on update le label avec le nouveau nom de la figure
+                    self.update_figure_name()
 
-            # on update les actions disponibles pour cette figure
-            self.update_action_combo()
+                    # on update les actions disponibles pour cette figure
+                    self.update_action_combo()
+
+            elif name == "fit":
+                # on créer une nouvelle figure
+                figure = Figure("Pic selection", 1)
+
+                # on fait une copy des data_array 0
+                data_array_x = self.console.current_data.current_figure.x_axe.data[0].copy()
+                data_array_y = self.console.current_data.current_figure.y1_axe.data[0].copy()
+
+                # on ajoute les data_array
+                figure.add_data_x_Data(data_array_x)
+                figure.add_data_y1_Data(data_array_y)
+
+                # on créer Abstract_objet_affiche pour la sélection de pics
+                pic_selection = Pic_selection(self.console.current_data, figure)
+
+                # le graph ne sera pas éditable
+                pic_selection.editable = False
+
+                # on garde une ref de l'objet créée
+                self.edit_plot_figure_w = Figure_plot(pic_selection, self)
+
+                # on connect de callback
+                self.edit_plot_figure_w.closed.connect(self.callback_pic_selection)
+
+                # on passe le plot d'édition en modal
+                self.edit_plot_figure_w.setWindowModality(QtCore.Qt.ApplicationModal)
+
+                # on affiche le widget
+                self.edit_plot_figure_w.show()
 
     """---------------------------------------------------------------------------------"""
 
@@ -748,78 +850,124 @@ class Window(QMainWindow, Ui_MainWindow):
         index = 0
         # on parcours les threads de lecture en cours
         while index < len(self.threads):
-
-            # si le thread à fini
-            if self.threads[index][1].finish:
-
-                # si le thread n'a aucune data, le type de fichier est invalide
-                # on affiche un pop_up
+            if type(self.threads[index][1]).__name__ == "Open_file_cccv" and self.threads[index][1].finish:
                 if self.threads[index][1].data is None:
                     self.fichier_invalide_error()
                 else:
+                    # on créer un objet data cccv
+                    obj_data = CCCV_data()
 
-                    # si le type de fichier lu est cccv
-                    if type(self.threads[index][1]).__name__ == "Open_file_cccv":
-                        # on créer un objet data cccv
-                        obj_data = CCCV_data()
+                    # on lui ajoute les data lu par le thread
+                    obj_data.data = self.threads[index][1].data
 
-                        # on lui ajoute les data lu par le thread
-                        obj_data.data = self.threads[index][1].data
+                    # créer son nom
+                    obj_data.name = obj_data.data["name"]
 
-                        # créer son nom
-                        obj_data.name = obj_data.data["name"]
+                    # on ajoute l'objet data à la console
+                    self.console.add_data(obj_data)
 
-                        # on ajoute l'objet data à la console
-                        self.console.add_data(obj_data)
+                    # on update le tree widget
+                    self.treeWidget.add_data("cccv", obj_data.name)
 
-                        # on update le tree widget
-                        self.treeWidget.add_data("cccv", obj_data.name)
+                    # on update current data avec ne nom du nouveau fichier
+                    _translate = QtCore.QCoreApplication.translate
+                    self.label.setText(
+                        _translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                                 "Current data : "
+                                   + obj_data.name + " </span></p></body></html>"))
 
-                        # on update current data avec ne nom du nouveau fichier
-                        _translate = QtCore.QCoreApplication.translate
-                        self.label.setText(
-                            _translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
-                                                     "Current data : "
-                                       + obj_data.name + " </span></p></body></html>"))
-
-                        self.update_console({"str": "Done", "foreground_color": "green"})
-
-                    elif type(self.threads[index][1]).__name__ == "Open_file_diffraction":
-                        # on créer un objet data cccv
-                        obj_data = Diffraction_data()
-
-                        # on lui ajoute les data lu par le thread
-                        obj_data.data = self.threads[index][1].data
-
-                        # créer son nom
-                        obj_data.name = obj_data.data["name"]
-
-                        # on ajoute l'objet data à la console
-                        self.console.add_data(obj_data)
-
-                        # on update le tree widget
-                        self.treeWidget.add_data("diffraction", obj_data.name)
-
-                        # on update current data avec ne nom du nouveau fichier
-                        _translate = QtCore.QCoreApplication.translate
-                        self.label.setText(
-                            _translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
-                                                     "Current data : "
-                                       + obj_data.name + " </span></p></body></html>"))
-
-                        self.update_console({"str": "Done", "foreground_color": "green"})
+                    self.update_console({"str": "Done", "foreground_color": "green"})
 
                     # on récupére les actions disponibles pour ce type de fichier pour update
                     # current data comboBox_5
                     self.update_new_plot_combo()
 
-                # on termine le thread
-                self.threads[index][0].terminate()
+                    # on termine le thread
+                    self.threads[index][0].terminate()
 
-                # on le suprime de la liste
-                del self.threads[index]
-            else:
-                index += 1
+                    # on le suprime de la liste
+                    del self.threads[index]
+                break
+
+            elif type(self.threads[index][1]).__name__ == "Open_file_diffraction" and self.threads[index][1].finish:
+                if self.threads[index][1].data is None:
+                    self.fichier_invalide_error()
+                else:
+                    # on créer un objet data cccv
+                    obj_data = Diffraction_data()
+
+                    # on lui ajoute les data lu par le thread
+                    obj_data.data = self.threads[index][1].data
+
+                    # créer son nom
+                    obj_data.name = obj_data.data["name"]
+
+                    # on ajoute l'objet data à la console
+                    self.console.add_data(obj_data)
+
+                    # on update le tree widget
+                    self.treeWidget.add_data("diffraction", obj_data.name)
+
+                    # on update current data avec ne nom du nouveau fichier
+                    _translate = QtCore.QCoreApplication.translate
+                    self.label.setText(
+                        _translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                                 "Current data : "
+                                   + obj_data.name + " </span></p></body></html>"))
+
+                    self.update_console({"str": "Done", "foreground_color": "green"})
+
+                    # on récupére les actions disponibles pour ce type de fichier pour update
+                    # current data comboBox_5
+                    self.update_new_plot_combo()
+
+                    # on termine le thread
+                    self.threads[index][0].terminate()
+
+                    # on le suprime de la liste
+                    del self.threads[index]
+                break
+            elif type(self.threads[index][1]).__name__ == "Open_file_ihch_1501" and self.threads[index][1].finish:
+                print("Open_file_ihch_1501")
+                if self.threads[index][1].data is None:
+                    self.fichier_invalide_error()
+                else:
+                    # on créer un objet data cccv
+                    obj_data = Ihch_1501()
+
+                    # on lui ajoute les data lu par le thread
+                    obj_data.cycles = self.threads[index][1].data
+
+                    # créer son nom
+                    obj_data.name = "ihch A MODIFIER"
+
+                    # on ajoute l'objet data à la console
+                    self.console.add_data(obj_data)
+
+                    # on update le tree widget
+                    self.treeWidget.add_data("ihch 1501", obj_data.name)
+
+                    # on update current data avec ne nom du nouveau fichier
+                    _translate = QtCore.QCoreApplication.translate
+                    self.label.setText(
+                        _translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                                 "Current data : "
+                                   + obj_data.name + " </span></p></body></html>"))
+
+                    self.update_console({"str": "Done", "foreground_color": "green"})
+
+                    # on récupére les actions disponibles pour ce type de fichier pour update
+                    # current data comboBox_5
+                    self.update_new_plot_combo()
+
+                    # on termine le thread
+                    self.threads[index][0].terminate()
+
+                    # on le suprime de la liste
+                    del self.threads[index]
+
+        else:
+            index += 1
 
     """---------------------------------------------------------------------------------"""
 
@@ -1105,6 +1253,10 @@ class Window(QMainWindow, Ui_MainWindow):
 
         new_name = self.tabWidget.tabText(signal)
 
+        # si new_name == "", il n'y a plus de tab d'ouverte, rien à faire
+        if new_name == "":
+            return
+
         parent = self.treeWidget.get_top_item(new_name)
 
         # on reset la selection du treewidget
@@ -1296,6 +1448,15 @@ class Window(QMainWindow, Ui_MainWindow):
             self.comboBox_5.addItem(action)
 
     """---------------------------------------------------------------------------------"""
+
+    def update_figure_name(self):
+        _translate = QtCore.QCoreApplication.translate
+        self.label_5.setText(
+            _translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                     "Current plot : "
+                       + self.console.current_data.current_figure.name + " </span></p></body></html>"))
+
+    """---------------------------------------------------------------------------------"""
     """                            Edit Current Plot start                              """
     """---------------------------------------------------------------------------------"""
 
@@ -1321,87 +1482,114 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.update_console({"str": "Bar plot cannot be edited", "foreground_color": "red"})
                 return
 
-            # on créer la nouvelle fenêtre
-            self.edit_plot_w = Edit_plot(self)
+            if self.console.current_data.current_figure.type == "contour":
+                # on créer la nouvelle fenêtre
+                self.edit_plot_w = Edit_plot_contour(self)
 
-            # on sauvegarde la figure édité
-            self.figure_edited = self.console.current_data.current_figure
+                # on sauvegarde la figure édité
+                self.figure_edited = self.console.current_data.current_figure
 
-            # on change le label pour y affiche le nom de la figure courrante
-            self.edit_plot_w.label.setText(self.console.current_data.current_figure.name)
-            self.edit_plot_w.label.setFont(QFont(*self.resource.default_font))
+                # on change le label pour y affiche le nom de la figure courrante
+                self.edit_plot_w.label.setText(self.console.current_data.current_figure.name)
+                self.edit_plot_w.label.setFont(QFont(*self.resource.default_font))
 
-            # on ajoute toutes les légendes des axes pour leurs édition
-            # on commence par l'axe y1
-            for i, data_array in enumerate(self.console.current_data.current_figure.y1_axe.data):
-                self.edit_plot_w.listWidget.addItem(data_array.legend)
-                # si l'axe est invisible, on passe l'écriture de la légende en rouge
-                if not data_array.visible:
-                    self.edit_plot_w.listWidget.item(i).setForeground(QColor("red"))
+                # on compléte le combobox avec le nom de toutes le couleurs disponible
+                self.edit_plot_w.comboBox_left.addItem("unchanged")
+                self.edit_plot_w.comboBox_left.addItem("default")
+                for color in Resources.COLOR_MAP.keys():
+                    self.edit_plot_w.comboBox_left.addItem(color)
 
-            # de même pour l'axe y2
-            if self.console.current_data.current_figure.y2_axe is not None:
-                for i, data_array in enumerate(self.console.current_data.current_figure.y2_axe.data):
+                if "norm" in self.figure_edited.kwarks:
+                    if self.figure_edited.kwarks["norm"][0] != -1:
+                        self.edit_plot_w.lineEdit.setText(str(self.figure_edited.kwarks["norm"][0]))
+
+                    if self.figure_edited.kwarks["norm"][1] != -1:
+                        self.edit_plot_w.lineEdit_2.setText(str(self.figure_edited.kwarks["norm"][1]))
+
+                self.edit_plot_w.finish_signal.connect(self.res_edit_plot)
+
+            else:
+                # on créer la nouvelle fenêtre
+                self.edit_plot_w = Edit_plot(self)
+
+                # on sauvegarde la figure édité
+                self.figure_edited = self.console.current_data.current_figure
+
+                # on change le label pour y affiche le nom de la figure courrante
+                self.edit_plot_w.label.setText(self.console.current_data.current_figure.name)
+                self.edit_plot_w.label.setFont(QFont(*self.resource.default_font))
+
+                # on ajoute toutes les légendes des axes pour leurs édition
+                # on commence par l'axe y1
+                for i, data_array in enumerate(self.console.current_data.current_figure.y1_axe.data):
                     self.edit_plot_w.listWidget.addItem(data_array.legend)
                     # si l'axe est invisible, on passe l'écriture de la légende en rouge
                     if not data_array.visible:
                         self.edit_plot_w.listWidget.item(i).setForeground(QColor("red"))
 
-            self.edit_plot_w.listWidget.setCurrentRow(0)
+                # de même pour l'axe y2
+                if self.console.current_data.current_figure.y2_axe is not None:
+                    for i, data_array in enumerate(self.console.current_data.current_figure.y2_axe.data):
+                        self.edit_plot_w.listWidget.addItem(data_array.legend)
+                        # si l'axe est invisible, on passe l'écriture de la légende en rouge
+                        if not data_array.visible:
+                            self.edit_plot_w.listWidget.item(i).setForeground(QColor("red"))
 
-            # on remplie l'edit line avec le zoom actuel
-            self.edit_plot_w.lineEdit_4.setText(str(self.console.current_data.current_figure.margin))
+                self.edit_plot_w.listWidget.setCurrentRow(0)
 
-            # on compléte le combobox avec le nom de toutes le couleurs disponible
-            self.edit_plot_w.comboBox_left.addItem("unchanged")
-            self.edit_plot_w.comboBox_left.addItem("default")
-            for color in Resources.COLOR_MAP.keys():
-                self.edit_plot_w.comboBox_left.addItem(color)
+                # on remplie l'edit line avec le zoom actuel
+                self.edit_plot_w.lineEdit_4.setText(str(self.console.current_data.current_figure.margin))
 
-            if self.figure_edited.y2_axe is not None:
-                # color right axis
-                self.edit_plot_w.comboBox_right = QtWidgets.QComboBox(self.edit_plot_w)
-                self.edit_plot_w.comboBox_right.setObjectName("comboBox_right")
-                self.edit_plot_w.gridLayout_2.addWidget(self.edit_plot_w.comboBox_right, 3, 2, 1, 1)
-                spacerItem5 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding,
-                                                    QtWidgets.QSizePolicy.Minimum)
-                self.edit_plot_w.gridLayout_2.addItem(spacerItem5, 3, 1, 1, 1)
-                self.edit_plot_w.label_8 = QtWidgets.QLabel(self.edit_plot_w)
-                self.edit_plot_w.label_8.setObjectName("label_8")
-                self.edit_plot_w.gridLayout_2.addWidget(self.edit_plot_w.label_8, 3, 0, 1, 1)
-
-                _translate = QtCore.QCoreApplication.translate
-                self.edit_plot_w.label_8.setText(_translate("Dialog",
-                                                            "<html><head/><body><p><span style=\" font-size:8pt;\">"
-                                                            "Color right axis</span></p></body></html>"))
-
-                # type line right axis
-                self.edit_plot_w.comboBox_type_line_right = QtWidgets.QComboBox(self.edit_plot_w)
-                self.edit_plot_w.comboBox_type_line_right.setObjectName("comboBox_type_line_right")
-                self.edit_plot_w.gridLayout_2.addWidget(self.edit_plot_w.comboBox_type_line_right, 4, 2, 1, 1)
-                self.edit_plot_w.create_combobox_marker(self.edit_plot_w.comboBox_type_line_right)
-
-                spacerItem6 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding,
-                                                    QtWidgets.QSizePolicy.Minimum)
-                self.edit_plot_w.gridLayout_2.addItem(spacerItem6, 4, 1, 1, 1)
-                self.edit_plot_w.label_9 = QtWidgets.QLabel(self.edit_plot_w)
-                self.edit_plot_w.label_9.setObjectName("label_9")
-                self.edit_plot_w.gridLayout_2.addWidget(self.edit_plot_w.label_9, 4, 0, 1, 1)
-
-                self.edit_plot_w.label_9.setText(_translate("Dialog",
-                                                            "<html><head/><body><p><span style=\" font-size:8pt;\">"
-                                                            "Style lines right axis</span></p></body></html>"))
-
-                self.edit_plot_w.comboBox_right.addItem("unchanged")
-                self.edit_plot_w.comboBox_right.addItem("default")
+                # on compléte le combobox avec le nom de toutes le couleurs disponible
+                self.edit_plot_w.comboBox_left.addItem("unchanged")
+                self.edit_plot_w.comboBox_left.addItem("default")
                 for color in Resources.COLOR_MAP.keys():
-                    self.edit_plot_w.comboBox_right.addItem(color)
+                    self.edit_plot_w.comboBox_left.addItem(color)
 
-            # on connect le signal indiquant que l'édition est fini
-            self.edit_plot_w.finish_signal.connect(self.res_edit_plot)
+                if self.figure_edited.y2_axe is not None:
+                    # color right axis
+                    self.edit_plot_w.comboBox_right = QtWidgets.QComboBox(self.edit_plot_w)
+                    self.edit_plot_w.comboBox_right.setObjectName("comboBox_right")
+                    self.edit_plot_w.gridLayout_2.addWidget(self.edit_plot_w.comboBox_right, 3, 2, 1, 1)
+                    spacerItem5 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding,
+                                                        QtWidgets.QSizePolicy.Minimum)
+                    self.edit_plot_w.gridLayout_2.addItem(spacerItem5, 3, 1, 1, 1)
+                    self.edit_plot_w.label_8 = QtWidgets.QLabel(self.edit_plot_w)
+                    self.edit_plot_w.label_8.setObjectName("label_8")
+                    self.edit_plot_w.gridLayout_2.addWidget(self.edit_plot_w.label_8, 3, 0, 1, 1)
 
-            # signal pour la création d'une figure servant à la supréssion de points
-            self.edit_plot_w.edit_signal.connect(self.create_edit_plot)
+                    _translate = QtCore.QCoreApplication.translate
+                    self.edit_plot_w.label_8.setText(_translate("Dialog",
+                                                                "<html><head/><body><p><span style=\" font-size:8pt;\">"
+                                                                "Color right axis</span></p></body></html>"))
+
+                    # type line right axis
+                    self.edit_plot_w.comboBox_type_line_right = QtWidgets.QComboBox(self.edit_plot_w)
+                    self.edit_plot_w.comboBox_type_line_right.setObjectName("comboBox_type_line_right")
+                    self.edit_plot_w.gridLayout_2.addWidget(self.edit_plot_w.comboBox_type_line_right, 4, 2, 1, 1)
+                    self.edit_plot_w.create_combobox_marker(self.edit_plot_w.comboBox_type_line_right)
+
+                    spacerItem6 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding,
+                                                        QtWidgets.QSizePolicy.Minimum)
+                    self.edit_plot_w.gridLayout_2.addItem(spacerItem6, 4, 1, 1, 1)
+                    self.edit_plot_w.label_9 = QtWidgets.QLabel(self.edit_plot_w)
+                    self.edit_plot_w.label_9.setObjectName("label_9")
+                    self.edit_plot_w.gridLayout_2.addWidget(self.edit_plot_w.label_9, 4, 0, 1, 1)
+
+                    self.edit_plot_w.label_9.setText(_translate("Dialog",
+                                                                "<html><head/><body><p><span style=\" font-size:8pt;\">"
+                                                                "Style lines right axis</span></p></body></html>"))
+
+                    self.edit_plot_w.comboBox_right.addItem("unchanged")
+                    self.edit_plot_w.comboBox_right.addItem("default")
+                    for color in Resources.COLOR_MAP.keys():
+                        self.edit_plot_w.comboBox_right.addItem(color)
+
+                # on connect le signal indiquant que l'édition est fini
+                self.edit_plot_w.finish_signal.connect(self.res_edit_plot)
+
+                # signal pour la création d'une figure servant à la supréssion de points
+                self.edit_plot_w.edit_signal.connect(self.create_edit_plot)
 
             # on affiche la fenêtre
             self.edit_plot_w.show()
@@ -1424,131 +1612,174 @@ class Window(QMainWindow, Ui_MainWindow):
 
         # on savegarde les changements
         elif signal == "save":
+            if self.edit_plot_w.__name__ == "Edit_plot":
+                obj_figure = self.get_plot_from_figure(self.figure_edited)
+                if len(self.edit_plot_dics) != 0:
+                    # on applique la suppression des points effectuée sur les différentes courbes
+                    self.process_del_point_plot(obj_figure)
 
-            obj_figure = self.get_plot_from_figure(self.figure_edited)
+                # on cache les courbes qui doivent l'être
+                self.hide_data_array(obj_figure)
 
-            if len(self.edit_plot_dics) != 0:
-                # on applique la suppression des points effectuée sur les différentes courbes
-                self.process_del_point_plot(obj_figure)
-
-            # on cache les courbes qui doivent l'être
-            self.hide_data_array(obj_figure)
-
-            # on applique la couleur
-            colory1 = self.edit_plot_w.comboBox_left.itemText(self.edit_plot_w.comboBox_left.currentIndex())
-            if colory1 == "unchanged":
-                pass
-            elif colory1 == "default":
-                for data in self.figure_edited.y1_axe.data:
-                    data.color = None
-                if obj_figure is not None:
-                    obj_figure.reset_color_plot("y1")
-            else:
-                self.figure_edited.y1_axe.color_map = colory1
-                self.figure_edited.y1_axe.apply_color()
-
-                if obj_figure is not None:
-                    obj_figure.update_color_plot("y1")
-
-            # on applique le nouveau marker
-            left_axis_line = self.edit_plot_w.comboBox_type_line_left.itemText \
-                (self.edit_plot_w.comboBox_type_line_left.currentIndex())
-
-            # si la valeurs est à unchanged on n'a rien à faire
-            if left_axis_line != "unchanged":
-                # on récupére la key de la value
-                for key, value in Resources.MARKERS_PLOT.items():
-                    if value == left_axis_line:
-                        left_axis_line = key
-                        break
-
-                # si left_axis_line == -- c'est que l'on reset en ligne
-                if left_axis_line == "__":
-                    self.figure_edited.format_line_y1 = None
-
-                    # si le plot est ouvert, on l'update
-                    if obj_figure is not None:
-                        obj_figure.reset_marker_plot("y1")
-
-                else:
-                    # on update format_line_y1 de figure_edited avec la nouvelle valeur
-                    self.figure_edited.format_line_y1 = left_axis_line
-
-                    # si le plot est ouvert, on l'update
-                    if obj_figure is not None:
-                        obj_figure.update_marker_plot("y1", left_axis_line)
-
-            if self.figure_edited.y2_axe is not None:
-                colory2 = self.edit_plot_w.comboBox_right.itemText(self.edit_plot_w.comboBox_right.currentIndex())
-                if colory2 == "unchanged":
+                # on applique la couleur
+                colory1 = self.edit_plot_w.comboBox_left.itemText(self.edit_plot_w.comboBox_left.currentIndex())
+                if colory1 == "unchanged":
                     pass
-                elif colory2 == "default":
-                    for data in self.figure_edited.y2_axe.data:
+                elif colory1 == "default":
+                    for data in self.figure_edited.y1_axe.data:
                         data.color = None
                     if obj_figure is not None:
-                        obj_figure.reset_color_plot("y2")
+                        obj_figure.reset_color_plot("y1")
                 else:
-                    self.figure_edited.y2_axe.color_map = colory2
-                    self.figure_edited.y2_axe.apply_color()
+                    self.figure_edited.y1_axe.color_map = colory1
+                    self.figure_edited.y1_axe.apply_color()
 
                     if obj_figure is not None:
-                        obj_figure.update_color_plot("y2")
+                        obj_figure.update_color_plot("y1")
 
                 # on applique le nouveau marker
-                right_axis_line = self.edit_plot_w.comboBox_type_line_right.itemText \
-                    (self.edit_plot_w.comboBox_type_line_right.currentIndex())
+                left_axis_line = self.edit_plot_w.comboBox_type_line_left.itemText \
+                    (self.edit_plot_w.comboBox_type_line_left.currentIndex())
 
                 # si la valeurs est à unchanged on n'a rien à faire
-                if right_axis_line != "unchanged":
+                if left_axis_line != "unchanged":
                     # on récupére la key de la value
                     for key, value in Resources.MARKERS_PLOT.items():
-                        if value == right_axis_line:
-                            right_axis_line = key
+                        if value == left_axis_line:
+                            left_axis_line = key
                             break
 
-                    # si right_axis_line == -- c'est que l'on reset en ligne
-                    if right_axis_line == "__":
-                        self.figure_edited.format_line_y2 = None
+                    # si left_axis_line == -- c'est que l'on reset en ligne
+                    if left_axis_line == "__":
+                        self.figure_edited.format_line_y1 = None
 
                         # si le plot est ouvert, on l'update
                         if obj_figure is not None:
-                            obj_figure.reset_marker_plot("y2")
+                            obj_figure.reset_marker_plot("y1")
 
                     else:
                         # on update format_line_y1 de figure_edited avec la nouvelle valeur
-                        self.figure_edited.format_line_y2 = right_axis_line
+                        self.figure_edited.format_line_y1 = left_axis_line
 
                         # si le plot est ouvert, on l'update
                         if obj_figure is not None:
-                            obj_figure.update_marker_plot("y2", right_axis_line)
+                            obj_figure.update_marker_plot("y1", left_axis_line)
 
-            # on applique la marge
-            margin = float(self.edit_plot_w.lineEdit_4.text())
-            # si il y a eu un chagement
-            if self.figure_edited.margin != margin:
-                # on garde en mémoire la marge précédente
-                old_margin = self.figure_edited.margin
-                self.figure_edited.margin = margin
+                if self.figure_edited.y2_axe is not None:
+                    colory2 = self.edit_plot_w.comboBox_right.itemText(self.edit_plot_w.comboBox_right.currentIndex())
+                    if colory2 == "unchanged":
+                        pass
+                    elif colory2 == "default":
+                        for data in self.figure_edited.y2_axe.data:
+                            data.color = None
+                        if obj_figure is not None:
+                            obj_figure.reset_color_plot("y2")
+                    else:
+                        self.figure_edited.y2_axe.color_map = colory2
+                        self.figure_edited.y2_axe.apply_color()
+
+                        if obj_figure is not None:
+                            obj_figure.update_color_plot("y2")
+
+                    # on applique le nouveau marker
+                    right_axis_line = self.edit_plot_w.comboBox_type_line_right.itemText \
+                        (self.edit_plot_w.comboBox_type_line_right.currentIndex())
+
+                    # si la valeurs est à unchanged on n'a rien à faire
+                    if right_axis_line != "unchanged":
+                        # on récupére la key de la value
+                        for key, value in Resources.MARKERS_PLOT.items():
+                            if value == right_axis_line:
+                                right_axis_line = key
+                                break
+
+                        # si right_axis_line == -- c'est que l'on reset en ligne
+                        if right_axis_line == "__":
+                            self.figure_edited.format_line_y2 = None
+
+                            # si le plot est ouvert, on l'update
+                            if obj_figure is not None:
+                                obj_figure.reset_marker_plot("y2")
+
+                        else:
+                            # on update format_line_y1 de figure_edited avec la nouvelle valeur
+                            self.figure_edited.format_line_y2 = right_axis_line
+
+                            # si le plot est ouvert, on l'update
+                            if obj_figure is not None:
+                                obj_figure.update_marker_plot("y2", right_axis_line)
+
+                # on applique la marge
+                margin = float(self.edit_plot_w.lineEdit_4.text())
+                # si il y a eu un chagement
+                if self.figure_edited.margin != margin:
+                    # on garde en mémoire la marge précédente
+                    old_margin = self.figure_edited.margin
+                    self.figure_edited.margin = margin
+                    if obj_figure is not None:
+                        Abstract_data.resize_axe(obj_figure.abstract_affiche.ax1, obj_figure.abstract_affiche.ax2, margin,
+                                                 old_margin)
+
+                # on met à jours le figure
                 if obj_figure is not None:
-                    Abstract_data.resize_axe(obj_figure.abstract_affiche.ax1, obj_figure.abstract_affiche.ax2, margin,
-                                             old_margin)
+                    obj_figure.canvas.draw()
 
-            # on met à jours le figure
-            if obj_figure is not None:
-                obj_figure.canvas.draw()
+                # l'édition étant terminé on clear le vecteur qui gardais en mémoire les éditions
+                self.edit_plot_dics.clear()
 
-            # l'édition étant terminé on clear le vecteur qui gardais en mémoire les éditions
-            self.edit_plot_dics.clear()
+                # on délect la fenêtre
+                self.edit_plot_w.deleteLater()
+                self.edit_plot_w = None
+                # passe a None la figure édité
+                self.figure_edited = None
 
-            # on délect la fenêtre
-            self.edit_plot_w.deleteLater()
-            self.edit_plot_w = None
-            # passe a None la figure édité
-            self.figure_edited = None
+            elif self.edit_plot_w.__name__ == "Edit_plot_contour":
+
+                edit = False
+
+                obj_figure = self.get_plot_from_figure(self.figure_edited)
+
+                colory1 = self.edit_plot_w.comboBox_left.itemText(self.edit_plot_w.comboBox_left.currentIndex())
+                if colory1 == "unchanged":
+                    pass
+                elif colory1 == "default":
+                    self.figure_edited.y1_axe.color_map = None
+                    edit = True
+                else:
+                    self.figure_edited.y1_axe.color_map = colory1
+                    edit = True
+
+                if self.edit_plot_w.lineEdit.text() != "":
+                    _min = self.edit_plot_w.lineEdit.get_value()
+                else:
+                    _min = -1
+
+                if self.edit_plot_w.lineEdit_2.text() != "":
+                    _max = self.edit_plot_w.lineEdit_2.get_value()
+                else:
+                    _max = -1
+
+                if _min != -1 or _max != -1:
+                    if "norm" not in self.figure_edited.kwarks:
+                        self.figure_edited.kwarks["norm"] = [_min, _max]
+                        edit = True
+                    else:
+                        if _min != self.figure_edited.kwarks["norm"][0] or _max != self.figure_edited.kwarks["norm"][1]:
+                            self.figure_edited.kwarks["norm"] = [_min, _max]
+                            edit = True
+
+                if edit:
+                    obj_figure.update_contour_plot()
+
+                self.edit_plot_w.deleteLater()
+                self.edit_plot_w = None
+                self.figure_edited = None
+
         else:
             raise NotImplementedError
 
     """---------------------------------------------------------------------------------"""
+
 
     def create_edit_plot(self, signal):
         """
@@ -1720,6 +1951,229 @@ class Window(QMainWindow, Ui_MainWindow):
 
     """---------------------------------------------------------------------------------"""
     """                            Edit Current Plot end                                """
+    """---------------------------------------------------------------------------------"""
+
+    """---------------------------------------------------------------------------------"""
+    """                            pics fitting start                                   """
+    """---------------------------------------------------------------------------------"""
+
+    def callback_pic_selection(self, event):
+        """
+        fonction callback de la selection dpics pour le fitting
+        Si la selection est correct on créer un thread pour faire le fitting
+        sinon on return juste
+
+
+        :param event: sans importance
+        :return: None
+        """
+
+        # on récupére les pics selectionnés
+        pics = []
+        for i in range(len(self.edit_plot_figure_w.abstract_affiche.pics)):
+            pics.append([])
+            for j in range(len(self.edit_plot_figure_w.abstract_affiche.pics[i])):
+                pics[i].append(self.edit_plot_figure_w.abstract_affiche.pics[i][j])
+
+        pplot.close(self.edit_plot_figure_w.abstract_affiche.pplot_fig)
+        self.edit_plot_figure_w.deleteLater()
+        self.edit_plot_figure_w = None
+
+        # rien à faire dans ce cas
+        if len(pics) == 0:
+            return
+
+        """file = open(r"C:Users\Maxime\Desktop\export_diffraction.txt", "w")
+
+        for i in range(len(self.console.current_data.current_figure.x_axe.data)):
+            s = ""
+            for j in range(len(self.console.current_data.current_figure.x_axe.data[i].data)):
+                s += str(self.console.current_data.current_figure.x_axe.data[i].data[j]) + "\t"
+            s = s[:-1] + "\n"
+            file.write(s)
+            s = ""
+            for j in range(len(self.console.current_data.current_figure.x_axe.data[i].data)):
+                s += str(self.console.current_data.current_figure.y1_axe.data[i].data[j]) + "\t"
+            s = s[:-1] + "\n"
+            file.write(s)
+        file.close()"""
+
+        # création d'un nouveau thread
+        t = QThread()
+
+        # création du worker
+        worker = Fitting(self.console.current_data.current_figure, pics)
+        worker.moveToThread(t)
+
+        # connection
+        t.started.connect(worker.run)
+        worker.finished.connect(self.callback_fitting)
+
+        # on garde une ref du thread
+        self.threads.append([t, worker])
+
+        # start
+        t.start()
+
+
+    """---------------------------------------------------------------------------------"""
+
+    def callback_fitting(self):
+        """
+        fonctione callbak du fitting, on créer la figure résultat
+
+        :return: None
+        """
+        index = 0
+        # on parcours les threads de lecture en cours
+        while index < len(self.threads):
+            if type(self.threads[index][1]).__name__ == "Fitting" and self.threads[index][1].finished:
+                center = self.threads[index][1].center
+                area = self.threads[index][1].area
+                fwhm = self.threads[index][1].fwhm
+
+                figure = self.threads[index][1].figure
+
+                init_index_min = self.threads[index][1].init_index_min
+                init_index_max = self.threads[index][1].init_index_max
+
+                init_center = self.threads[index][1].init_center
+
+                # on termine le thread
+                self.threads[index][0].terminate()
+
+                # on le suprime de la liste
+                del self.threads[index]
+
+                nb_pics = len(center[0])
+
+                new_xmax = []
+                for i in range(nb_pics):
+                    new_xmax.append([])
+                    for j in range(len(center)):
+                        new_xmax[-1].append(center[j][i])
+
+                # création du vecteur area
+                new_area = []
+                for i in range(nb_pics):
+                    new_area.append([])
+                    for j in range(len(area)):
+                        new_area[-1].append(area[j][i])
+
+                # création du vecteur largeur
+                newlargeur = []
+                for i in range(nb_pics):
+                    newlargeur.append([])
+                    for j in range(len(fwhm)):
+                        newlargeur[-1].append(fwhm[j][i])
+
+                figure_res = Figure("Diffraction res " + str(figure.x_axe.data[0].data[init_index_min])[0:6] + " " +
+                            str(figure.x_axe.data[0].data[init_index_max])[0:6], 1, init_center=init_center)
+
+                figure_res.plot_name = "Diffraction res " + str(figure.x_axe.data[0].data[init_index_min])[0:6] + " " + \
+                               str(figure.x_axe.data[0].data[init_index_max])[0:6]
+                figure_res.type = "res_fitting_temperature"
+                figure_res.created_from = figure
+
+                units = Units()
+                x_unit = units.get_unit(figure.x_axe.get_unit().name)
+                y_unit = units.get_unit(figure.y1_axe.get_unit().name)
+
+                size_w = 0
+                size_c = 0
+                warning_x = []
+                for i in range(len(self.console.current_data.data["loop_data"])):
+                    if self.console.current_data.data["loop_data"][i][2] == "w":
+                        warning_x.append(self.console.current_data.data["loop_data"][i][3])
+                        size_w += 1
+
+                cooling_x = []
+                for i in range(len(self.console.current_data.data["loop_data"])):
+                    if self.console.current_data.data["loop_data"][i][2] == "c":
+                        cooling_x.append(self.console.current_data.data["loop_data"][i][3])
+                        size_c += 1
+
+                # new_xmax
+                if size_w != 0:
+                    for i in range(len(new_xmax)):
+                        data_unit_x = Data_unit(warning_x, x_unit)
+                        data_unit_y = Data_unit(new_xmax[i][0:size_w], y_unit)
+
+                        temp_x = Data_array(data_unit_x, "Température", None, "nesaisias", temperature="warning")
+                        temp_y = Data_array(data_unit_y, "diffraction", None, "nesaispas")
+                        figure_res.add_data_x_Data(temp_x)
+                        figure_res.add_data_y1_Data(temp_y)
+
+                if size_c != 0:
+                    for i in range(len(new_xmax)):
+                        data_unit_x = Data_unit(cooling_x, x_unit)
+                        data_unit_y = Data_unit(new_xmax[i][size_w:], y_unit)
+
+                        temp_x = Data_array(data_unit_x, "Température", None, "nesaisias", temperature="cooling")
+                        temp_y = Data_array(data_unit_y, "diffraction", None, "nesaispas")
+                        figure_res.add_data_x_Data(temp_x)
+                        figure_res.add_data_y1_Data(temp_y)
+
+                # new_area
+                if size_w != 0:
+                    for i in range(len(new_area)):
+                        data_unit_x = Data_unit(warning_x, x_unit)
+                        data_unit_y = Data_unit(new_area[i][0:size_w], y_unit)
+
+                        temp_x = Data_array(data_unit_x, "Température", None, "nesaisias", temperature="warning")
+                        temp_y = Data_array(data_unit_y, "diffraction", None, "nesaispas")
+                        figure_res.add_data_x_Data(temp_x)
+                        figure_res.add_data_y1_Data(temp_y)
+
+                if size_c != 0:
+                    for i in range(len(new_area)):
+                        data_unit_x = Data_unit(cooling_x, x_unit)
+                        data_unit_y = Data_unit(new_area[i][size_w:], y_unit)
+
+                        temp_x = Data_array(data_unit_x, "Température", None, "nesaisias", temperature="cooling")
+                        temp_y = Data_array(data_unit_y, "diffraction", None, "nesaispas")
+                        figure_res.add_data_x_Data(temp_x)
+                        figure_res.add_data_y1_Data(temp_y)
+
+                # new fwhm
+                if size_w != 0:
+                    for i in range(len(newlargeur)):
+                        data_unit_x = Data_unit(warning_x, x_unit)
+                        data_unit_y = Data_unit(newlargeur[i][0:size_w], y_unit)
+
+                        temp_x = Data_array(data_unit_x, "Température", None, "nesaisias", temperature="warning")
+                        temp_y = Data_array(data_unit_y, "diffraction", None, "nesaispas")
+                        figure_res.add_data_x_Data(temp_x)
+                        figure_res.add_data_y1_Data(temp_y)
+
+                if size_c != 0:
+                    for i in range(len(newlargeur)):
+                        data_unit_x = Data_unit(cooling_x, x_unit)
+                        data_unit_y = Data_unit(newlargeur[i][size_w:], y_unit)
+
+                        temp_x = Data_array(data_unit_x, "Température", None, "nesaisias", temperature="cooling")
+                        temp_y = Data_array(data_unit_y, "diffraction", None, "nesaispas")
+                        figure_res.add_data_x_Data(temp_x)
+                        figure_res.add_data_y1_Data(temp_y)
+
+                # on update le tree widget
+                # on ajoute la figure a current_data
+                self.treeWidget.add_figure(figure_res, self.console.current_data.name)
+                self.console.current_data.figures.append(figure_res)
+
+                # on passe la figure en figure courante
+                self.console.current_data.current_figure = figure_res
+
+                # on update le label avec le nouveau nom de la figure
+                self.update_figure_name()
+
+                # on update les actions disponibles pour cette figure
+                self.update_action_combo()
+                break
+            index += 1
+
+    """---------------------------------------------------------------------------------"""
+    """                              pics fitting end                                   """
     """---------------------------------------------------------------------------------"""
 
     """---------------------------------------------------------------------------------"""

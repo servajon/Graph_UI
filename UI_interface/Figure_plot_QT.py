@@ -1,13 +1,19 @@
 import warnings
 
 import matplotlib
+import numpy as np
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QInputDialog, QLineEdit
 from matplotlib.backend_bases import MouseButton
 from matplotlib.backends.backend_qt import NavigationToolbar2QT
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.colorbar import Colorbar
+from matplotlib.contour import QuadContourSet
 
+import Console_Objets.Affiche_objet
+import Data_type.Abstract_data
+from Console_Objets.Data_Unit import Units
 from Resources_file.Emit import Emit
 from UI_interface.Edit_Axe_QT import Edit_Axe
 from UI_interface.View_data_value_QT import View_data_value
@@ -88,6 +94,10 @@ class Figure_plot(QWidget):
         # création du canvas
         self.canvas = FigureCanvas(self.abstract_affiche.pplot_fig)
 
+        # pour que key_event fonctionne....
+        self.canvas.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.canvas.setFocus()
+
         # on récupére la toolbar de matplotlib
         self.toolbar = NavigationToolbar2QT(self.canvas, self, True)
 
@@ -146,14 +156,21 @@ class Figure_plot(QWidget):
             self.edit_y1_axe()
 
         # check de l'axe y2
-        elif self.abstract_affiche.ax2 is not None and \
+        # on check que le plot n'est pas un contour plot avec isinstance(self.abstract_affiche.ax2, QuadContourSet)
+        # dans ce cas on ne fait rien, ax2 n'est pas un axe mais la colorbar
+        elif self.abstract_affiche.ax2 is not None and not isinstance(self.abstract_affiche.ax2, QuadContourSet) and \
                 (self.abstract_affiche.ax2.yaxis.contains(event)[0] or
                  self.abstract_affiche.ax2.yaxis.get_label().contains(event)[0]):
-            self.edit_y2_axe()
+
+                self.edit_y2_axe()
 
         # check du suptitle
         elif self.abstract_affiche.pplot_fig._suptitle.contains(event)[0]:
             self.edit_suptitle()
+
+        elif isinstance(self.abstract_affiche.value, Colorbar) and \
+                self.abstract_affiche.value.ax.yaxis.get_label().contains(event)[0]:
+            self.edit_color_bar()
 
         else:
             # check de la ligne de la légende 1
@@ -207,7 +224,6 @@ class Figure_plot(QWidget):
         :param event: QCloseEvent / CloseEvent
         :return: None
         """
-
         if type(event).__name__ == "QCloseEvent":
             self.closed.emit(self.abstract_affiche.figure.name)
 
@@ -219,6 +235,11 @@ class Figure_plot(QWidget):
     """---------------------------------------------------------------------------------"""
 
     def axes_leave_event(self, event):
+        pass
+
+    """---------------------------------------------------------------------------------"""
+
+    def on_key(self, event):
         pass
 
     """---------------------------------------------------------------------------------"""
@@ -316,6 +337,25 @@ class Figure_plot(QWidget):
 
     """---------------------------------------------------------------------------------"""
 
+    def edit_color_bar(self):
+        """
+        fonction appellée pour editer la colorbar du graph
+
+        :return: None
+        """
+        old_name = self.abstract_affiche.figure.z1_axe.name
+        name = QInputDialog.getText(self, "Name change", "New name ?", QLineEdit.Normal, old_name)
+        if name[1] and name[0] != "":
+            name = self.abstract_affiche.data.unique_name(name[0])
+            self.abstract_affiche.figure.z1_axe.name = name
+
+            self.abstract_affiche.value.ax.yaxis.get_label().set_text(self.abstract_affiche.figure.z1_axe.name_unit)
+
+
+            self.canvas.draw()
+
+    """---------------------------------------------------------------------------------"""
+
     def edit_suptitle(self):
         """
         fonction appellée pour editer le titre du graph
@@ -325,7 +365,6 @@ class Figure_plot(QWidget):
         old_name = self.abstract_affiche.pplot_fig._suptitle.get_text()
         name = QInputDialog.getText(self, "Name change", "New name ?", QLineEdit.Normal, old_name)
         if name[1] and name[0] != "":
-
             name = self.abstract_affiche.data.unique_name(name[0])
             self.abstract_affiche.pplot_fig._suptitle.set_text(name)
             self.abstract_affiche.figure.name = name
@@ -442,63 +481,76 @@ class Figure_plot(QWidget):
             unit = self.edit_w.comboBox_19.itemText(self.edit_w.comboBox_19.currentIndex())
             if unit != "unchanged":
                 if self.axe_edited == "x":
-                    self.abstract_affiche.figure.x_axe.change_unit(unit)
+                    if self.abstract_affiche.figure.type == "contour":
 
-                    _max = self.abstract_affiche.figure.x_axe.data[0].data[0]
-                    _min = self.abstract_affiche.figure.x_axe.data[0].data[0]
+                        self.abstract_affiche.figure.x_axe.change_unit(unit)
+                        self.update_contour_plot()
 
-                    for i, data_array in enumerate(self.abstract_affiche.figure.x_axe.data):
-                        temp_max = max(data_array.data)
-                        temp_min = min(data_array.data)
-                        if temp_max > _max:
-                            _max = temp_max
-                        if temp_min < _min:
-                            _min = temp_min
+                    else:
+                        self.abstract_affiche.figure.x_axe.change_unit(unit)
 
-                        self.update_plot_data("x", i, data_array.data)
+                        _max = self.abstract_affiche.figure.x_axe.data[0].data[0]
+                        _min = self.abstract_affiche.figure.x_axe.data[0].data[0]
 
-                    delta = _max - _min
-                    self.abstract_affiche.ax1.set_xlim(_min - delta * 0.05, _max + delta * 0.05)
-                    self.abstract_affiche.ax1.xaxis.set_label_text(self.abstract_affiche.figure.x_axe.name_unit)
+                        for i, data_array in enumerate(self.abstract_affiche.figure.x_axe.data):
+                            temp_max = max(data_array.data)
+                            temp_min = min(data_array.data)
+                            if temp_max > _max:
+                                _max = temp_max
+                            if temp_min < _min:
+                                _min = temp_min
+
+                            self.update_plot_data("x", i, data_array.data)
+
+                            delta = _max - _min
+                            self.abstract_affiche.ax1.set_xlim(_min - delta * 0.05, _max + delta * 0.05)
+                            self.abstract_affiche.ax1.xaxis.set_label_text(self.abstract_affiche.figure.x_axe.name_unit)
 
                 elif self.axe_edited == "y1":
-                    self.abstract_affiche.figure.y1_axe.change_unit(unit)
+                    if self.abstract_affiche.figure.type == "contour":
+                        self.abstract_affiche.figure.y1_axe.change_unit(unit)
+                        self.update_contour_plot()
+                    else:
+                        self.abstract_affiche.figure.y1_axe.change_unit(unit)
 
-                    _max = self.abstract_affiche.figure.y1_axe.data[0].data[0]
-                    _min = self.abstract_affiche.figure.y1_axe.data[0].data[0]
+                        _max = self.abstract_affiche.figure.y1_axe.data[0].data[0]
+                        _min = self.abstract_affiche.figure.y1_axe.data[0].data[0]
 
-                    for i, data_array in enumerate(self.abstract_affiche.figure.y1_axe.data):
-                        temp_max = max(data_array.data)
-                        temp_min = min(data_array.data)
-                        if temp_max > _max:
-                            _max = temp_max
-                        if temp_min < _min:
-                            _min = temp_min
+                        for i, data_array in enumerate(self.abstract_affiche.figure.y1_axe.data):
+                            temp_max = max(data_array.data)
+                            temp_min = min(data_array.data)
+                            if temp_max > _max:
+                                _max = temp_max
+                            if temp_min < _min:
+                                _min = temp_min
 
-                        self.update_plot_data("y1", i, data_array.data)
+                            self.update_plot_data("y1", i, data_array.data)
 
-                    delta = _max - _min
-                    self.abstract_affiche.ax1.set_ylim(_min - delta * 0.05, _max + delta * 0.05)
-                    self.abstract_affiche.ax1.yaxis.set_label_text(self.abstract_affiche.figure.y1_axe.name_unit)
+                        delta = _max - _min
+                        self.abstract_affiche.ax1.set_ylim(_min - delta * 0.05, _max + delta * 0.05)
+                        self.abstract_affiche.ax1.yaxis.set_label_text(self.abstract_affiche.figure.y1_axe.name_unit)
 
                 else:
-                    _max = self.abstract_affiche.figure.y2_axe.data[0].data[0]
-                    _min = self.abstract_affiche.figure.y2_axe.data[0].data[0]
+                    if self.abstract_affiche.figure.type == "contour":
+                        pass
+                    else:
+                        _max = self.abstract_affiche.figure.y2_axe.data[0].data[0]
+                        _min = self.abstract_affiche.figure.y2_axe.data[0].data[0]
 
-                    self.abstract_affiche.figure.y2_axe.change_unit(unit)
-                    for i, data_array in enumerate(self.abstract_affiche.figure.y2_axe.data):
-                        temp_max = max(data_array.data)
-                        temp_min = min(data_array.data)
-                        if temp_max > _max:
-                            _max = temp_max
-                        if temp_min < _min:
-                            _min = temp_min
+                        self.abstract_affiche.figure.y2_axe.change_unit(unit)
+                        for i, data_array in enumerate(self.abstract_affiche.figure.y2_axe.data):
+                            temp_max = max(data_array.data)
+                            temp_min = min(data_array.data)
+                            if temp_max > _max:
+                                _max = temp_max
+                            if temp_min < _min:
+                                _min = temp_min
 
-                        self.update_plot_data("y2", i, data_array.data)
+                            self.update_plot_data("y2", i, data_array.data)
 
-                    delta = _max - _min
-                    self.abstract_affiche.ax2.set_ylim(_min - delta * 0.05, _max + delta * 0.05)
-                    self.abstract_affiche.ax2.yaxis.set_label_text(self.abstract_affiche.figure.y2_axe.name_unit)
+                        delta = _max - _min
+                        self.abstract_affiche.ax2.set_ylim(_min - delta * 0.05, _max + delta * 0.05)
+                        self.abstract_affiche.ax2.yaxis.set_label_text(self.abstract_affiche.figure.y2_axe.name_unit)
 
             # on récupére le nouveau nom de l'axe
             new_name = self.edit_w.lineEdit_2.text()
@@ -639,7 +691,6 @@ class Figure_plot(QWidget):
                         emit.emit("msg_console", type="msg_console",
                                   str="Data has no positive values, y2 scale set to linear",
                                   foreground_color="red")
-
 
             self.canvas.draw()
 
@@ -1023,7 +1074,7 @@ class Figure_plot(QWidget):
 
         # on update les valeurs en utilisant global_index
         for i, data_name in enumerate(self.array_data_displayed):
-            self.view_data_value.gridLayout.itemAtPosition(i, 2).widget().\
+            self.view_data_value.gridLayout.itemAtPosition(i, 2).widget(). \
                 setText(str(self.abstract_affiche.data.data[data_name][global_index]))
 
     """---------------------------------------------------------------------------------"""
@@ -1051,6 +1102,73 @@ class Figure_plot(QWidget):
     """---------------------------------------------------------------------------------"""
     """                         View data current plot end                              """
     """---------------------------------------------------------------------------------"""
+
+    def update_contour_plot(self):
+        """
+        On update pour apliquer les changement du contour plot
+        pour un contour plot value correspond à la colorbar
+
+        :return: None
+        """
+
+        self.abstract_affiche.value.remove()
+        self.abstract_affiche.ax1.clear()
+
+        data_x = self.abstract_affiche.figure.x_axe.data
+        data_y1 = self.abstract_affiche.figure.y1_axe.data
+        data_z1 = self.abstract_affiche.figure.z1_axe.data
+
+        if "norm" in self.abstract_affiche.figure.kwarks:
+            norm_min = self.abstract_affiche.figure.kwarks["norm"][0]
+            norm_max = self.abstract_affiche.figure.kwarks["norm"][1]
+
+            if norm_min == -1:
+                norm_min = 0
+
+            if norm_max == -1:
+                _max = 0
+                for i in range(len(self.abstract_affiche.figure.z1_axe.data[0].data[0])):
+                    _max = max(_max, self.abstract_affiche.figure.z1_axe.data[0].data[0][i])
+                norm_max = int(_max)
+        else:
+            # approximation, on ne check que le premier cycle
+            _max = 0
+            for i in range(len(self.abstract_affiche.figure.z1_axe.data[0].data[0])):
+                _max = max(_max, self.abstract_affiche.figure.z1_axe.data[0].data[0][i])
+            norm_min = 0
+            norm_max = int(_max)
+
+        pas = int((norm_max - norm_min) / 8)
+
+        for i in range(len(data_x)):
+            if norm_min == -1:
+                self.abstract_affiche.ax2 = self.abstract_affiche. \
+                    ax1.contourf(data_x[i].data, data_y1[i].data,
+                                 data_z1[i].data,
+                                 cmap=data_x[i].get_color_map())
+            else:
+                self.abstract_affiche.ax2 = self.abstract_affiche. \
+                    ax1.contourf(data_x[i].data, data_y1[i].data,
+                                 data_z1[i].data,
+                                 levels=np.linspace(norm_min,
+                                                    norm_max,
+                                                    num=200),
+                                 extend='both',
+                                 cmap=self.abstract_affiche.figure.y1_axe.color_map)
+        if norm_min == -1:
+            self.abstract_affiche.value = self.abstract_affiche.pplot_fig.colorbar(self.abstract_affiche.ax2)
+        else:
+            self.abstract_affiche.value = self.abstract_affiche.pplot_fig.colorbar(self.abstract_affiche.ax2,
+                                                                                   ticks=range(norm_min, norm_max, pas))
+
+        self.abstract_affiche.ax1.set_xlabel(self.abstract_affiche.figure.x_axe.name_unit, labelpad=20)
+        self.abstract_affiche.ax1.set_ylabel(self.abstract_affiche.figure.y1_axe.name_unit, labelpad=20)
+        self.abstract_affiche.value.ax.set_ylabel(self.abstract_affiche.figure.z1_axe.name_unit, rotation=90,
+                                                  labelpad=0.7)
+
+        Data_type.Abstract_data.format_axes_figure(self.abstract_affiche.figure, self.abstract_affiche.ax1, None)
+
+        self.canvas.draw()
 
     def close_view_values(self):
         """

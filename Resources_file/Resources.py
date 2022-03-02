@@ -363,18 +363,30 @@ def fusion_figure(fig1, fig2):
 """----------------------------------------------------------------------------------"""
 
 
-def get_file_from_dir(path):
-    """Prend en input un chemin d'accés a un dossier et return le pth de tout ce qui est présent dans le dossier"""
+def get_file_from_dir(path, ext=None):
+    """
+    Prend en input un chemin d'accés a un dossier et return le pth de tout ce qui est présent dans le dossier
+
+    :param path: chemin d'un dossier
+    :param ext: exentetion des fichier cherché, sinon None tous
+    :return: list des dossier/fichier
+    """
+
     if not os.path.exists(path):
         print("Chemin d'accès invalide", "fail")
         raise ValueError
     else:
         if not os.path.isdir(path):
+            print("Un chemin d'accès à un dossier est demandé", "fail")
             raise ValueError
         else:
             res = []
-            for f in listdir(path):
-                res.append(path + "/" + f)
+            for f in os.listdir(path):
+                if ext is not None:
+                    if f[len(f) - len(ext):] == ext:
+                        res.append(path + "/" + f)
+                else:
+                    res.append(path + "/" + f)
             return res
 
 

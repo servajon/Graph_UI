@@ -46,7 +46,8 @@ UNITS = {
     "milliampere_heure_par_gramme": "milliampere_heure_par_gramme",
     "coulomb_par_gramme": "coulomb_par_gramme",
     "coulomb": "coulomb",
-
+    "degree_c": "degree_c",
+    "kelvin": "kelvin",
 
     # nom court des unitée
     "cm": "cm",
@@ -67,6 +68,9 @@ UNITS = {
     "C/g": "coulomb_par_gramme",
     "mA.h": "milliampere_heure",
     "°": "degrees",
+    "°C": "degree_c",
+    "K": "kelvin",
+    "rad": "radians",
     # nom des unitées sans conversion
 
     "%": "pourcentage",
@@ -105,6 +109,7 @@ class BasicUnit:
 
     def get_units_available(self):
         return [key for key in self.conversions.keys()]
+
 
 class CompositeUnit:
     def __init__(self, unit1, facteur, unit2, name, fullname=None):
@@ -244,6 +249,14 @@ class Units:
 
         """--------------------------------------------------"""
 
+        degree_c = BasicUnit('°C', '°C')
+        kelvin = BasicUnit('K', 'kelvin')
+
+        degree_c.add_conversion_fn(kelvin, lambda x: x - 273.15)
+        kelvin.add_conversion_fn(degree_c, lambda x: x + 273.15)
+
+        """--------------------------------------------------"""
+
         # déclaration des unitées non convertibles
         pourcentage = BasicUnit('%', 'pourcentage')
         volt_par_milliampere = BasicUnit('V/mA', 'V/mA')
@@ -276,6 +289,9 @@ class Units:
 
         self.units["milliampere_heure_par_gramme"] = milliampere_heure_par_gramme
         self.units["coulomb_par_gramme"] = coulomb_par_gramme
+
+        self.units["degree_c"] = degree_c
+        self.units["kelvin"] = kelvin
 
         self.units["pourcentage"] = pourcentage
 
@@ -315,13 +331,14 @@ class Data_unit(list):
     def convert_to(self, unit):
         if unit == self.unit or self.unit is None:
             return
-
         try:
             func = self.unit.get_conversion(unit)
             self.data = [func(value) for value in self.data]
             self._unit = unit
         except KeyError:
             raise ValueError('cannot convert ' + self.unit.name + ' in ' + unit.name)
+
+
 
     def __getitem__(self, item):
         if isinstance(item, slice):

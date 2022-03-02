@@ -7,7 +7,7 @@ import matplotlib.colors as mcolors
 
 
 class Data_array:
-    def __init__(self, data_unit, name, source, legende, color=None):
+    def __init__(self, data_unit, name, source, legende, color=None, **kwargs):
         # data : Data_unit
         self._data_unit = data_unit
 
@@ -34,6 +34,10 @@ class Data_array:
         # détermine si ce data_array doit-être tracé ou non, par défault oui
         # cela ne sera modifié que pour un data_array d'un axe y1 ou y2, pas x
         self._visible = True
+
+        # on garde un dict des argument apssé en plus, si il y a des infos
+        # que l'on souhaite garder
+        self.kwargs = kwargs
 
     def get_color_map(self):
         if self._color is None:

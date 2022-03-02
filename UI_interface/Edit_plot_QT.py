@@ -15,6 +15,8 @@ class Edit_plot(QWidget):
 
     def __init__(self, parent):
         super().__init__(parent)
+        self.__name__ = "Edit_plot"
+
         self.setWindowFlags(QtCore.Qt.Dialog | QtCore.Qt.WindowCloseButtonHint)
 
         self.setWindowModality(QtCore.Qt.ApplicationModal)

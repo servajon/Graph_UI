@@ -11,6 +11,8 @@ import matplotlib.pyplot as pplot
 from matplotlib.backend_bases import MouseButton
 from scipy.stats import linregress
 
+from Resources_file.Emit import Emit
+
 
 class Abstract_objet_affiche(ABC):
 
@@ -44,10 +46,6 @@ class Abstract_objet_affiche(ABC):
 
     @abstractmethod
     def update_pplot_fig(self):
-        pass
-
-    @abstractmethod
-    def set_open(self):
         pass
 
     @abstractmethod
@@ -193,7 +191,7 @@ class Array_Abstract_objet_affiche(object):
 
 class Classique_affiche(Abstract_objet_affiche):
 
-    def __init__(self, data, figure, norm=None):
+    def __init__(self, data, figure):
         super().__init__(data, figure)
         self.ax1 = None
         self.ax2 = None
@@ -209,8 +207,6 @@ class Classique_affiche(Abstract_objet_affiche):
         self.pos_y = None
         self.ligne1 = None
         self.ligne2 = None
-
-        self.norm = norm
 
         self.__name__ = "Classique_affiche"
 
@@ -262,33 +258,42 @@ class Classique_affiche(Abstract_objet_affiche):
             else:
                 self.finish = True
                 return False
+        elif self.figure.type == "res_fitting_temperature":
+            # pour cette figure pas d'édition possible, pour le moment
+            # et pour longtemps je pense
+            self.editable = False
+            if self.figure.is_data_set() == 1:
+                if self.save is not None:
+                    self.pplot_fig = self.data.load_graph_fit(self.figure, self.save)
+                    pplot.close(self.pplot_fig)
+                    self.finish = True
+                    self.pplot_fig = None
+                else:
+                    self.pplot_fig = self.data.load_graph_fit(self.figure)
+            else:
+                self.finish = True
+                return False
         elif self.figure.type == "contour":
             if self.figure.is_data_set_contour() == 1:
                 if self.save is not None:
                     self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
-                        self.data.load_graph_contour(self.figure, self.norm, self.save)
+                        self.data.load_graph_contour(self.figure, self.save)
                     pplot.close(self.pplot_fig)
                     self.finish = True
                     self.pplot_fig = None
                 else:
                     self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
-                        self.data.load_graph_contour(self.figure, self.norm)
+                        self.data.load_graph_contour(self.figure)
                     self.pplot_fig.tight_layout()
             else:
                 self.finish = True
                 return False
-        elif self.figure.type == "res_diffraction":
-            if self.figure.is_data_set() == 1:
-                if self.save is not None:
-                    self.pplot_fig = self.data.load_graph_affichage(self.figure, self.save)
-                    pplot.close(self.pplot_fig)
-                    self.finish = True
-                    self.pplot_fig = None
-                else:
-                    self.pplot_fig = self.data.load_graph_affichage(self.figure)
-            else:
-                self.finish = True
-                return False
+
+
+
+
+
+
         elif self.figure.type == "res_waxs":
             if self.figure.is_data_set() == 1:
                 if self.save is not None:
@@ -323,7 +328,7 @@ class Classique_affiche(Abstract_objet_affiche):
                         self.finish = True
                         self.pplot_fig = None
                     else:
-                        self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2\
+                        self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 \
                             = self.data.load_graph(self.figure)
 
                         self.pplot_fig.tight_layout()
@@ -387,8 +392,8 @@ class Classique_affiche(Abstract_objet_affiche):
                         break
 
                 res = Resources.coord_to_point([[self.pos_x, self.pos_y]],
-                                              self.figure.x_axe.data[self.index[0][1]],
-                                              self.figure.y1_axe.data[self.index[1][1]])
+                                               self.figure.x_axe.data[self.index[0][1]],
+                                               self.figure.y1_axe.data[self.index[1][1]])
 
                 if self.can_emit:
                     self.emit.emit("update_values", res=res, index=self.index)
@@ -470,12 +475,6 @@ class Classique_affiche(Abstract_objet_affiche):
 
     """----------------------------------------------------------------------------------"""
 
-    def set_open(self):
-        if self.pplot_fig is not None:
-            self.open = True
-
-    """----------------------------------------------------------------------------------"""
-
     def set_atteractive(self):
         if self.figure.is_interact() == 0:
             return False
@@ -510,6 +509,9 @@ class Classique_affiche(Abstract_objet_affiche):
     """----------------------------------------------------------------------------------"""
 
     def focus_off(self):
+        if not self.editable or self.figure.type == "contour":
+            return
+
         self.interactive = False
         self.index = None
         self.pos_x = None
@@ -517,7 +519,8 @@ class Classique_affiche(Abstract_objet_affiche):
 
         self.disconnect_name("motion_notify_event")
 
-        self.value.set_visible(False)
+        if self.value is not None:
+            self.value.set_visible(False)
 
         if self.freq is not None:
             self.freq.set_visible(False)
@@ -581,12 +584,6 @@ class Classique_affiche(Abstract_objet_affiche):
     """----------------------------------------------------------------------------------"""
 
 
-
-
-
-
-
-
 class Edit_affiche(Abstract_objet_affiche):
     def __init__(self, data, figure, norm=None):
         super().__init__(data, figure)
@@ -622,7 +619,7 @@ class Edit_affiche(Abstract_objet_affiche):
             pplot.close(self.pplot_fig)
         if self.figure.is_data_set() == 1:
             try:
-                self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2\
+                self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 \
                     = self.data.load_graph(self.figure)
                 self.pplot_fig.tight_layout()
             except ValueError as err:
@@ -668,8 +665,8 @@ class Edit_affiche(Abstract_objet_affiche):
                         break
 
                 res = Resources.coord_to_point([[self.pos_x, self.pos_y]],
-                                              self.figure.x_axe.data[self.index[0][1]],
-                                              self.figure.y1_axe.data[self.index[1][1]])
+                                               self.figure.x_axe.data[self.index[0][1]],
+                                               self.figure.y1_axe.data[self.index[1][1]])
                 self.res = res
                 if res != -1:
                     text_legend_pointed = self.figure.y1_axe.data[self.index[1][1]].legend
@@ -745,12 +742,6 @@ class Edit_affiche(Abstract_objet_affiche):
     def connect_all(self):
         self.mpl_connect.append([self.pplot_fig.canvas.mpl_connect('button_press_event', self.on_click),
                                  "button_press_event"])
-
-    """----------------------------------------------------------------------------------"""
-
-    def set_open(self):
-        if self.pplot_fig is not None:
-            self.open = True
 
     """----------------------------------------------------------------------------------"""
 
@@ -839,7 +830,7 @@ class Edit_affiche(Abstract_objet_affiche):
             else:
                 self.focus_on()
         elif event.dblclick and event.inaxes is not None and event.button == MouseButton.RIGHT and \
-            event.inaxes == self.ax1:
+                event.inaxes == self.ax1:
             self.delect_point()
 
     """----------------------------------------------------------------------------------"""
@@ -855,7 +846,6 @@ class Edit_affiche(Abstract_objet_affiche):
         new_data_x = np.delete(new_data_x, self.res)
         new_data_y = np.delete(new_data_y, self.res)
 
-
         self.ax1.lines[0].set_xdata(new_data_x)
         self.ax1.lines[0].set_ydata(new_data_y)
 
@@ -870,6 +860,237 @@ class Edit_affiche(Abstract_objet_affiche):
 
     def reset_color(self):
         pass
+
+
+class Pic_selection(Abstract_objet_affiche):
+    def __init__(self, data, figure):
+        super().__init__(data, figure)
+        self.ax1 = None
+        self.ax2 = None
+        self.value = None
+        self.freq = None
+
+        self.emit = Emit()
+
+        self.pos_x = None
+        self.pos_y = None
+        self.ligne1 = None
+        self.ligne2 = None
+
+        self.pics = []
+
+        self.can_be_closed = False
+
+        self.coords = [[None, None], [None, None]]
+
+    """----------------------------------------------------------------------------------"""
+
+    def create_figure(self):
+        if self.pplot_fig is not None:
+            pplot.close(self.pplot_fig)
+
+        if self.figure.is_data_set() == 1:
+            try:
+                self.pplot_fig, self.ax1, self.ax2, self.value, a, b, c = self.data.load_graph(self.figure)
+                self.pplot_fig.tight_layout()
+            except ValueError as err:
+                self.emit.emit("msg_console", type="msg_console", str="Les dimensions de la figure " +
+                                                                      self.figure.name +
+                                                                      " ne sont pas identiques",
+                               foreground_color="red")
+                print(err)
+                self.finish = True
+
+        else:
+            self.emit.emit("msg_console", type="msg_console", str="La figure " + self.figure.name +
+                                                                  " n'est pas valide", foreground_color="red")
+            self.finish = True
+
+    """----------------------------------------------------------------------------------"""
+
+    def interact(self):
+        black = matplotlib.colors.to_rgba("black")
+        if self.coords[0][0] is not None:
+            self.ligne1 = self.ax1.axvline(x=self.coords[0][0], color=black)
+
+        if self.coords[1][0] is not None:
+            self.ligne2 = self.ax1.axvline(x=self.coords[1][0], color=black)
+        self.pplot_fig.canvas.draw()
+
+    """----------------------------------------------------------------------------------"""
+
+    def update_pplot_fig(self):
+        if self.ligne1 is not None:
+            try:
+                self.ax1.lines.remove(self.ligne1)
+            except ValueError:
+                pass
+            self.ligne1 = None
+        if self.ligne2 is not None:
+            try:
+                self.ax1.lines.remove(self.ligne2)
+            except ValueError:
+                pass
+            self.ligne2 = None
+        self.interact()
+
+    """----------------------------------------------------------------------------------"""
+
+    def set_atteractive(self):
+        return True
+
+    """----------------------------------------------------------------------------------"""
+
+    def reset_color(self):
+        pass
+
+    """----------------------------------------------------------------------------------"""
+
+    def disconnect_all(self):
+        for i in self.mpl_connect:
+            self.pplot_fig.canvas.mpl_disconnect(i)
+
+    """----------------------------------------------------------------------------------"""
+
+    def connect_all(self):
+        self.mpl_connect.append(self.pplot_fig.canvas.mpl_connect('key_press_event', self.on_key))
+        if 's' in pplot.rcParams['keymap.save']:
+            pplot.rcParams['keymap.save'].remove('s')
+
+        self.mpl_connect.append(self.pplot_fig.canvas.mpl_connect('close_event', self.on_close))
+        self.mpl_connect.append(self.pplot_fig.canvas.mpl_connect('button_press_event', self.on_click))
+
+    """----------------------------------------------------------------------------------"""
+
+    def focus_off(self):
+       pass
+
+    """----------------------------------------------------------------------------------"""
+
+    def focus_on(self):
+        pass
+
+    """----------------------------------------------------------------------------------"""
+
+    def on_click(self, event):
+        if event.dblclick and event.inaxes is not None and event.button == MouseButton.LEFT and \
+                (event.inaxes == self.ax1 or event.inaxes == self.ax2):
+            if self.coords[0][0] is None:
+                self.coords[0] = [event.xdata, event.ydata]
+            elif self.coords[1][0] is None:
+                self.coords[1] = [event.xdata, event.ydata]
+            else:
+                self.coords[0] = [event.xdata, event.ydata]
+                self.coords[1] = [None, None]
+            self.update_pplot_fig()
+
+    """----------------------------------------------------------------------------------"""
+
+    def on_close(self, event):
+        self.disconnect_all()
+        pplot.close(self.pplot_fig)
+
+    """----------------------------------------------------------------------------------"""
+
+    def on_key(self, event):
+        if event.key == "s":
+            if self.coords[0][0] is not None and self.coords[1][0] is not None:
+                try:
+                    self.calc()
+                except ValueError:
+                    self.emit.emit("msg_console", type="msg_console", str="Invalid landmarks", foreground_color="red")
+                else:
+                    self.emit.emit("msg_console", type="msg_console", str="Landmarks saved", foreground_color="green")
+            else:
+                if self.coords[0][0] is None or self.coords[1][0] is None:
+                    self.emit.emit("msg_console", type="msg_console", str="there should be two landmarks",
+                                   foreground_color="red")
+                else:
+                    self.emit.emit("msg_console", type="msg_console", str="Invalid landmarks", foreground_color="red")
+        elif event.key == "r":
+            self.pics = []
+            self.emit.emit("msg_console", type="msg_console", str="the selection of peaks has been deleted",
+                           foreground_color="red")
+
+    """----------------------------------------------------------------------------------"""
+
+    def disconnect_name(self, name):
+        for i in range(len(self.mpl_connect)):
+            if self.mpl_connect[i][1] == name:
+                self.pplot_fig.canvas.mpl_disconnect(self.mpl_connect[i][0])
+                del self.mpl_connect[i]
+                return
+        raise ValueError
+
+    """----------------------------------------------------------------------------------"""
+
+    def calc(self):
+        data_x = self.figure.x_axe.data[0].data
+        data_y = self.figure.y1_axe.data[0].data
+
+        if self.coords[0][0] > self.coords[1][0]:
+            temp = self.coords[1][0]
+            self.coords[1][0] = self.coords[0][0]
+            self.coords[0][0] = temp
+
+        index = 0
+        while data_x[index] < self.coords[0][0]:
+            index += 1
+
+        born_y_min = data_y[index]
+
+        index_min = index
+
+        val_max = data_y[index]
+        index_val_max = index
+        while data_x[index] < self.coords[1][0]:
+            """calcule de x ou y est max"""
+            if data_y[index] > val_max:
+                val_max = data_y[index]
+                index_val_max = index
+            index += 1
+
+        x_max = data_x[index_val_max]
+
+        born_y_max = data_y[index]
+
+        index_max = index
+
+        calc = 0
+        for j in range(index_min + 1, index_max + 1):
+            calc += ((abs(data_x[j]) - abs(data_x[j - 1])) * data_y[j - 1] +
+                     (data_y[j] - data_y[j - 1]) * (data_x[j] - data_x[j - 1]) / 2)
+
+        area = calc
+
+        y_milieux_gauche = (val_max - born_y_min) / 2 + born_y_min
+        y_milieux_droit = (val_max - born_y_max) / 2 + born_y_max
+
+        temp_xright = None
+        temp_xleft = None
+
+        for j in range(index_min + 1, index_max + 1):
+            if data_y[j] > y_milieux_gauche:
+                vecteur = (data_x[j] - data_x[j - 1]) / (data_y[j] - data_y[j - 1])
+                temp_xleft = (data_y[j] - y_milieux_gauche) * vecteur + data_x[j - 1]
+                break
+
+        for j in reversed(range(index_min + 1, index_max + 1)):
+            if data_y[j] > y_milieux_droit:
+                vecteur = (data_x[j - 1] - data_x[j]) / (data_y[j] - data_y[j - 1])
+                temp_xright = (data_y[j] - y_milieux_droit) * vecteur + data_x[j - 1]
+                break
+
+        largeur = temp_xright - temp_xleft
+
+        self.pics.append([index_min, index_max, x_max, area, largeur])
+
+
+
+
+
+
+
 
 
 
@@ -937,6 +1158,8 @@ class Gitt_affiche(Abstract_objet_affiche):
             if self.figure.is_data_set() == 1:
                 try:
                     self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, a = self.data.load_graph(self.figure)
+                    self.pplot_fig.tight_layout()
+                    print("ok")
                 except ValueError as err:
                     print(err)
                     self.finish = True
@@ -944,7 +1167,6 @@ class Gitt_affiche(Abstract_objet_affiche):
             else:
                 self.finish = True
                 return False
-            self.pplot_fig.tight_layout()
 
     """----------------------------------------------------------------------------------"""
 
@@ -978,12 +1200,6 @@ class Gitt_affiche(Abstract_objet_affiche):
         if self.ligne3 is not None and len(self.ligne3) > 0:
             line3 = self.ligne3.pop(0)
             line3.remove()
-
-    """----------------------------------------------------------------------------------"""
-
-    def set_open(self):
-        if self.pplot_fig is not None:
-            self.open = True
 
     """----------------------------------------------------------------------------------"""
 
@@ -1037,7 +1253,7 @@ class Gitt_affiche(Abstract_objet_affiche):
         self.update_pplot_fig()
 
         if self.coords[0][0] is not None and self.coords[1][0] is not None:
-            res = Resources.coord_to_point(self.coords, self.figure.data_x[0], self.figure.data_y1[0])
+            res = Resources.coord_to_point(self.coords, self.figure.x_axe.data[0], self.figure.data_y1[0])
             if res == -1:
                 print("Borne incorrecte")
                 return
@@ -1162,12 +1378,6 @@ class Cv_affiche(Abstract_objet_affiche):
             except ValueError:
                 pass
             self.ligne3 = None
-
-    """----------------------------------------------------------------------------------"""
-
-    def set_open(self):
-        if self.pplot_fig is not None:
-            self.open = True
 
     """----------------------------------------------------------------------------------"""
 
@@ -1476,7 +1686,8 @@ class Cv_affiche(Abstract_objet_affiche):
             y_max = y_min
 
         array_return = [self.data.name + "_" + self.figure.name[5:], self.figure.data_x[0].data[res[0]],
-                        self.figure.data_x[0].data[res[1]], x_max, abs(integral), abs(integral) / 3.6, longueur, y_max - y]
+                        self.figure.data_x[0].data[res[1]], x_max, abs(integral), abs(integral) / 3.6, longueur,
+                        y_max - y]
 
         return array_return
 
@@ -1578,8 +1789,8 @@ class Impedance_affiche(Abstract_objet_affiche):
                         break
 
                 res = Resources.coord_to_point([[self.pos_x, self.pos_y]],
-                                              self.figure.data_x[self.index[0][1]],
-                                              self.figure.data_y1[self.index[1][1]])
+                                               self.figure.data_x[self.index[0][1]],
+                                               self.figure.data_y1[self.index[1][1]])
                 if res != -1:
                     self.value.legend([test, test], [
                         'x : ' + str(self.figure.data_x[self.index[0][1]].data[res])[0:len_x],
@@ -1646,12 +1857,6 @@ class Impedance_affiche(Abstract_objet_affiche):
 
     """----------------------------------------------------------------------------------"""
 
-    def set_open(self):
-        if self.pplot_fig is not None:
-            self.open = True
-
-    """----------------------------------------------------------------------------------"""
-
     def set_atteractive(self):
         return True
 
@@ -1714,8 +1919,8 @@ class Impedance_affiche(Abstract_objet_affiche):
             return focus
         elif event.button is MouseButton.RIGHT and event.dblclick:
             res = Resources.coord_to_point([[self.pos_x, self.pos_y]],
-                                          self.figure.data_x[self.index[0][1]],
-                                          self.figure.data_y1[self.index[1][1]])
+                                           self.figure.data_x[self.index[0][1]],
+                                           self.figure.data_y1[self.index[1][1]])
             if res != -1:
                 red = matplotlib.colors.to_rgba("red")
                 add_y = abs(self.ax1.get_yticks()[-1] * 20)
@@ -1811,10 +2016,10 @@ class Diffraction_affiche(Abstract_objet_affiche):
         add_y = abs(self.ax1.get_yticks()[-1] * 4)
         if self.coords[0][0] is not None:
             self.ligne1 = self.ax1.plot([self.coords[0][0], self.coords[0][0]],
-                              [self.coords[0][1] - add_y, self.coords[0][1] + add_y], color=black)
+                                        [self.coords[0][1] - add_y, self.coords[0][1] + add_y], color=black)
         if self.coords[1][0] is not None:
             self.ligne2 = self.ax1.plot([self.coords[1][0], self.coords[1][0]],
-                              [self.coords[1][1] - add_y, self.coords[1][1] + add_y], color=black)
+                                        [self.coords[1][1] - add_y, self.coords[1][1] + add_y], color=black)
 
     """----------------------------------------------------------------------------------"""
 
@@ -1828,12 +2033,6 @@ class Diffraction_affiche(Abstract_objet_affiche):
         if self.ligne2 is not None and len(self.ligne2) > 0:
             line2 = self.ligne2.pop(0)
             line2.remove()
-
-    """----------------------------------------------------------------------------------"""
-
-    def set_open(self):
-        if self.pplot_fig is not None:
-            self.open = True
 
     """----------------------------------------------------------------------------------"""
 
@@ -2073,7 +2272,8 @@ class Diffraction_affiche(Abstract_objet_affiche):
             longueur = math.sqrt((temp_xright - temp_xleft) ** 2 + (temp_yright - temp_yleft) ** 2)
             largeur.append(longueur)
 
-            array_res.append([str(self.figure.data_x[i].extra_info) + "\t" + str(data_x[i][index_val_max]) + "\t" + str(calc) + "\t" + str(longueur)])
+            array_res.append([str(self.figure.data_x[i].extra_info) + "\t" + str(data_x[i][index_val_max]) + "\t" + str(
+                calc) + "\t" + str(longueur)])
 
         self.res_calc.extend(array_res)
         return x_max, area, largeur
@@ -2107,7 +2307,6 @@ class Waxs_affiche(Abstract_objet_affiche):
 
         self.ax1 = None
         self.ax2 = None
-
 
         self.pos_x = None
         self.pos_y = None
@@ -2174,12 +2373,6 @@ class Waxs_affiche(Abstract_objet_affiche):
             except ValueError:
                 pass
             self.ligne2 = None
-
-    """----------------------------------------------------------------------------------"""
-
-    def set_open(self):
-        if self.pplot_fig is not None:
-            self.open = True
 
     """----------------------------------------------------------------------------------"""
 
@@ -2387,7 +2580,8 @@ class Waxs_affiche(Abstract_objet_affiche):
             longueur = math.sqrt((temp_xright - temp_xleft) ** 2 + (temp_yright - temp_yleft) ** 2)
             largeur.append(longueur)
 
-            array_res.append([str(self.figure.data_x[i].extra_info) + "\t" + str(data_x[i][index_val_max]) + "\t" + str(calc) + "\t" + str(longueur)])
+            array_res.append([str(self.figure.data_x[i].extra_info) + "\t" + str(data_x[i][index_val_max]) + "\t" + str(
+                calc) + "\t" + str(longueur)])
 
         self.res_calc.extend(array_res)
         return x_max, area, largeur
@@ -2487,12 +2681,6 @@ class Saxs_affiche(Abstract_objet_affiche):
             except ValueError:
                 pass
             self.ligne2 = None
-
-    """----------------------------------------------------------------------------------"""
-
-    def set_open(self):
-        if self.pplot_fig is not None:
-            self.open = True
 
     """----------------------------------------------------------------------------------"""
 
@@ -2853,8 +3041,8 @@ class Saxs_selection(Abstract_objet_affiche):
                         break
 
                 res = Resources.coord_to_point([[self.pos_x, self.pos_y]],
-                                              self.figure.data_x[self.index[0][1]],
-                                              self.figure.data_y1[self.index[1][1]])
+                                               self.figure.data_x[self.index[0][1]],
+                                               self.figure.data_y1[self.index[1][1]])
                 if res != -1:
                     text_legend_pointed = self.figure.data_y1[self.index[1][1]].legend
 
@@ -2950,8 +3138,8 @@ class Saxs_selection(Abstract_objet_affiche):
                 print("Aucune courbe sélectionnée")
             else:
                 res = Resources.coord_to_point([[self.pos_x, self.pos_y]],
-                                             self.figure.data_x[self.index[0][1]],
-                                             self.figure.data_y1[self.index[1][1]])
+                                               self.figure.data_x[self.index[0][1]],
+                                               self.figure.data_y1[self.index[1][1]])
                 if self.index is not None and res != -1:
                     self.res = res
                     pplot.close(self.pplot_fig)

@@ -2,11 +2,26 @@ from abc import ABC, abstractmethod
 
 import matplotlib
 import matplotlib.pyplot as pplot
+import numpy as np
 
 from Console_Objets.Axe import Axe
 from Console_Objets.Figure import Figure
 from Resources_file import Resources
 from Resources_file.Emit import Emit
+
+
+def resize_axe_y(axe1, axe2, p):
+    """On augemente la taille de l'ax donné en paramétre de p %"""
+    p = -p
+    size_axe_y1 = axe1.get_ylim()[1] - axe1.get_ylim()[0]
+    axe1.set_ylim(axe1.get_ylim()[0] - (size_axe_y1 * p / 100), axe1.get_ylim()[1] + (size_axe_y1 * p / 100))
+
+    if axe2 is not None:
+        size_axe_y2 = axe2.get_ylim()[1] - axe2.get_ylim()[0]
+        axe2.set_ylim(axe2.get_ylim()[0] - (size_axe_y2 * p / 100), axe2.get_ylim()[1] + (size_axe_y2 * p / 100))
+
+
+"""----------------------------------------------------------------------------------"""
 
 
 def format_axes_figure(figure, ax1, ax2):
@@ -121,7 +136,7 @@ class Abstract_data(ABC):
         self._data = None
         self._name = None
 
-        #self._nom_cell = None
+        # self._nom_cell = None
         self._nom_cell = "temp"
         self._figures = []
         self._current_figure = None
@@ -171,6 +186,10 @@ class Abstract_data(ABC):
 
     @abstractmethod
     def get_cycle_available(self):
+        pass
+
+    @abstractmethod
+    def diffraction_contour_temperature(self):
         pass
 
     def unique_name(self, name):
@@ -324,18 +343,22 @@ class Abstract_data(ABC):
                         index_modulo_y2 < len(modulo_y2) and i == modulo_y2[index_modulo_y2]):
                     index_modulo_y2 += 1
                     if data_y2[i].color is not None:
-                        ax2.plot(data_x[i + len_y1].data, data_y2[i].data, format_line_y2, markersize=figure.marker_size,
+                        ax2.plot(data_x[i + len_y1].data, data_y2[i].data, format_line_y2,
+                                 markersize=figure.marker_size,
                                  label=data_y2[i].legend,
                                  color=data_y2[i].color, visible=data_y2[i].visible)
                     else:
-                        ax2.plot(data_x[i + len_y1].data, data_y2[i].data, format_line_y2, markersize=figure.marker_size,
+                        ax2.plot(data_x[i + len_y1].data, data_y2[i].data, format_line_y2,
+                                 markersize=figure.marker_size,
                                  color=couleur[index_color], label=data_y2[i].legend, visible=data_y2[i].visible)
                 else:
                     if data_y2[i].color is not None:
-                        ax2.plot(data_x[i + len_y1].data, data_y2[i].data, format_line_y2, markersize=figure.marker_size,
+                        ax2.plot(data_x[i + len_y1].data, data_y2[i].data, format_line_y2,
+                                 markersize=figure.marker_size,
                                  color=data_y2[i].color, visible=data_y2[i].visible)
                     else:
-                        ax2.plot(data_x[i + len_y1].data, data_y2[i].data, format_line_y2, markersize=figure.marker_size,
+                        ax2.plot(data_x[i + len_y1].data, data_y2[i].data, format_line_y2,
+                                 markersize=figure.marker_size,
                                  color=couleur[index_color], visible=data_y2[i].visible)
                 index_color += 1
 
@@ -351,7 +374,6 @@ class Abstract_data(ABC):
             pplot.tight_layout()
             pplot.close(fig)
             fig.savefig(path_save, bbox_inches='tight', dpi=150)
-
 
         return fig, ax1, ax2, value, val_freq, leg1, leg2
 
@@ -461,34 +483,288 @@ class Abstract_data(ABC):
 
     """----------------------------------------------------------------------------------"""
 
-    def format_axes(self, axe, type, name):
-        if type is not None and "3d" in type:
-            if axe is not None:
-                for tick in axe.xaxis.get_major_ticks():
-                    tick.label1.set_fontsize(18)
-                    tick.label1.set_fontweight('bold')
-                for tick in axe.yaxis.get_major_ticks():
-                    tick.label1.set_fontsize(18)
-                    tick.label1.set_fontweight('bold')
-                for tick in axe.yaxis.get_major_ticks():
-                    tick.label2.set_fontsize(18)
-                    tick.label2.set_fontweight('bold')
-                for tick in axe.zaxis.get_major_ticks():
-                    tick.label1.set_fontsize(18)
-                    tick.label1.set_fontweight('bold')
-                """je le fais comme ça vu qu'il n'y a que 1 graph en 3d, à modifier par la suite au cas ou"""
-                axe.set_aspect('equal', 'box')
+    def load_graph_fit(self, figure, path_save=None):
+        """
+        création de la figure matplotlib issu d'un fit
+        graph général a revoir, il est moche
+
+
+        :param figure: figure résultat d'un fit
+        :param path_save: chemin d'accés en cas de sauvegarde
+        :return: fig, ax1, None, value, val_freq, leg1, None
+        """
+        couleurs = []
+        for name in matplotlib.colors.TABLEAU_COLORS:
+            couleurs.append(name)
+
+        if figure.type == "res_fitting_temperature":
+            nb_cooling = 0
+            nb_warning = 0
+            for data in figure.x_axe.data:
+                if data.kwargs["temperature"] == "cooling":
+                    nb_cooling += 1
+                else:
+                    nb_warning += 1
+
+            if nb_cooling != 0 and nb_warning != 0:
+                nb_pics = len(figure.y1_axe.data) / 6
+
+                index = 0
+
+                fig = pplot.figure(figsize=(11, 7))
+                gs = fig.add_gridspec(3, 3, hspace=0.1, wspace=0, width_ratios=[5, 5, 1])
+                axes = gs.subplots(sharex='col', sharey='row')
+                _str = figure.name
+                _str = _str.replace("_", " ")
+                fig.suptitle(_str)
+
+                ligne_1 = axes[0]
+                ligne_2 = axes[1]
+                ligne_3 = axes[2]
+
+                leg = ["pic " + str(figure.kwarks["init_center"][i]) for i in range(int(nb_pics))]
+
+                for i, axe in enumerate(ligne_1):
+                    if i == 2:
+                        fig.delaxes(axe)
+                        break
+                    index_color = 0
+                    for j in range(int(nb_pics)):
+                        if index_color == len(couleurs):
+                            index_color = 0
+                        axe.plot(figure.x_axe.data[index].data, figure.y1_axe.data[index].data, "x",
+                                 color=couleurs[index_color], label=leg[j])
+                        index_color += 1
+                        index += 1
+
+                    axe.get_xaxis().set_visible(False)
+
+                    if i == 0:
+                        axe.set_title('warning')
+                        axe.set_ylabel("x_max")
+                    elif i == 1:
+                        axe.set_title('cooling')
+                        axe.get_yaxis().set_visible(False)
+
+                for i, axe in enumerate(ligne_2):
+                    if i == 2:
+                        leg = axe
+                        axe.axis("off")
+                        break
+
+                    index_color = 0
+                    for j in range(int(nb_pics)):
+                        if index_color == len(couleurs):
+                            index_color = 0
+                        axe.plot(figure.x_axe.data[index].data, figure.y1_axe.data[index].data, "x",
+                                 color=couleurs[index_color])
+                        index_color += 1
+                        index += 1
+
+                    axe.get_xaxis().set_visible(False)
+
+                    if i == 0:
+                        axe.set_ylabel("area")
+                    elif i == 1:
+                        axe.get_yaxis().set_visible(False)
+
+                for i, axe in enumerate(ligne_3):
+                    if i == 2:
+                        fig.delaxes(axe)
+                        break
+
+                    index_color = 0
+                    for j in range(int(nb_pics)):
+                        if index_color == len(couleurs):
+                            index_color = 0
+                        axe.plot(figure.x_axe.data[index].data, figure.y1_axe.data[index].data, "x",
+                                 color=couleurs[index_color])
+                        index_color += 1
+                        index += 1
+
+                    if i == 0:
+                        axe.set_ylabel("fwhm")
+                        axe.set_xlabel("temperature")
+                    elif i == 1:
+                        axe.set_xlabel("temperature")
+                        axe.invert_xaxis()
+                        axe.get_yaxis().set_visible(False)
+
+                h = []
+                l = []
+                leg_axe = [axes[0, 0], axes[1, 0], axes[2, 0]]
+
+                for axe in leg_axe:
+                    h1, l1 = axe.get_legend_handles_labels()
+                    h.extend(h1)
+                    l.extend(l1)
+
+                leg.legend(h, l, bbox_to_anchor=(2.9, 1))
+                fig.subplots_adjust(left=0.105, right=0.87)
+            else:
+                nb_pics = len(figure.y1_axe.data) / 3
+
+                index = 0
+                fig = pplot.figure(figsize=(11, 7))
+                gs = fig.add_gridspec(3, 2, hspace=0.1, wspace=0, width_ratios=[10, 1])
+                axes = gs.subplots(sharex='col', sharey='row')
+                _str = figure.name
+                _str = _str.replace("_", " ")
+                fig.suptitle(_str)
+
+                if nb_cooling == 0:
+                    name = "warning"
+                else:
+                    name = "cooling"
+
+                ligne_1 = axes[0]
+                ligne_2 = axes[1]
+                ligne_3 = axes[2]
+
+                leg = ["x max", "area", "fwhm"]
+
+                for i, axe in enumerate(ligne_1):
+                    if i == 1:
+                        fig.delaxes(axe)
+                        break
+                    for j in range(int(nb_pics)):
+                        axe.plot(figure.x_axe.data[index].data, figure.y1_axe.data[index].data, "x", color=couleurs[j],
+                                 label="x_max")
+                        index += 1
+
+                    axe.get_xaxis().set_visible(False)
+                    resize_axe_y(axe, None, -7.5)
+                    if i == 0:
+                        axe.set_title(name)
+                        axe.set_ylabel("x_max")
+
+                for i, axe in enumerate(ligne_2):
+                    if i == 1:
+                        leg = axe
+                        axe.axis("off")
+                        break
+                    for j in range(int(nb_pics)):
+                        axe.plot(figure.x_axe.data[index].data, figure.y1_axe.data[index].data, "x", color=couleurs[j],
+                                 label="area")
+                        index += 1
+
+                    axe.get_xaxis().set_visible(False)
+                    resize_axe_y(axe, None, -7.5)
+
+                    if i == 0:
+                        axe.set_ylabel("area")
+
+                for i, axe in enumerate(ligne_3):
+                    if i == 1:
+                        fig.delaxes(axe)
+                        break
+                    for j in range(int(nb_pics)):
+                        axe.plot(figure.x_axe.data[index].data, figure.y1_axe.data[index].data, "x", color=couleurs[j],
+                                 label="fwhm")
+                        index += 1
+
+                    resize_axe_y(axe, None, -7.5)
+
+                    if i == 0:
+                        axe.set_ylabel("largeur")
+                        axe.set_xlabel("temperature")
+                    if name == "cooling":
+                        axe.invert_xaxis()
+
+                h = []
+                l = []
+                leg_axe = [axes[0, 0], axes[1, 0], axes[2, 0]]
+
+                for axe in leg_axe:
+                    h1, l1 = axe.get_legend_handles_labels()
+                    h.extend(h1)
+                    l.extend(l1)
+
+                leg.legend(h, l, bbox_to_anchor=(2.9, 1))
+                fig.subplots_adjust(left=0.105, right=0.90)
+
+            if path_save is not None:
+                pplot.tight_layout()
+                pplot.close(fig)
+                fig.savefig(path_save, bbox_inches='tight', dpi=150)
+
+            return fig
+
         else:
-            if axe is not None:
-                for tick in axe.xaxis.get_major_ticks():
-                    tick.label1.set_fontsize(18)
-                    tick.label1.set_fontweight('bold')
-                for tick in axe.yaxis.get_major_ticks():
-                    tick.label1.set_fontsize(18)
-                    tick.label1.set_fontweight('bold')
-                for tick in axe.yaxis.get_major_ticks():
-                    tick.label2.set_fontsize(18)
-                    tick.label2.set_fontweight('bold')
+            raise NotImplementedError
+
+    """----------------------------------------------------------------------------------"""
+
+    def load_graph_contour(self, figure, path_save=None):
+        """Cette focntion créer une nouvelle figure avec les paramettre de la figure donné, pas de try cach ici
+        cela se fait dans les fonctions du dessus"""
+
+        if figure.is_data_set_contour() != 1:
+            return
+        else:
+            if "norm" in figure.kwarks:
+                norm_min = figure.kwarks["norm"][0]
+                norm_max = figure.kwarks["norm"][1]
+
+                if norm_min == -1:
+                    norm_min = 0
+
+                if norm_max == -1:
+                    _max = 0
+                    for i in range(len(figure.z1_axe.data[0].data[0])):
+                        _max = max(_max, figure.z1_axe.data[0].data[0][i])
+                    norm_max = int(_max)
+
+            else:
+                # approximation, on ne check que le premier cycle
+                _max = 0
+                for i in range(len(figure.z1_axe.data[0].data[0])):
+                    _max = max(_max, figure.z1_axe.data[0].data[0][i])
+
+                norm_min = 0
+                norm_max = int(_max)
+
+            # self.format_figure(figure)
+            pplot.rcParams.update({'font.size': 18})
+
+            data_x = figure.x_axe.data
+            data_y1 = figure.y1_axe.data
+            data_z1 = figure.z1_axe.data
+
+            fig = pplot.figure()
+            fig.set_size_inches(11, 7)
+            fig.canvas.manager.set_window_title(figure.plot_name)
+            pplot.suptitle(figure.plot_name)
+            ax1 = fig.add_subplot()
+
+            pas = int((norm_max - norm_min) / 8)
+
+            for i in range(len(data_x)):
+                if norm_min == -1:
+                    contourf_ = ax1.contourf(data_x[i].data, data_y1[i].data, data_z1[i].data,
+                                             cmap=data_x[i].get_color_map())
+                else:
+                    contourf_ = ax1.contourf(data_x[i].data, data_y1[i].data, data_z1[i].data,
+                                             levels=np.linspace(norm_min, norm_max, num=200),
+                                             extend='both', cmap=figure.y1_axe.color_map)
+
+            if norm_min == -1:
+                cbar = fig.colorbar(contourf_)
+            else:
+                cbar = fig.colorbar(contourf_, ticks=range(norm_min, norm_max, pas))
+            cbar.ax.set_ylabel(figure.z1_axe.name_unit, rotation=90, labelpad=0.7)
+
+            ax1.set_xlabel(figure.x_axe.name_unit, labelpad=20)
+            ax1.set_ylabel(figure.y1_axe.name_unit, labelpad=20)
+
+            format_axes_figure(figure, ax1, None)
+
+            if path_save is not None:
+                pplot.tight_layout()
+                pplot.close(fig)
+                fig.savefig(path_save, bbox_inches='tight', dpi=150)
+
+            return fig, ax1, contourf_, cbar, None, None, None
 
     """----------------------------------------------------------------------------------"""
 
@@ -669,5 +945,3 @@ class Abstract_data(ABC):
     @abstractmethod
     def resource(self, resource):
         pass
-
-

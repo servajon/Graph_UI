@@ -14,11 +14,14 @@ class Figure:
         "cycle_y1_y2": ["derive", "shift x"],   # figure issus d'un traitement de cycle avec quelque chose en y1 ET y2
         "derive_y1": ["shift x", "shift y", "derive"],  # figure issus d'une dérivée avec data en y1
         "derive_y1_y2": ["shift x", "derive"],  # figure issus d'une dérivée avec data en y1 ET y2
-        "diffraction": ["cycle", "calc", "fitting"],    # figure du traitement diffraction
-        "diffraction_cycle": ["calc", "fitting"]    # figure issus d'une selection de cycle d'une figure de diffraction
+        "diffraction": ["cycle", "fit"],    # figure du traitement diffraction
+        "diffraction_cycle": ["fit"],    # figure issus d'une selection de cycle d'une figure de diffraction
+        "res_fitting_temperature": [],   # figure résultat d'un fit
+        "res_fitting_temps": [],  # figure résultat d'un fit
+        "contour": [],  # figure résultat d'un fit
     }
 
-    def __init__(self, name, dirty=None):
+    def __init__(self, name, dirty=None, **kwarks):
         self.x_axe = None
         self.y1_axe = None
         self.y2_axe = None
@@ -53,6 +56,9 @@ class Figure:
 
         # Si la figure a était créer depuis une autre figure, on garde l'adresse pour l'afficher
         self._created_from = None
+
+        # information complémetaire de la figure contnue ici
+        self.kwarks = kwarks
 
     """                                                  """
     """                      getter                      """
@@ -387,6 +393,7 @@ class Figure:
         # créer l'axe z1 si il n'existe pas encore
         if self.z1_axe is None:
             self.z1_axe = Axe("z1")
+            self.z1_axe.name = name
 
         # si data_y est une list, on créer un objet data_unit
         # son unité sera None, aucune conversion possible
@@ -415,6 +422,7 @@ class Figure:
         # créer l'axe z1 si il n'existe pas encore
         if self.z1_axe is None:
             self.z1_axe = Axe("z1")
+            self.z1_axe.name = data.name
 
         # ajoute un nouvel objet Data_array à data_z1
         self.z1_axe.append(data)
@@ -556,3 +564,4 @@ class Figure:
                 new_figure.__setattr__(att, value.copy())
 
         return new_figure
+

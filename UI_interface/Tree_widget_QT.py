@@ -194,7 +194,6 @@ class Tree_widget(QtWidgets.QTreeWidget):
             item = item.get(index)
         item.name = new_name
 
-
         self.info()
 
 

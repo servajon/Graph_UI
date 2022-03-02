@@ -24,17 +24,6 @@ class Diffraction_data(Abstract_data):
         :return: nouvelle figure
         """
 
-        """start = self.data["2t"][self.data["loop_data"][0][0]]
-        end = self.data["2t"][self.data["loop_data"][0][1]]"""
-
-        """t_start = None
-        while t_start is None:
-            t_start = Resource.get_float("Start x ? >> ")
-            if t_start > end or t_start < start:
-                self.resource.print_color("Valeur invalide, doit être comprise entre "
-                                          + str(start) + " et " + str(end), "fail")
-                t_start = None"""
-
         figure = Figure("diffraction")
         figure.type = "diffraction"
         figure.plot_name = "Diffraction"
@@ -51,14 +40,6 @@ class Diffraction_data(Abstract_data):
             global_index = [val for val in range(start, end)]
             temp_x = self.data["2t"][start:end]
             temp_y = self.data["intensite"][start:end]
-
-            # calcule d'une ligne de base clodo, à refaire
-            """calc = (self.data["intensite"][end] - self.data["intensite"][start]) / 
-                   (self.data["2t"][end] - self.data["2t"][start])
-            _minus = self.data["intensite"][start]"""
-
-            """for j in range(len(temp_x)):
-                temp_y[j] -= temp_x[j] * calc + _minus"""
 
             data_unit_x = Data_unit(temp_x, unit_x)
             data_unit_y = Data_unit(temp_y, unit_y)
@@ -83,10 +64,10 @@ class Diffraction_data(Abstract_data):
         raise ValueError
 
     def derive(self, *args, **kwargs):
-        pass
+        raise ValueError
 
     def shift_axe(self, *args, **kwargs):
-        pass
+        raise ValueError
 
     """----------------------------------------------------------------------------------"""
 
@@ -146,6 +127,102 @@ class Diffraction_data(Abstract_data):
 
     """----------------------------------------------------------------------------------"""
 
+    def diffraction_contour_temperature(self):
+        figure_warming = Figure("contour_warming", 1)
+        figure_cooling = Figure("contour_cooling", 1)
+        figure_contour = Figure("contour", 1)
+
+        figure_warming.type = "contour"
+        figure_cooling.type = "contour"
+        figure_contour.type = "contour"
+
+        units = Units()
+        x_unit = units.get_unit("degrees")
+        y_unit = units.get_unit("degree_c")
+        z_unit = units.get_unit("ua")
+
+        x = self.data["2t"][self.data["loop_data"][0][0]:self.data["loop_data"][0][1]]
+
+        y = []
+        z = []
+        for loop in self.data["loop_data"]:
+            if loop[2] == "w":
+                y.append(loop[3])
+                start = loop[0]
+                end = loop[1]
+                z.append(self.data.get("intensite")[start:end])
+
+        data_unit_x = Data_unit(x, x_unit)
+        data_unit_y = Data_unit(y, y_unit)
+        data_unit_z = Data_unit(z, z_unit)
+
+        figure_warming.add_data_x_Data(Data_array(data_unit_x, "2 θ", self.name, "nesaispas"))
+        figure_warming.add_data_y1_Data(Data_array(data_unit_y, "température", self.name, "nesaispas"))
+        figure_warming.add_data_z1_Data(Data_array(data_unit_z, "diffraction", self.name, "nesaispas"))
+
+        try:
+            y = []
+            z = []
+            for loop in self.data["loop_data"]:
+                if loop[2] == "c":
+                    y.append(loop[3])
+                    start = loop[0]
+                    end = loop[1]
+                    z.append(self.data.get("intensite")[start:end])
+
+            figure_cooling.start_y1 = y[0]
+            figure_cooling.end_y1 = y[-1]
+
+            data_unit_x = Data_unit(x, x_unit)
+            data_unit_y = Data_unit(y, y_unit)
+            data_unit_z = Data_unit(z, z_unit)
+
+            figure_cooling.add_data_x_Data(Data_array(data_unit_x, "2 θ", self.name, "nesaispas"))
+            figure_cooling.add_data_y1_Data(Data_array(data_unit_y, "Température", self.name, "nesaispas"))
+            figure_cooling.add_data_z1_Data(Data_array(data_unit_z, "diffraction", self.name, "nesaispas"))
+        except IndexError:
+            figure_cooling = None
+
+        try:
+            z = []
+            y = []
+            for loop in self.data["loop_data"]:
+                if loop[2] == "w":
+                    y.append(loop[3])
+                    start = loop[0]
+                    end = loop[1]
+                    z.append(self.data.get("intensite")[start:end])
+
+            last = y[-1]
+            extra_type = {}
+            temp = []
+            for i in range(len(self.data["loop_data"])):
+                temp.append(self.data["loop_data"][i][3])
+            extra_type["yticks"] = temp
+            extra_type["last"] = last
+            figure_contour.extra_type = extra_type
+
+            for loop in self.data["loop_data"]:
+                if loop[2] == "c":
+                    y.append(-loop[3] + 2 * last)
+                    start = loop[0]
+                    end = loop[1]
+                    z.append(self.data.get("intensite")[start:end])
+
+            data_unit_x = Data_unit(x, x_unit)
+            data_unit_y = Data_unit(y, y_unit)
+            data_unit_z = Data_unit(z, z_unit)
+
+            figure_contour.add_data_x_Data(Data_array(data_unit_x, "2 θ", self.name, "nesaispas"))
+            figure_contour.add_data_y1_Data(Data_array(data_unit_y, "Température", self.name, "nesaispas"))
+            figure_contour.add_data_z1_Data(Data_array(data_unit_z, "diffraction", self.name, "nesaispas"))
+        except IndexError:
+            figure_contour = None
+
+        return figure_contour, figure_cooling, figure_warming
+
+    """----------------------------------------------------------------------------------"""
+
     @property
     def data(self):
         return self._data
@@ -181,12 +258,10 @@ class Diffraction_data(Abstract_data):
 
     @name.setter
     def name(self, name):
-        """On replace les espaces par des '_'"""
         self._name = name
 
     @nom_cell.setter
     def nom_cell(self, name):
-        """On replace les espaces par des '_'"""
         self._nom_cell = name
 
     @figures.setter
