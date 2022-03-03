@@ -6,7 +6,7 @@ import numpy as np
 
 import Resources_file.Resources
 from Data_type.Ihch_1501 import Ihch_1501_cycle, Ihch_1501_sample_saxs, Ihch_1501_scan, Ihch_1501_frame, \
-Ihch_1501_sample_waxs
+    Ihch_1501_sample_waxs
 from Resources_file.Emit import Emit
 
 
@@ -375,4 +375,3 @@ def get_file_from_dir(path, ext=None):
                 else:
                     res.append(path + "/" + f)
             return res
-
