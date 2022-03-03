@@ -1,3 +1,5 @@
+import unicodedata
+
 from Console_Objets.Axe import Axe
 from Console_Objets.Data_Unit import Data_unit
 from Console_Objets.Data_array import Data_array
@@ -565,3 +567,45 @@ class Figure:
 
         return new_figure
 
+    """----------------------------------------------------------------------------------"""
+
+    def export(self, path):
+        len_max = 0
+        """On récupére l'index du vecteur en x le plus grand"""
+        for i in range(len(self.x_axe.data)):
+            len_max = max(len_max, len(self.x_axe.data[i].data))
+
+        file = open(path, "w")
+
+        for i in range(len(self.y1_axe.data)):
+            temp = unicodedata.normalize('NFKD', str(self.y1_axe.data[i].legend)).encode('ascii', 'replace').decode()
+            file.write(temp + "_" + self.y1_axe.name_unit + "\t")
+            file.write(temp + "_" + self.x_axe.name_unit + "\t")
+
+        if self.y2_axe is not None:
+            for i in range(len(self.y2_axe.data)):
+                temp = unicodedata.normalize('NFKD', str(self.y2_axe.data[i].legend)).encode('ascii', 'replace').decode()
+                file.write(temp + "_" + self.y2_axe.name_unit + "\t")
+                file.write(temp + "_" + self.x_axe.name_unit + "\t")
+
+        file.write("\n")
+
+        for i in range(len_max):
+            for j in range(len(self.y1_axe.data)):
+                if i < len(self.y1_axe.data[j].data):
+                    if self.y1_axe.data[j].legend is not None:
+                        file.write(str(self.x_axe.data[j].data[i]) + "\t")
+                        file.write(str(self.y1_axe.data[j].data[i]) + "\t")
+                else:
+                    file.write("\t")
+
+            if self.y2_axe is not None:
+                for j in range(len(self.y2_axe.data)):
+                    if i < len(self.y2_axe.data[j].data):
+                        if self.y2_axe.data[j].legend is not None:
+                            file.write(str(self.x_axe.data[j].data[i]) + "\t")
+                            file.write(str(self.y2_axe.data[j].data[i]) + "\t")
+                    else:
+                        file.write("\t")
+            file.write("\n")
+        file.close()

@@ -7,10 +7,7 @@ self.edit_plot_w.lineEdit.setText(self.console.current_data.current_figure.name)
 faire quelque chose pour renomer les fichiers
 en penssant a update l'origine de TOUTES les figures
 
-continuer la diffraction
-
 création des figures dans des threads
 
 refaire les unitées issu d'une dérivée
 
-faire unité température

@@ -152,8 +152,10 @@ class Ui_MainWindow(object):
 
         self.actionDelete_Current_Plot = QtWidgets.QAction(MainWindow)
         self.actionDelete_Current_Plot.setObjectName("actionDelete_Current_Plot")
-        self.actionPlot = QtWidgets.QAction(MainWindow)
-        self.actionPlot.setObjectName("actionPlot")
+
+        self.export_actionPlot = QtWidgets.QAction(MainWindow)
+        self.export_actionPlot.setObjectName("export_actionPlot")
+
         self.actionR_sistance = QtWidgets.QAction(MainWindow)
         self.actionR_sistance.setObjectName("actionR_sistance")
         self.actionArea = QtWidgets.QAction(MainWindow)
@@ -177,7 +179,9 @@ class Ui_MainWindow(object):
         self.menuPlot.addAction(self.actionEdit_Current_Plot)
         self.menuPlot.addAction(self.actionview_data_Current_Plot)
         self.menuPlot.addAction(self.actionDelete_Current_Plot)
-        self.menuExport.addAction(self.actionPlot)
+        self.menuPlot.addAction(self.export_actionPlot)
+
+
         self.menuExport.addAction(self.actionR_sistance)
         self.menuExport.addAction(self.actionArea)
         self.menuExport.addAction(self.actionDiffraction)
@@ -225,7 +229,7 @@ class Ui_MainWindow(object):
         self.actionEdit_Current_Plot.setText(_translate("MainWindow", "Edit Current Plot"))
         self.actionview_data_Current_Plot.setText(_translate("MainWindow", "View Data Current Plot"))
         self.actionDelete_Current_Plot.setText(_translate("MainWindow", "Delete Current Plot"))
-        self.actionPlot.setText(_translate("MainWindow", "Plot"))
+        self.export_actionPlot.setText(_translate("MainWindow", "Export Current Plot"))
         self.actionR_sistance.setText(_translate("MainWindow", "Résistance"))
         self.actionArea.setText(_translate("MainWindow", "Area"))
         self.actionDiffraction.setText(_translate("MainWindow", "Diffraction"))

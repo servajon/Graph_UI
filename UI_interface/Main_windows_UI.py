@@ -107,9 +107,13 @@ class Window(QMainWindow, Ui_MainWindow):
         self.actioncv.triggered.connect(self.open_cv)
         self.actiongitt.triggered.connect(self.open_gitt)
         self.actiondiffracion.triggered.connect(self.open_diffraction)
+        self.actionIhch_1501.triggered.connect(self.open_ihch_1501)
+
         self.actionEdit_Current_Plot.triggered.connect(self.edit_current_plot)
         self.actionview_data_Current_Plot.triggered.connect(self.view_data_Current_Plot)
-        self.actionIhch_1501.triggered.connect(self.open_ihch_1501)
+        self.actionDelete_Current_Plot.triggered.connect(self.delet_current_plot)
+        self.export_actionPlot.triggered.connect(self.export_plot)
+
 
         self.pushButton_5.clicked.connect(self.create_current_data)
         self.pushButton_4.clicked.connect(self.create_figure)
@@ -174,14 +178,15 @@ class Window(QMainWindow, Ui_MainWindow):
         :return: None
         """
 
-        fig = Figure("test", 1)
+        """fig = Figure("test", 1)
         fig.add_data_x_Data(Data_array([1, 2, 3], None, None, "None"))
         fig.add_data_y1_Data(Data_array([10, 5, 20], None, None, "None"))
 
         obj = Classique_affiche(self.console.current_data, fig)
 
         self.figure_plot = Figure_plot(obj, self)
-        self.figure_plot.show()
+        self.figure_plot.show()"""
+        print(self.threads)
 
     """---------------------------------------------------------------------------------"""
 
@@ -270,12 +275,12 @@ class Window(QMainWindow, Ui_MainWindow):
         if self.save_state_dialog is not None:
             dialog.restoreState(self.save_state_dialog)
 
-        dialog.setWindowTitle('Open diffraction folder')
+        dialog.setWindowTitle('Open ihch folder')
         dialog.setFileMode(QFileDialog.DirectoryOnly)
 
         if dialog.exec_() == QDialog.Accepted:
             folder_name = dialog.selectedFiles()[0]
-            folder_name = r"C:\Users\Maxime\Desktop\Diffraction_marta_test"
+            folder_name = r"C:\Users\Maxime\Desktop\Diffraction_Marta - Copie"
 
             # création d'un nouveau thread
             t = QThread()
@@ -295,6 +300,100 @@ class Window(QMainWindow, Ui_MainWindow):
             self.save_state_dialog = dialog.saveState()
 
     """---------------------------------------------------------------------------------"""
+
+    def open_ihch_time(self, root_dir):
+        # création de l'objet QFileDialog
+        dialog = QFileDialog()
+
+        dialog.setWindowTitle('Open cccv File')
+        dialog.setNameFilter('EC_lab file (*.mpt *.txt)')
+        dialog.setFileMode(QFileDialog.ExistingFile)
+
+        if dialog.exec_() == QDialog.Accepted:
+            folder_name = dialog.selectedFiles()[0]
+
+            # création d'un nouveau thread
+            t = QThread()
+
+            # création du worker
+            worker = Threads_UI.Open_file_ihch_1501(root_dir, folder_name)
+            worker.moveToThread(t)
+
+            # connection
+            t.started.connect(worker.run)
+            worker.finished.connect(self.fin_lecteur_ihch_time)
+
+            self.threads.append([t, worker])
+            t.start()
+
+            # on sauvegarde l'état de la fenêtre d'ouverture de fichiers
+            self.save_state_dialog = dialog.saveState()
+
+    def fin_lecteur_ihch_time(self, event):
+        """
+        callback de la fonction open_ihch_time
+
+        :param event: 0 : ok, -1: fail, -2: fail time creation
+        :return:
+        """
+        index = 0
+        while index < len(self.threads):
+            if type(self.threads[index][1]).__name__ == "Open_file_ihch_1501" and self.threads[index][1].finish:
+                if event == -1:
+                    # on termine le thread
+                    self.threads[index][0].terminate()
+
+                    # on le suprime de la liste
+                    del self.threads[index]
+
+                    self.fichier_invalide_error()
+                elif event == -2:
+                    # on termine le thread
+                    self.threads[index][0].terminate()
+
+                    # on le suprime de la liste
+                    del self.threads[index]
+
+                    self.QMessageBox_str("Error durring the creation of time")
+
+                elif event == 1:
+                    # on créer un objet data cccv
+                    obj_data = Ihch_1501()
+
+                    # on lui ajoute les data lu par le thread
+                    obj_data.cycles = self.threads[index][1].data
+
+                    # créer son nom
+                    obj_data.name = "ihch A MODIFIER"
+
+                    # on ajoute l'objet data à la console
+                    self.console.add_data(obj_data)
+
+                    # on update le tree widget
+                    self.treeWidget.add_data("ihch 1501", obj_data.name)
+
+                    # on update current data avec ne nom du nouveau fichier
+                    _translate = QtCore.QCoreApplication.translate
+                    self.label.setText(
+                        _translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                                 "Current data : "
+                                   + obj_data.name + " </span></p></body></html>"))
+
+                    self.update_console({"str": "Done", "foreground_color": "green"})
+
+                    # on récupére les actions disponibles pour ce type de fichier pour update
+                    # current data comboBox_5
+                    self.update_new_plot_combo()
+
+                    # on termine le thread
+                    self.threads[index][0].terminate()
+
+                    # on le suprime de la liste
+                    del self.threads[index]
+                break
+
+            else:
+                index += 1
 
     def create_current_data(self):
         """
@@ -840,20 +939,27 @@ class Window(QMainWindow, Ui_MainWindow):
 
     """---------------------------------------------------------------------------------"""
 
-    def fin_thread_lecture(self):
+    def fin_thread_lecture(self, event):
         """
         Déclenché à la suite de la fin de l'execution d'un thread de lecture
         On créer un nouvelle objet data associée au data récupérées par le thread
 
+        :event: 1 tout c'est bien passé, -1, fail, -2 manque un fichier pour ihch file
         :return: None
         """
         index = 0
         # on parcours les threads de lecture en cours
         while index < len(self.threads):
             if type(self.threads[index][1]).__name__ == "Open_file_cccv" and self.threads[index][1].finish:
-                if self.threads[index][1].data is None:
+                if event == -1:
+                    # on termine le thread
+                    self.threads[index][0].terminate()
+
+                    # on le suprime de la liste
+                    del self.threads[index]
+
                     self.fichier_invalide_error()
-                else:
+                elif event == 1:
                     # on créer un objet data cccv
                     obj_data = CCCV_data()
 
@@ -890,9 +996,15 @@ class Window(QMainWindow, Ui_MainWindow):
                 break
 
             elif type(self.threads[index][1]).__name__ == "Open_file_diffraction" and self.threads[index][1].finish:
-                if self.threads[index][1].data is None:
+                if event == -1:
+                    # on termine le thread
+                    self.threads[index][0].terminate()
+
+                    # on le suprime de la liste
+                    del self.threads[index]
+
                     self.fichier_invalide_error()
-                else:
+                elif event == 1:
                     # on créer un objet data cccv
                     obj_data = Diffraction_data()
 
@@ -928,10 +1040,38 @@ class Window(QMainWindow, Ui_MainWindow):
                     del self.threads[index]
                 break
             elif type(self.threads[index][1]).__name__ == "Open_file_ihch_1501" and self.threads[index][1].finish:
-                print("Open_file_ihch_1501")
-                if self.threads[index][1].data is None:
+                if event == -2:
+                    root_path = self.threads[index][1].file_path
+
+                    # on termine le thread
+                    self.threads[index][0].terminate()
+
+                    # on le suprime de la liste
+                    del self.threads[index]
+
+                    msgBox = QMessageBox()
+                    msgBox.setIcon(QMessageBox.Warning)
+                    msgBox.setText("time missing in .dat file\nSelect ec_lab file to create it")
+                    msgBox.setWindowTitle("Error")
+                    msgBox.setStandardButtons(QMessageBox.Ok)
+                    msgBox.exec_()
+
+                    # on passe l'event à None pour ne pas triger une seconde fois le traitement
+                    # je ne sias pas du tout pouruqoi cette fonction est callback 2 fois, c'est pas super
+                    # jolie mais ça fonctionne
+                    event = None
+                    self.open_ihch_time(root_path)
+
+
+                elif event == -1:
+                    # on termine le thread
+                    self.threads[index][0].terminate()
+
+                    # on le suprime de la liste
+                    del self.threads[index]
+
                     self.fichier_invalide_error()
-                else:
+                elif event == 1:
                     # on créer un objet data cccv
                     obj_data = Ihch_1501()
 
@@ -965,6 +1105,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
                     # on le suprime de la liste
                     del self.threads[index]
+                break
 
         else:
             index += 1
@@ -1455,6 +1596,69 @@ class Window(QMainWindow, Ui_MainWindow):
             _translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
                                      "Current plot : "
                        + self.console.current_data.current_figure.name + " </span></p></body></html>"))
+
+    """---------------------------------------------------------------------------------"""
+
+    def delet_current_plot(self):
+        """
+        Fonction par un clique sur delet_current_plot
+
+        :return: None
+        """
+        # si il n'y a pas de current_figure, on return
+        if self.console.current_data is None:
+            self.current_data_None()
+            return
+        elif self.console.current_data.current_figure is None:
+            self.current_figure_None()
+            return
+        else:
+            found = False
+
+            # on récupére le plot associé à cette figure
+            # on cherche dans les fenêtre si le plot y est présent
+            for i, _plot_obj in enumerate(self.figure_w):
+                if _plot_obj.abstract_affiche.figure == self.console.current_data.current_figure:
+                    _plot_obj.close()
+                    _plot_obj.deleteLater()
+                    self.figure_w.pop(i)
+                    found = True
+                    break
+
+            if not found:
+                # on cherche dans le tab si le plot est présent
+                for i in range(self.tabWidget.count()):
+                    if self.tabWidget.tabText(i) == self.console.current_data.current_figure.name:
+                        self.tabWidget.widget(i).close()
+                        self.tabWidget.widget(i).deleteLater()
+                        break
+
+            self.treeWidget.delete_figure(self.console.current_data.current_figure.name, self.console.current_data.name)
+
+            for i in range(len(self.console.current_data.figures)):
+                if self.console.current_data.figures[i].name == self.console.current_data.current_figure.name:
+                    self.console.current_data.figures.pop(i)
+                    self.console.current_data.current_figure = None
+                    break
+
+    """---------------------------------------------------------------------------------"""
+
+    def export_plot(self):
+        if self.console.current_data is None:
+            self.current_data_None()
+            return
+        elif self.console.current_data.current_figure is None:
+            self.current_figure_None()
+            return
+        else:
+
+            dialog = QFileDialog.getSaveFileName(filter="Text files (*.txt)")
+
+            if dialog[0] != "":
+                self.console.current_data.current_figure.export(dialog[0])
+                self.update_console({"str": "Done", "foreground_color": "green"})
+            else:
+                return
 
     """---------------------------------------------------------------------------------"""
     """                            Edit Current Plot start                              """

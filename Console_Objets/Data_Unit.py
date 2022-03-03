@@ -166,7 +166,10 @@ class Units:
 
     def get_unit(self, name):
         name = UNITS[name]
-        return self.units[name]
+        if name is None:
+            return None
+        else:
+            return self.units[name]
 
     def create_units(self):
 

@@ -106,6 +106,39 @@ class Tree_widget(QtWidgets.QTreeWidget):
 
     """---------------------------------------------------------------------------------"""
 
+    def delete_figure(self, name, data_name):
+        """
+        On suprime la figure portant le nom name appartenant au fichier data_name de l'arbre physique
+        et logique
+        :param name: nom de la figure
+        :param data_name: nom du fichier de donnée de la figure
+        :return: None
+        """
+        for i, item in enumerate(self.items):
+            if item.name == data_name:
+                item = self.get_item(name)
+                self.topLevelItem(i).removeChild(item)
+
+        res = None
+        for i, conteneur in enumerate(self.items):
+            res = conteneur.get_item(name)
+            if res is not None:
+                res.append(i)
+                break
+
+        if res is None:
+            raise ValueError
+
+        res = res[1:]
+        res.reverse()
+
+        item = self.items[res[0]]
+        for index in res[1:-1]:
+            item = item.get(index)
+        item.get_array().pop(res[-1])
+
+    """---------------------------------------------------------------------------------"""
+
     def get_array_created_from(self, figure, array_res):
         """
         créer un array contenant le nom des figure ayant servis à la création de la figure passé
@@ -269,6 +302,10 @@ class Tree_widget(QtWidgets.QTreeWidget):
             pass
 
         @abstractmethod
+        def get_array(self):
+            pass
+
+        @abstractmethod
         def get_item(self, name):
             pass
 
@@ -324,6 +361,9 @@ class Tree_widget(QtWidgets.QTreeWidget):
         def get(self, index):
             return self.figures_child[index]
 
+        def get_array(self):
+            return self.figures_child
+
 
     class Conteneur_figure(Conteneur):
         def __init__(self, name):
@@ -367,3 +407,6 @@ class Tree_widget(QtWidgets.QTreeWidget):
 
         def get(self, index):
             return self.figures_child[index]
+
+        def get_array(self):
+            return self.figures_child

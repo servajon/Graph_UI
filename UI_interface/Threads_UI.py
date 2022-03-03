@@ -2,6 +2,7 @@ import PyQt5
 from PyQt5.QtCore import QObject, pyqtSignal
 
 from Resources_file import Lecteur_diffraction, Lecteur_ihch_1501
+from Resources_file.Emit import Emit
 from Resources_file.Lecteur_threads import Lecteur_thread
 
 
@@ -111,7 +112,7 @@ class Open_file_diffraction(QObject):
 class Open_file_ihch_1501(QObject):
     finished = pyqtSignal(int)
 
-    def __init__(self, path):
+    def __init__(self, path, ec_lab_path=None):
         QObject.__init__(self)
         """
         __file_path : [type, path]
@@ -120,19 +121,36 @@ class Open_file_ihch_1501(QObject):
         self.__file_path = path
         self.__data = None
         self.__finish = False
+        self.__ec_lab_path = ec_lab_path
 
     def run(self):
-        try:
-            self.__data = Lecteur_ihch_1501.open_ihch_1501(self.__file_path)
-        except TypeError:
-            print(".dat a modifier")
-
-        except ValueError:
-            self.finished.emit(-1)
-            self.__finish = True
+        if self.__ec_lab_path is None:
+            try:
+                self.__data = Lecteur_ihch_1501.open_ihch_1501(self.__file_path)
+            except TypeError:
+                emit = Emit()
+                emit.emit("msg_console", type="msg_console", str="time need to be created", foreground_color="red")
+                self.finished.emit(-2)
+                self.__finish = True
+            except ValueError:
+                self.finished.emit(-1)
+                self.__finish = True
+            else:
+                self.finished.emit(1)
+                self.__finish = True
         else:
-            self.finished.emit(1)
-            self.__finish = True
+            try:
+                Lecteur_ihch_1501.create_time(self.__ec_lab_path, self.__file_path)
+                self.__data = Lecteur_ihch_1501.open_ihch_1501(self.__file_path)
+            except ValueError:
+                self.finished.emit(-1)
+                self.__finish = True
+            except TypeError:
+                self.finished.emit(-2)
+                self.__finish = True
+            else:
+                self.finished.emit(1)
+                self.__finish = True
 
     @property
     def file_path(self):
