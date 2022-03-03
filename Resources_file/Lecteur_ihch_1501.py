@@ -6,7 +6,7 @@ import numpy as np
 
 import Resources_file.Resources
 from Data_type.Ihch_1501 import Ihch_1501_cycle, Ihch_1501_sample_saxs, Ihch_1501_scan, Ihch_1501_frame, \
-    Ihch_1501_sample_waxs
+Ihch_1501_sample_waxs
 from Resources_file.Emit import Emit
 
 
@@ -198,18 +198,23 @@ def create_time(ec_lab_path, root_folder):
     cycle_folders = get_file_from_dir(root_folder, "dir")
 
     if len(cycle_folders) == 0:
-        raise ValueError("0 cycle")
+        emit.emit("msg_console", type="msg_console", str="No cycle found", foreground_color="red")
+        raise ValueError
     else:
         for cycle_folder in cycle_folders:
             dir_path = get_file_from_dir(cycle_folder, "dir")
 
             if len(dir_path) != 2 or ((dir_path[0][-5:-1] != "saxs" or dir_path[1][-5:-1] != "waxs") and
                                       (dir_path[1][-5:-1] != "saxs" or dir_path[0][-5:-1] != "waxs")):
-                raise ValueError("Le répertoire n'a pas la bonne structure")
+                emit.emit("msg_console", type="msg_console", str="The directory does not have the right structure",
+                          foreground_color="red")
+                raise ValueError
 
             paths_h5 = get_file_from_dir(cycle_folder, "h5")
             if len(paths_h5) == 0:
-                raise ValueError("Fichier h5 introuvable " + cycle_folder)
+                emit.emit("msg_console", type="msg_console", str="Fichier h5 introuvable " + cycle_folder,
+                          foreground_color="red")
+                raise ValueError
             else:
                 names_h5 = []
                 for path_h5 in paths_h5:
@@ -262,7 +267,7 @@ def create_time(ec_lab_path, root_folder):
                                     file.writelines(lines)
                                     file.close()
 
-                            except Exception as err:
+                            except Exception:
                                 pass
                         else:
                             try:
