@@ -29,7 +29,7 @@ class Resource_class:
             cls.time_s_format = "Time [s]"
 
             # taille par défaut de l'écriture dans le widget console
-            cls.default_size = 12
+            cls.default_size = 10
             cls.default_font = ("Times", cls.default_size)
 
 

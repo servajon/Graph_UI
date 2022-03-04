@@ -29,6 +29,7 @@ from Resources_file.Emit import Emit
 from UI_interface import Threads_UI
 from UI_interface.Ask_Value_QT import Ask_Value
 from UI_interface.Create_figure import Create_figure
+from UI_interface.Create_figure_ihch_1501 import Create_figure_ihch_1501
 from UI_interface.Cycle_selection_creation import Cycle_selection_creation
 from UI_interface.Derive_Selection_QT import Derive_Selection
 from UI_interface.Edit_plot_contour import Edit_plot_contour
@@ -187,6 +188,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.figure_plot = Figure_plot(obj, self)
         self.figure_plot.show()"""
         print(self.threads)
+        self.console.current_data.get_info_data()
 
     """---------------------------------------------------------------------------------"""
 
@@ -301,7 +303,13 @@ class Window(QMainWindow, Ui_MainWindow):
 
     """---------------------------------------------------------------------------------"""
 
-    def open_ihch_time(self, root_dir):
+    def open_ihch_time(self, root_dir, nb_cycle):
+        """
+
+        :param root_dir: path du dossier contenant l'exp
+        :param nb_cycle: nombre de cycle et donc de fichier ec_lac a ouvrir
+        :return: None
+        """
         # création de l'objet QFileDialog
         dialog = QFileDialog()
 
@@ -309,37 +317,42 @@ class Window(QMainWindow, Ui_MainWindow):
         dialog.setNameFilter('EC_lab file (*.mpt *.txt)')
         dialog.setFileMode(QFileDialog.ExistingFile)
 
-        if dialog.exec_() == QDialog.Accepted:
-            folder_name = dialog.selectedFiles()[0]
+        paths_files = []
+        for i in range(nb_cycle):
+            if dialog.exec_() == QDialog.Accepted:
+                paths_files.append(dialog.selectedFiles()[0])
+            else:
+                # dans le cas ou la fenêtre est fermée on return juste
+                return
 
-            # création d'un nouveau thread
-            t = QThread()
+        # création d'un nouveau thread
+        t = QThread()
 
-            # création du worker
-            worker = Threads_UI.Open_file_ihch_1501(root_dir, folder_name)
-            worker.moveToThread(t)
+        # création du worker
+        worker = Threads_UI.Open_file_ihch_1501(root_dir, paths_files)
+        worker.moveToThread(t)
 
-            # connection
-            t.started.connect(worker.run)
-            worker.finished.connect(self.fin_lecteur_ihch_time)
+        # connection
+        t.started.connect(worker.run)
+        worker.finished.connect(self.fin_lecteur_ihch_time)
 
-            self.threads.append([t, worker])
-            t.start()
+        self.threads.append([t, worker])
+        t.start()
 
-            # on sauvegarde l'état de la fenêtre d'ouverture de fichiers
-            self.save_state_dialog = dialog.saveState()
+        # on sauvegarde l'état de la fenêtre d'ouverture de fichiers
+        self.save_state_dialog = dialog.saveState()
 
     def fin_lecteur_ihch_time(self, event):
         """
         callback de la fonction open_ihch_time
 
-        :param event: 0 : ok, -1: fail, -2: fail time creation
-        :return:
+        :param event: 0 : ok, -1: fail, -2: fail time creation, -3: fail avec création du temps fait
+        :return: None
         """
         index = 0
         while index < len(self.threads):
             if type(self.threads[index][1]).__name__ == "Open_file_ihch_1501" and self.threads[index][1].finish:
-                if event == -1:
+                if event == [-1]:
                     # on termine le thread
                     self.threads[index][0].terminate()
 
@@ -347,7 +360,7 @@ class Window(QMainWindow, Ui_MainWindow):
                     del self.threads[index]
 
                     self.fichier_invalide_error()
-                elif event == -2:
+                elif event == [-2]:
                     # on termine le thread
                     self.threads[index][0].terminate()
 
@@ -355,8 +368,15 @@ class Window(QMainWindow, Ui_MainWindow):
                     del self.threads[index]
 
                     self.QMessageBox_str("Error durring the creation of time")
+                elif event == [-3]:
+                    # on termine le thread
+                    self.threads[index][0].terminate()
 
-                elif event == 1:
+                    # on le suprime de la liste
+                    del self.threads[index]
+
+                    self.QMessageBox_str("Unable to process the data")
+                elif event == [1]:
                     # on créer un objet data cccv
                     obj_data = Ihch_1501()
 
@@ -463,6 +483,24 @@ class Window(QMainWindow, Ui_MainWindow):
 
             elif self.comboBox_5.currentText() == "Contour":
                 self.callback_create_current_data("save", "Contour")
+
+            elif self.comboBox_5.currentText() == "Ihch 1501 plot":
+                # on est sur un ihch 1501, donc pas de data ici, mais cycles
+                kwargs = {}
+                for i in range(len(self.console.current_data.cycles)):
+                    nb_scan_saxs = self.console.current_data.cycles[i].get_nb_scan_saxs()
+                    nb_scan_waxs = self.console.current_data.cycles[i].get_nb_scan_waxs()
+
+                    nb_frame_saxs = self.console.current_data.cycles[i].get_nb_frame()
+                    nb_frame_waxs = self.console.current_data.cycles[i].get_nb_frame()
+
+                    kwargs["cycle" + str(i)] = {"saxs_frame": nb_frame_saxs, "waxs_frame": nb_frame_waxs,
+                                                "saxs_scan": nb_scan_saxs, "waxs_scan": nb_scan_waxs}
+
+                self.argument_selection_creation_w = Create_figure_ihch_1501(self, kwargs)
+                self.argument_selection_creation_w.finish_signal.connect(
+                    lambda signal: self.callback_create_current_data(signal, "Ihch 1501 plot"))
+                self.argument_selection_creation_w.show()
 
     """---------------------------------------------------------------------------------"""
 
@@ -622,6 +660,26 @@ class Window(QMainWindow, Ui_MainWindow):
 
                 # on passe la figure en figure courante
                 self.console.current_data.current_figure = new_figure[0]
+
+            elif name == "Ihch 1501 plot":
+                cycles_base = self.argument_selection_creation_w.cycles_base
+                cycles = self.argument_selection_creation_w.cycles
+                s_w = self.argument_selection_creation_w.s_w
+                f_s = self.argument_selection_creation_w.f_s
+
+                # on a récupérer les info, on délect la fenêtre
+                self.argument_selection_creation_w.deleteLater()
+                self.argument_selection_creation_w = None
+
+                figures = self.console.current_data.create_figure_cycle(s_w, f_s, cycles_base, cycles)
+
+                # on parcours le vecteur, update tree widget ave le nom des figure créées
+                # on ajoute les figure a current_data
+                for figure in reversed(figures):
+                    self.treeWidget.add_figure(figure, self.console.current_data.name)
+                    self.console.current_data.figures.append(figure)
+
+                self.console.current_data.current_figure = self.console.current_data.figures[-1]
 
             _translate = QtCore.QCoreApplication.translate
             self.label_5.setText(
@@ -902,7 +960,13 @@ class Window(QMainWindow, Ui_MainWindow):
 
                     # à ce point de la fonction, le plot n'existe pas, il faut le créer
                     obj = Classique_affiche(self.console.current_data, figure)
-                    new_tab = Figure_plot(obj, self)
+
+                    try:
+                        new_tab = Figure_plot(obj, self)
+                    except ValueError:
+                        self.delete_obj_plot(obj)
+                        return
+
                     new_tab.setObjectName(figure.name)
                     new_tab.name_changed.connect(self.name_changed_plot)
 
@@ -1040,8 +1104,11 @@ class Window(QMainWindow, Ui_MainWindow):
                     del self.threads[index]
                 break
             elif type(self.threads[index][1]).__name__ == "Open_file_ihch_1501" and self.threads[index][1].finish:
-                if event == -2:
+                # dans le cas de ihch event est une list
+                # [resultat, nb_cycles]
+                if event[0] == -2:
                     root_path = self.threads[index][1].file_path
+                    nb_cycles = event[1]
 
                     # on termine le thread
                     self.threads[index][0].terminate()
@@ -1060,10 +1127,10 @@ class Window(QMainWindow, Ui_MainWindow):
                     # je ne sias pas du tout pouruqoi cette fonction est callback 2 fois, c'est pas super
                     # jolie mais ça fonctionne
                     event = None
-                    self.open_ihch_time(root_path)
+                    self.open_ihch_time(root_path, nb_cycles)
 
 
-                elif event == -1:
+                elif event[0] == -1:
                     # on termine le thread
                     self.threads[index][0].terminate()
 
@@ -1071,7 +1138,7 @@ class Window(QMainWindow, Ui_MainWindow):
                     del self.threads[index]
 
                     self.fichier_invalide_error()
-                elif event == 1:
+                elif event[0] == 1:
                     # on créer un objet data cccv
                     obj_data = Ihch_1501()
 
@@ -1223,6 +1290,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         # une nouvelle fenêtre est créée avec comme paramétre abstract_affiche du plot de la tab détachée
         # on garde donc les éventuels résultats et calculs effectuées sur ce plot
+        # pas besoin de try catch ici, le plot a déjà été créée donc il est valide
         new_w = Figure_plot(self.tabWidget.widget(signal).abstract_affiche, self)
 
         # connection avec la nouvelle fenêtre
@@ -1640,6 +1708,23 @@ class Window(QMainWindow, Ui_MainWindow):
                     self.console.current_data.figures.pop(i)
                     self.console.current_data.current_figure = None
                     break
+
+    """---------------------------------------------------------------------------------"""
+
+    def delete_obj_plot(self, obj):
+        """
+        fonction callbak de delete de Figure_plot
+        si la figure n'a pas pu être tracé, ce plot est delete
+        :return: None
+        """
+        self.update_console({"str": "Done", obj.figure.name + " is invalide": "red"})
+
+        self.treeWidget.delete_figure(obj.figure.name, self.console.current_data.name)
+
+        for i in range(len(self.console.current_data.figures)):
+            if self.console.current_data.figures[i].name == obj.figure.name:
+                self.console.current_data.figures.pop(i)
+                break
 
     """---------------------------------------------------------------------------------"""
 
@@ -2499,6 +2584,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         :return: None
         """
+        raise ValueError
         msgBox = QMessageBox()
         msgBox.setIcon(QMessageBox.Warning)
         msgBox.setText("File type invalid")

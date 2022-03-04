@@ -15,64 +15,86 @@ def open_ihch_1501(_dir_path):
     emit.emit("msg_console", type="msg_console", str="Playing files in progress", foreground_color="yellow")
     cycles = []
     dir_path = Resources_file.Resources.get_file_from_dir(_dir_path)
-    for cycle_path in dir_path:
-        cycles.append(Ihch_1501_cycle(cycle_path.split("/")[-1]))
-        cycle_path += "/"
-        samples_path = Resources_file.Resources.get_file_from_dir(cycle_path)
-        if "SAXS" in samples_path[0]:
-            saxs_paths = samples_path[0] + "/"
-            waxs_paths = samples_path[1] + "/"
-        else:
-            saxs_paths = samples_path[1] + "/"
-            waxs_paths = samples_path[0] + "/"
+    try:
+        for cycle_path in dir_path:
+            cycles.append(Ihch_1501_cycle(cycle_path.split("/")[-1]))
+            cycle_path += "/"
+            samples_path = Resources_file.Resources.get_file_from_dir(cycle_path)
 
-        saxs_paths = Resources_file.Resources.get_file_from_dir(saxs_paths)
-        waxs_paths = Resources_file.Resources.get_file_from_dir(waxs_paths)
 
-        for saxs_path in saxs_paths[1:]:
-            cycles[-1].saxs.append(Ihch_1501_sample_saxs(saxs_path.split("/")[-1]))
-            saxs_path += "/"
+            if "saxs" in samples_path[0]:
+                saxs_paths = samples_path[0] + "/"
+                waxs_paths = samples_path[1] + "/"
+            else:
+                saxs_paths = samples_path[1] + "/"
+                waxs_paths = samples_path[0] + "/"
 
-            file_paths = Resources_file.Resources.get_file_from_dir(saxs_path)
+            saxs_paths = Resources_file.Resources.get_file_from_dir(saxs_paths)
+            waxs_paths = Resources_file.Resources.get_file_from_dir(waxs_paths)
 
-            current = file_paths[0][-13:-9]
-            cycles[-1].saxs[-1].scans.append(Ihch_1501_scan(current))
-            for file_path in file_paths:
-                if file_path[-13:-9] != current:
-                    current = file_path[-13:-9]
-                    cycles[-1].saxs[-1].scans.append(Ihch_1501_scan(current))
+            for saxs_path in saxs_paths:
+                cycles[-1].saxs.append(Ihch_1501_sample_saxs(saxs_path.split("/")[-1]))
+                saxs_path += "/"
 
-                cycles[-1].saxs[-1].scans[-1].frames.append(Ihch_1501_frame(file_path[-8:-4]))
-                file = open(file_path)
-                cycles[-1].saxs[-1].scans[-1].frames[-1].data = read_frame(file)
+                file_paths = Resources_file.Resources.get_file_from_dir(saxs_path)
 
-        for waxs_path in waxs_paths[1:]:
-            cycles[-1].waxs.append(Ihch_1501_sample_waxs(waxs_path.split("/")[-1]))
-            waxs_path += "/"
+                current = file_paths[0][-13:-9]
 
-            file_paths = Resources_file.Resources.get_file_from_dir(waxs_path)
+                cycles[-1].saxs[-1].scans.append(Ihch_1501_scan(current))
+                for file_path in file_paths:
+                    if file_path[-13:-9] != current:
+                        current = file_path[-13:-9]
+                        cycles[-1].saxs[-1].scans.append(Ihch_1501_scan(current))
 
-            current = file_paths[0][-13:-9]
-            cycles[-1].waxs[-1].scans.append(Ihch_1501_scan(current))
-            for file_path in file_paths:
-                if file_path[-13:-9] != current:
-                    current = file_path[-13:-9]
-                    cycles[-1].waxs[-1].scans.append(Ihch_1501_scan(current))
+                    cycles[-1].saxs[-1].scans[-1].frames.append(Ihch_1501_frame(file_path[-8:-4]))
+                    file = open(file_path)
+                    cycles[-1].saxs[-1].scans[-1].frames[-1].data = read_frame(file)
 
-                cycles[-1].waxs[-1].scans[-1].frames.append(Ihch_1501_frame(file_path[-8:-4]))
-                file = open(file_path)
-                cycles[-1].waxs[-1].scans[-1].frames[-1].data = read_frame(file)
-    return cycles
+            for waxs_path in waxs_paths:
+                cycles[-1].waxs.append(Ihch_1501_sample_waxs(waxs_path.split("/")[-1]))
+                waxs_path += "/"
+
+                file_paths = Resources_file.Resources.get_file_from_dir(waxs_path)
+
+                current = file_paths[0][-13:-9]
+                cycles[-1].waxs[-1].scans.append(Ihch_1501_scan(current))
+                for file_path in file_paths:
+                    if file_path[-13:-9] != current:
+                        current = file_path[-13:-9]
+                        cycles[-1].waxs[-1].scans.append(Ihch_1501_scan(current))
+
+                    cycles[-1].waxs[-1].scans[-1].frames.append(Ihch_1501_frame(file_path[-8:-4]))
+                    file = open(file_path)
+                    cycles[-1].waxs[-1].scans[-1].frames[-1].data = read_frame(file)
+    except TypeError:
+        return len(dir_path)
+    else:
+        return cycles
 
 
 def read_frame(file):
     data = {}
 
     data_data = file.readlines()
-    index = 0
 
-    if "# time :" not in data_data[1]:
+    if "# time/s electroch:" not in data_data[0]:
+        print(file.name)
+        print(data_data)
         raise TypeError
+    else:
+
+        data["time/s"] = float(data_data[0][19:-1])
+        if data_data[1][21:-1] == "not started":
+            data["Ecell/V"] = None
+        else:
+            data["Ecell/V"] = float(data_data[1][21:-1])
+
+        if data_data[2][20:-1] == "not started":
+            data["<I>/mA"] = None
+        else:
+            data["<I>/mA"] = float(data_data[2][20:-1])
+
+    index = 3
 
     while data_data[index][0] == "#":
         index += 1
@@ -97,7 +119,6 @@ def read_frame(file):
         for i, _data in enumerate(row_data):
             data[_data].append(float(res_line2[i]))
         index += 1
-
     return data
 
 
@@ -185,15 +206,19 @@ def get_index(array, value):
     return index
 
 
-def create_time(ec_lab_path, root_folder):
+def create_time(ec_lab_paths, root_folder):
     emit = Emit()
-    emit.emit("msg_console", type="msg_console", str="rewriting in progress", foreground_color="yellow")
+
 
     start_global_time = None
     delta_t_electroch_dif = None
-
-    ec_lab_file = extract_data_cccv(ec_lab_path)
-    start_time_ec_lab = ec_lab_file["start_time_exp"]
+    try:
+        ec_lab_files = []
+        for ec_lab_path in ec_lab_paths:
+            ec_lab_files.append(extract_data_cccv(ec_lab_path))
+    except ValueError as err:
+        emit.emit("msg_console", type="msg_console", str="Invalide file", foreground_color="red")
+        raise err
 
     cycle_folders = get_file_from_dir(root_folder, "dir")
 
@@ -201,7 +226,12 @@ def create_time(ec_lab_path, root_folder):
         emit.emit("msg_console", type="msg_console", str="No cycle found", foreground_color="red")
         raise ValueError
     else:
-        for cycle_folder in cycle_folders:
+        emit.emit("msg_console", type="msg_console", str="rewriting in progress", foreground_color="yellow")
+        for i, cycle_folder in enumerate(cycle_folders):
+
+            ec_lab_file = ec_lab_files[i]
+            start_time_ec_lab = ec_lab_file["start_time_exp"]
+
             dir_path = get_file_from_dir(cycle_folder, "dir")
 
             if len(dir_path) != 2 or ((dir_path[0][-5:-1] != "saxs" or dir_path[1][-5:-1] != "waxs") and
@@ -228,7 +258,6 @@ def create_time(ec_lab_path, root_folder):
                         if 'p3' in value["measurement"]:
                             try:
                                 list_time = []
-                                files = []
 
                                 epoch = np.array(value['measurement/epoch'])
 
@@ -251,17 +280,17 @@ def create_time(ec_lab_path, root_folder):
                                     lines = file.readlines()
                                     file.close()
 
-                                    lines.insert(0, "# time/s electoch: " + str(list_time[i]) + "\n")
+                                    lines.insert(0, "# time/s electroch: " + str(list_time[i]) + "\n")
 
                                     if list_time[i] >= 0:
                                         index = get_index(ec_lab_file["time/s"], list_time[i])
                                         lines.insert(1,
-                                                     "# Ecell/V electoch: " + str(ec_lab_file["Ecell/V"][index]) + "\n")
+                                                     "# Ecell/V electroch: " + str(ec_lab_file["Ecell/V"][index]) + "\n")
                                         lines.insert(2,
-                                                     "# <I>/mA electoch: " + str(ec_lab_file["<I>/mA"][index]) + "\n")
+                                                     "# <I>/mA electroch: " + str(ec_lab_file["<I>/mA"][index]) + "\n")
                                     else:
-                                        lines.insert(1, "# Ecell/V electoch: not started\n")
-                                        lines.insert(2, "# <I>/mA electoch: not started\n")
+                                        lines.insert(1, "# Ecell/V electroch: not started\n")
+                                        lines.insert(2, "# <I>/mA electroch: not started\n")
 
                                     file = open(outfile, "w")
                                     file.writelines(lines)
@@ -272,7 +301,6 @@ def create_time(ec_lab_path, root_folder):
                         else:
                             try:
                                 list_time = []
-                                file = []
 
                                 epoch = np.array(value['measurement/epoch'])
 
@@ -300,17 +328,17 @@ def create_time(ec_lab_path, root_folder):
                                         lines = file.readlines()
                                         file.close()
 
-                                        lines.insert(0, "# time/s electoch: " + str(list_time[i]) + "\n")
+                                        lines.insert(0, "# time/s electroch: " + str(list_time[i]) + "\n")
 
                                         if list_time[i] >= 0:
                                             index = get_index(ec_lab_file["time/s"], list_time[i])
-                                            lines.insert(1, "# Ecell/V electoch: " + str(
+                                            lines.insert(1, "# Ecell/V electroch: " + str(
                                                 ec_lab_file["Ecell/V"][index]) + "\n")
-                                            lines.insert(2, "# <I>/mA electoch: " + str(
+                                            lines.insert(2, "# <I>/mA electroch: " + str(
                                                 ec_lab_file["<I>/mA"][index]) + "\n")
                                         else:
-                                            lines.insert(1, "# Ecell/V electoch: not started\n")
-                                            lines.insert(2, "# <I>/mA electoch: not started\n")
+                                            lines.insert(1, "# Ecell/V electroch: not started\n")
+                                            lines.insert(2, "# <I>/mA electroch: not started\n")
 
                                         file = open(outfile, "w")
                                         file.writelines(lines)
@@ -324,17 +352,17 @@ def create_time(ec_lab_path, root_folder):
                                     lines = file.readlines()
                                     file.close()
 
-                                    lines.insert(0, "# time/s electoch: " + str(list_time[i]) + "\n")
+                                    lines.insert(0, "# time/s electroch: " + str(list_time[i]) + "\n")
 
                                     if list_time[i] >= 0:
                                         index = get_index(ec_lab_file["time/s"], list_time[i])
                                         lines.insert(1,
-                                                     "# Ecell/V electoch: " + str(ec_lab_file["Ecell/V"][index]) + "\n")
+                                                     "# Ecell/V electroch: " + str(ec_lab_file["Ecell/V"][index]) + "\n")
                                         lines.insert(2,
-                                                     "# <I>/mA electoch: " + str(ec_lab_file["<I>/mA"][index]) + "\n")
+                                                     "# <I>/mA electroch: " + str(ec_lab_file["<I>/mA"][index]) + "\n")
                                     else:
-                                        lines.insert(1, "# Ecell/V electoch: not started\n")
-                                        lines.insert(2, "# <I>/mA electoch: not started\n")
+                                        lines.insert(1, "# Ecell/V electroch: not started\n")
+                                        lines.insert(2, "# <I>/mA electroch: not started\n")
 
                                     file = open(outfile, "w")
                                     file.writelines(lines)

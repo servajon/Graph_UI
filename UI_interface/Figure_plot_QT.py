@@ -11,9 +11,7 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.colorbar import Colorbar
 from matplotlib.contour import QuadContourSet
 
-import Console_Objets.Affiche_objet
 import Data_type.Abstract_data
-from Console_Objets.Data_Unit import Units
 from Resources_file.Emit import Emit
 from UI_interface.Edit_Axe_QT import Edit_Axe
 from UI_interface.View_data_value_QT import View_data_value
@@ -34,6 +32,7 @@ class Figure_plot(QWidget):
 
     # utilisé quand le plot est sous la forme d'une fenêtre et qu'il est en focus
     focus_in = pyqtSignal(str)
+
 
     def __init__(self, abstract_affiche, parent=None):
         super().__init__()

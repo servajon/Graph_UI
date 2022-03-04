@@ -110,9 +110,9 @@ class Open_file_diffraction(QObject):
 
 
 class Open_file_ihch_1501(QObject):
-    finished = pyqtSignal(int)
+    finished = pyqtSignal(list)
 
-    def __init__(self, path, ec_lab_path=None):
+    def __init__(self, path, ec_lab_paths=None):
         QObject.__init__(self)
         """
         __file_path : [type, path]
@@ -121,36 +121,48 @@ class Open_file_ihch_1501(QObject):
         self.__file_path = path
         self.__data = None
         self.__finish = False
-        self.__ec_lab_path = ec_lab_path
+        self.__ec_lab_paths = ec_lab_paths
 
     def run(self):
-        if self.__ec_lab_path is None:
+        emit = Emit()
+        if self.__ec_lab_paths is None:
             try:
                 self.__data = Lecteur_ihch_1501.open_ihch_1501(self.__file_path)
-            except TypeError:
-                emit = Emit()
-                emit.emit("msg_console", type="msg_console", str="time need to be created", foreground_color="red")
-                self.finished.emit(-2)
-                self.__finish = True
             except ValueError:
-                self.finished.emit(-1)
+                self.finished.emit([-1])
                 self.__finish = True
             else:
-                self.finished.emit(1)
-                self.__finish = True
+                # si le temp n'est pas créé on return data avec pour valeur le nombre de cycle et donc de fichier
+                # ec_lab a ouvrir
+                if isinstance(self.__data, int):
+                    # on récupére le nombre de cycle
+                    nb_cycle = self.__data
+
+                    emit.emit("msg_console", type="msg_console", str="time need to be created", foreground_color="red")
+                    self.finished.emit([-2, nb_cycle])
+                    self.__finish = True
+                else:
+                    self.finished.emit([1])
+                    self.__finish = True
         else:
             try:
-                Lecteur_ihch_1501.create_time(self.__ec_lab_path, self.__file_path)
+                Lecteur_ihch_1501.create_time(self.__ec_lab_paths, self.__file_path)
                 self.__data = Lecteur_ihch_1501.open_ihch_1501(self.__file_path)
             except ValueError:
-                self.finished.emit(-1)
-                self.__finish = True
-            except TypeError:
-                self.finished.emit(-2)
+                self.finished.emit([-1])
                 self.__finish = True
             else:
-                self.finished.emit(1)
-                self.__finish = True
+                # si même avec la création du temps on n'arrive pas à lire l'exp, c'est la merde,
+                # on stop jsute
+                if isinstance(self.__data, int):
+                    emit.emit("msg_console", type="msg_console", str="Unable to process the data",
+                              foreground_color="red")
+                    self.__data = None
+                    self.finished.emit([-3])
+                    self.__finish = True
+                else:
+                    self.finished.emit([1])
+                    self.__finish = True
 
     @property
     def file_path(self):

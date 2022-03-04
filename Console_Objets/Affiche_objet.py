@@ -318,28 +318,24 @@ class Classique_affiche(Abstract_objet_affiche):
             else:
                 self.finish = True
                 return False
+
+
+
         else:
             if self.figure.is_data_set() == 1:
-                try:
-                    if self.save is not None:
-                        self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
-                            self.data.load_graph(self.figure, self.save)
-                        pplot.close(self.pplot_fig)
-                        self.finish = True
-                        self.pplot_fig = None
-                    else:
-                        self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 \
-                            = self.data.load_graph(self.figure)
-
-                        self.pplot_fig.tight_layout()
-                except ValueError as err:
-                    raise err
-                    print(err)
+                if self.save is not None:
+                    self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
+                        self.data.load_graph(self.figure, self.save)
+                    pplot.close(self.pplot_fig)
                     self.finish = True
-                    return False
+                    self.pplot_fig = None
+                else:
+                    self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 \
+                        = self.data.load_graph(self.figure)
+
+                    self.pplot_fig.tight_layout()
             else:
-                self.finish = True
-                return False
+               raise ValueError
         return True
 
     """----------------------------------------------------------------------------------"""

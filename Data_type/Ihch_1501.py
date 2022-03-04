@@ -6,10 +6,14 @@ from Data_type.Traitement_cycle import Traitement_cycle_diffraction
 
 import matplotlib.pyplot as pplot
 
+from Resources_file.Emit import Emit
+
 
 class Ihch_1501(Abstract_data):
     def __init__(self):
         super().__init__()
+        self.__name__ = "ihch 1501"
+
         self._cycles = []
         self.res_calc_saxs = []
         self.res_calc_waxs = []
@@ -61,15 +65,19 @@ class Ihch_1501(Abstract_data):
     def get_info_data(self):
         print("info sur les données : " + self.name + "\n")
         for cycle in self._cycles:
-            print(cycle.name)
-
+            print("\tsaxs")
             for sample_saxs in cycle.saxs:
                 print("\t\t" + sample_saxs.name)
                 for scans in sample_saxs.scans:
                     print("\t\t\t\t" + scans.name)
                     for frame in scans.frames:
                         print("\t\t\t\t\t\t" + frame.name)
-
+                        for key, value in frame.data.items():
+                            try:
+                                print("\t\t\t\t\t\t\t\t" + str(len(value)))
+                            except TypeError:
+                                print("\t\t\t\t\t\t\t\t" + key + " : " + str(value))
+            print("\twaxs")
             for sample_waxs in cycle.waxs:
                 print("\t\t" + sample_waxs.name)
                 for scans in sample_waxs.scans:
@@ -77,63 +85,78 @@ class Ihch_1501(Abstract_data):
                     for frame in scans.frames:
                         print("\t\t\t\t\t\t" + frame.name)
                         for key, value in frame.data.items():
-                            print("\t\t\t\t\t\t\t\t" + str(len(value)))
+                            try:
+                                print("\t\t\t\t\t\t\t\t" + str(len(value)))
+                            except TypeError:
+                                print("\t\t\t\t\t\t\t\t" + key + " : " + str(value))
 
     """----------------------------------------------------------------------------------"""
 
-    def creation_figure_ihch(self, arg, type, cycle_number, number, color_arg=None):
+    def create_figure_cycle(self, arg, type, cycles, numbers):
         """
-        return -1 si la format est invalide
-        arg : waxs / saxs
-        type : frame / scan / sample
-        number :
-        cycle_number :
-        color : color
+        On créer la figure associé à la selection, on check ici que les paramètres sont
+        cohérent. Les list sont ordonnée du plus petit au plus grand, on ne chexk donc que
+        le dernier élement des lists
+
+
+        :param arg: waxs / saxs
+        :param type: frame / scan
+        :param cycles: list des cycle selectionnés
+        :param numbers: list des frame/scan selectionnés si None => toute
+        :return: figure / None : figure si tout c'est bien passé, None sinon
         """
 
-        try:
-            number = int(number)
-            number -= 1
-        except ValueError:
-            self.resource.print_color("Un nombre est demandé", "fail")
-            raise ValueError
+        emit = Emit()
 
-        try:
-            cycle_number = int(cycle_number)
-            cycle_number -= 1
-        except ValueError:
-            self.resource.print_color("Un nombre de cycle est demandé", "fail")
-            raise ValueError
+        # on check si les cycles selectionnée sont valides
+        if cycles[-1] > len(self._cycles):
+            emit.emit("msg_console", type="msg_console", str="There is only " + str(len(self._cycles)) + " cycle(s)"
+                      , foreground_color="red")
+            return
+
+        s = ""
+        for i in cycles:
+            s += str(i) + " "
+        name = s[0:-1]
+
+        print(cycles)
+        print(arg)
+        print(type)
+        print(numbers)
 
         if type == "frame":
-            if cycle_number >= len(self._cycles):
-                self.resource.print_color("Il n'y a que " + str(len(self._cycles)) + "cycle(s)", "fail")
-                raise ValueError
-            if number >= self._cycles[0].get_nb_frame():
-                self.resource.print_color("Il n'y a que " + str(self._cycles[0].get_nb_frame()) + "frame", "fail")
-                raise ValueError
+            # on check que le dernier nombres de la liste (le plus grand) est infè
+            if numbers is not None and numbers[-1] >= self._cycles[0].get_nb_frame():
+                emit.emit("msg_console", type="msg_console", str="There is only " + str(len(self._cycles)) + " frames"
+                          , foreground_color="red")
+                return
 
-            self.trace_frame(arg, cycle_number, number, color_arg)
+            figures = self.trace_frame(arg, cycles, numbers)
 
         elif type == "scan":
-            if cycle_number >= len(self._cycles):
-                self.resource.print_color("Il n'y a que " + str(len(self._cycles)) + "cycle(s)", "fail")
-                raise ValueError
             if arg == "saxs":
-                if number >= self._cycles[cycle_number].get_nb_scan_saxs():
-                    self.resource.print_color("Il n'y a que " + str(self._cycles[cycle_number].get_nb_frame())
-                                              + "scan saxs", "fail")
-                    raise ValueError
-            else:
-                if number >= self._cycles[cycle_number].get_nb_scan_waxs():
-                    self.resource.print_color("Il n'y a que " + str(self._cycles[cycle_number].get_nb_frame())
-                                              + "scan waxs", "fail")
-                    raise ValueError
+                if numbers is not None and numbers[-1] >= self._cycles[cycles[-1] - 1].get_nb_scan_saxs():
+                    emit.emit("msg_console", type="msg_console",
+                              str="There is only " + str(self._cycles[cycles[-1]].get_nb_frame()) + " scans on saxs"
+                              , foreground_color="red")
+                    return
 
-            self.trace_scan(arg, cycle_number, number, color_arg)
+            else:
+                if numbers is not None and numbers[-1] >= self._cycles[cycles[-1]].get_nb_scan_waxs():
+                    emit.emit("msg_console", type="msg_console",
+                              str="There is only " + str(self._cycles[cycles[-1] - 1].get_nb_frame()) + " scans on waxs"
+                              , foreground_color="red")
+                    return
+
+            figures = self.trace_scan(arg, cycles, numbers)
 
         else:
             raise NotImplementedError
+
+        for figure in figures:
+            figure.name = self.unique_name(self.nom_cell + " cycle " + name + " " + figure.name)
+
+        return figures
 
     """----------------------------------------------------------------------------------"""
 
@@ -157,42 +180,6 @@ class Ihch_1501(Abstract_data):
 
         self.res_calc_saxs.append(obj.res_calc)
         obj.finish = True
-
-    """----------------------------------------------------------------------------------"""
-
-    def format_axes(self, axe, type, name):
-        if axe is not None:
-            for tick in axe.xaxis.get_major_ticks():
-                tick.label1.set_fontsize(18)
-                tick.label1.set_fontweight('bold')
-            for tick in axe.yaxis.get_major_ticks():
-                tick.label1.set_fontsize(18)
-                tick.label1.set_fontweight('bold')
-            for tick in axe.yaxis.get_major_ticks():
-                tick.label2.set_fontsize(18)
-                tick.label2.set_fontweight('bold')
-            if type == "saxs" and name == "y1":
-                axe.set_yscale('log')
-                axe.set_xscale('log')
-
-    """----------------------------------------------------------------------------------"""
-
-    def resize_axe(self, axe1, axe2, p, figure=None):
-        if figure is not None and figure.type == "saxs":
-            return
-        else:
-            """On augemente la taille de l'ax donné en paramétre de p %"""
-            p = -p
-            size_axe_x = axe1.get_xlim()[1] - axe1.get_xlim()[0]
-            axe1.set_xlim(axe1.get_xlim()[0] - (size_axe_x * p / 100), axe1.get_xlim()[1] + (size_axe_x * p / 100))
-
-            size_axe_y1 = axe1.get_ylim()[1] - axe1.get_ylim()[0]
-            axe1.set_ylim(axe1.get_ylim()[0] - (size_axe_y1 * p / 100), axe1.get_ylim()[1] + (size_axe_y1 * p / 100))
-
-            if axe2 is not None:
-                size_axe_y2 = axe2.get_ylim()[1] - axe2.get_ylim()[0]
-                axe2.set_ylim(axe2.get_ylim()[0] - (size_axe_y2 * p / 100),
-                              axe2.get_ylim()[1] + (size_axe_y2 * p / 100))
 
     """----------------------------------------------------------------------------------"""
 
@@ -299,231 +286,197 @@ class Ihch_1501(Abstract_data):
             self.current_figure = fig
             self.figures.append(fig)
 
-    """----------------------------------------------------------------------------------"""
+    """------------------------------------------------------------------------------"""
+
     """                                                                              """
     """                               methode de class                               """
     """                                                                              """
 
-    def trace_frame(self, type, num_cycle, num_fram, color_arg=None):
+    def trace_frame(self, type, num_cycle, num_fram):
+        """
+
+        :param type: saxs/waxs
+        :param num_cycle: list des cycles que l'on souhaite traiter
+        :param num_fram: list des frame que l'on souhaite traiter, si None => toutes
+        :return: 3 figures
+        """
+
+        if num_fram is None:
+            s = " all"
+        else:
+            s = ""
+            for num in num_fram:
+                s += " " + str(num + 1)
+
         if type == "saxs":
-            fig_general = Figure("saxs_Frame_" + str(num_fram + 1) + "_general")
-            fig_lit = Figure("saxs_Frame_" + str(num_fram + 1) + "_lithiation")
-            fig_del = Figure("saxs Frame_" + str(num_fram + 1) + "_delithiation")
+            fig_general = Figure("saxs_Frame" + s + " general")
+            fig_lit = Figure("saxs_Frame" + s + " lithiation")
+            fig_del = Figure("saxs Frame" + s + " delithiation")
             fig_general.type = "saxs"
             fig_lit.type = "saxs"
             fig_del.type = "saxs"
         elif type == "waxs":
-            fig_general = Figure("waxs_Frame " + str(num_fram + 1) + "_general")
-            fig_lit = Figure("waxs_Frame " + str(num_fram + 1) + "_lithiation")
-            fig_del = Figure("waxs_Frame " + str(num_fram + 1) + "_delithiation")
+            fig_general = Figure("waxs Frame " + s + " general")
+            fig_lit = Figure("waxs Frame" + s + " lithiation")
+            fig_del = Figure("waxs Frame" + s + " delithiation")
             fig_general.type = "waxs"
             fig_lit.type = "waxs"
             fig_del.type = "waxs"
         else:
             raise ValueError
 
-        num_cycle -= 1
+        units = Units()
+        x_unit = units.get_unit("degrees")
+        y_unit = units.get_unit("<I>/mA")
 
-        data_x = []
-        data_y = []
 
-        data_x_lit = []
-        data_y_lit = []
-
-        data_x_del = []
-        data_y_del = []
         if type == "waxs":
-            for waxs_sample in self._cycles[num_cycle].waxs:
-                for scan in waxs_sample.scans:
-                    data_x.append(scan.frames[num_fram].data["2th_deg"])
-                    data_y.append(scan.frames[num_fram].data["I"])
+            for cycle in num_cycle:
+                for waxs_sample in self._cycles[cycle].waxs:
+                    for frame in waxs_sample.scans:
+                        if num_fram is None:
+                            _num_fram = [i for i in range(len(frame.frames))]
+                        else:
+                            _num_fram = num_fram
 
-            for waxs_sample in self._cycles[num_cycle].waxs:
-                if "-lithiation-" in waxs_sample.name:
-                    for scan in waxs_sample.scans:
-                        data_x_lit.append(scan.frames[num_fram].data["2th_deg"])
-                        data_y_lit.append(scan.frames[num_fram].data["I"])
+                        for num in _num_fram:
+                            data_x = frame.frames[num].data["2th_deg"]
+                            data_y = frame.frames[num].data["I"]
 
-            for waxs_sample in self._cycles[num_cycle].waxs:
-                if "-delithiation-" in waxs_sample.name:
-                    for scan in waxs_sample.scans:
-                        data_x_del.append(scan.frames[num_fram].data["2th_deg"])
-                        data_y_del.append(scan.frames[num_fram].data["I"])
-        elif type == "saxs":
-            for saxs_sample in self._cycles[num_cycle].saxs:
-                for scan in saxs_sample.scans:
-                    data_x.append(scan.frames[num_fram].data["q_A^-1"])
-                    data_y.append(scan.frames[num_fram].data["I"])
+                            data_unit_x = Data_unit(data_x, x_unit)
+                            data_unit_y = Data_unit(data_y, y_unit)
 
-            for saxs_sample in self._cycles[num_cycle].saxs:
-                if "-lithiation-" in saxs_sample.name:
-                    for scan in saxs_sample.scans:
-                        data_x_lit.append(scan.frames[num_fram].data["q_A^-1"])
-                        data_y_lit.append(scan.frames[num_fram].data["I"])
+                            legend = "time/h " + str(frame.frames[num].data["time/s"] / 3600)[0:5] + " z " + str(num + 1)
 
-            for saxs_sample in self._cycles[num_cycle].saxs:
-                if "-delithiation-" in saxs_sample.name:
-                    for scan in saxs_sample.scans:
-                        data_x_del.append(scan.frames[num_fram].data["q_A^-1"])
-                        data_y_del.append(scan.frames[num_fram].data["I"])
+                            fig_general.add_data_x_Data(Data_array(data_unit_x, "2th_deg", self.name, legend))
+                            fig_general.add_data_y1_Data(Data_array(data_unit_y, "current", self.name, legend))
 
-        if color_arg is not None:
-            if color_arg not in Resource.COLOR_MAP:
-                self.resource.print_color(color_arg + " : couleur invalide", "fail")
-                color_arg = None
+                            if "lithiation" in waxs_sample.name:
+                                fig_lit.add_data_x_Data(Data_array(data_unit_x, "2th_deg", self.name, legend))
+                                fig_lit.add_data_y1_Data(Data_array(data_unit_y, "current", self.name, legend))
 
-        color_y1 = []
-        if color_arg is not None:
-            color_map = Resource.get_color_map(color_arg)
-            color_y1.append(Traitement_cycle_outils.create_array_color(color_map, len(data_x)))
+                            elif "delithiation" in waxs_sample.name:
+                                fig_del.add_data_x_Data(Data_array(data_unit_x, "2th_deg", self.name, legend))
+                                fig_del.add_data_y1_Data(Data_array(data_unit_y, "current", self.name, legend))
 
-        for i in range(len(data_x)):
+        else:
+            for cycle in num_cycle:
+                for saxs_sample in self._cycles[cycle].saxs:
+                    for frame in saxs_sample.scans:
+                        if num_fram is None:
+                            _num_fram = [i for i in range(len(frame.frames))]
+                        else:
+                            _num_fram = num_fram
 
-            if type == "waxs":
-                temp_x = Data_array(data_x[i], "2th_deg", self.name, "time " + str(i) + " z " + str(num_fram + 1))
-            else:
-                temp_x = Data_array(data_x[i], "q(A\u207b\u00B9)", self.name, "time " + str(i) + " z " +
-                                    str(num_fram + 1))
-            temp_x.extra_info = ["frame", i]
-            fig_general.add_data_x_Data(temp_x)
+                        for num in _num_fram:
+                            data_x = frame.frames[num].data["q_A^-1"]
+                            data_y = frame.frames[num].data["I"]
 
-            if color_arg is None:
-                temp_y = Data_array(data_y[i], "Saxs intensity (u.a)", self.name, "time " + str(i) + " z " + str(num_fram + 1))
+                            data_unit_x = Data_unit(data_x, x_unit)
+                            data_unit_y = Data_unit(data_y, y_unit)
 
-            else:
-                temp_y = Data_array(data_y[i], "Saxs intensity (u.a)", self.name, "time " + str(i) + " z " +
-                                    str(num_fram + 1), color_y1[0][i])
+                            legend = "time/h " + str(frame.frames[num].data["time/s"] / 3600)[0:5] + " z " + str(num + 1)
 
-            temp_y.extra_info = ["frame", i]
-            fig_general.add_data_y1_Data(temp_y)
+                            fig_general.add_data_x_Data(Data_array(data_unit_x, "q_A^-1", self.name, legend))
+                            fig_general.add_data_y1_Data(Data_array(data_unit_y, "current", self.name, legend))
 
-        color_y1 = []
-        if color_arg is not None:
-            color_map = Resource.get_color_map(color_arg)
-            color_y1.append(Traitement_cycle_outils.create_array_color(color_map, len(data_x_lit)))
+                            if "lithiation" in saxs_sample.name:
+                                fig_lit.add_data_x_Data(Data_array(data_unit_x, "q_A^-1", self.name, legend))
+                                fig_lit.add_data_y1_Data(Data_array(data_unit_y, "current", self.name, legend))
 
-        for i in range(len(data_x_lit)):
-            if type == "waxs":
-                temp_x = Data_array(data_x_lit[i], "2th_deg", self.name, "time " + str(i) + " z " + str(num_fram + 1))
-            else:
-                temp_x = Data_array(data_x_lit[i], "q(A\u207b\u00B9)", self.name,
-                                    "time " + str(i) + " z " + str(num_fram + 1))
+                            elif "delithiation" in saxs_sample.name:
+                                fig_del.add_data_x_Data(Data_array(data_unit_x, "q_A^-1", self.name, legend))
+                                fig_del.add_data_y1_Data(Data_array(data_unit_y, "current", self.name, legend))
 
-            temp_x.extra_info = ["frame", i]
-            fig_lit.add_data_x_Data(temp_x)
-
-            if color_arg is None:
-                temp_y = Data_array(data_y_lit[i], "Saxs intensity (u.a)", self.name, "time " + str(i) + " z " + str(num_fram + 1))
-
-            else:
-                temp_y = Data_array(data_y_lit[i], "Saxs intensity (u.a)", self.name, "time " + str(i) + " z " +
-                                    str(num_fram + 1), color_y1[0][i])
-
-            temp_y.extra_info = ["frame", i]
-            fig_lit.add_data_y1_Data(temp_y)
-
-        color_y1 = []
-        if color_arg is not None:
-            color_map = Resource.get_color_map(color_arg)
-            color_y1.append(Traitement_cycle_outils.create_array_color(color_map, len(data_x_del)))
-
-        for i in range(len(data_x_del)):
-            if type == "waxs":
-                temp_x = Data_array(data_x_del[i], "2 θ[°]", self.name, "time " + str(i) + " z " + str(num_fram + 1))
-            else:
-                temp_x = Data_array(data_x_del[i], "q(A\u207b\u00B9)", self.name,
-                                    "time " + str(i) + " z " + str(num_fram + 1))
-
-            temp_x.extra_info = ["frame", i]
-            fig_del.add_data_x_Data(temp_x)
-
-            if color_arg is None:
-                temp_y = Data_array(data_y_del[i], "Saxs intensity (u.a)", self.name, "time " + str(i) + " z " + str(num_fram + 1))
-
-            else:
-                temp_y = Data_array(data_y_del[i], "Saxs intensity (u.a)", self.name, "time " + str(i) + " z " +
-                                    str(num_fram + 1), color_y1[0][i])
-
-            temp_y.extra_info = ["frame", i]
-            fig_del.add_data_y1_Data(temp_y)
 
         fig_general.name = self.unique_name(fig_general.name)
         fig_lit.name = self.unique_name(fig_lit.name)
         fig_del.name = self.unique_name(fig_del.name)
 
-        self.figures.append(fig_general)
-        self.figures.append(fig_lit)
-        self.figures.append(fig_del)
-
-        self.current_figure = fig_general
+        return [fig_general, fig_lit, fig_del]
 
     """----------------------------------------------------------------------------------"""
 
-    def trace_scan(self, type, num_cycle, num_scan, color_arg=None):
+    def trace_scan(self, type, num_cycle, num_scan):
+        """
+
+        :param type:
+        :param cycles:
+        :param num_scan:
+        :param color_arg:
+        :return:
+        """
+
+        if num_scan is None:
+            s = " all"
+        else:
+            s = ""
+            for num in num_scan:
+                s += " " + str(num + 1)
+
         if type == "saxs":
-            fig_general = Figure("saxs_Scan_" + str(num_scan + 1) + "_general")
+            fig_general = Figure("saxs Scan " + s + " general")
             fig_general.type = "saxs"
         elif type == "waxs":
-            fig_general = Figure("waxs_Scan_" + str(num_scan + 1) + "_general")
+            fig_general = Figure("waxs Scan " + s + " general")
             fig_general.type = "waxs"
+        else:
+            raise ValueError
 
-        num_cycle -= 1
+        units = Units()
+        x_unit = units.get_unit("degrees")
+        y_unit = units.get_unit("<I>/mA")
 
-        data_x = []
-        data_y = []
 
         if type == "waxs":
-            scan = self._cycles[num_cycle].get_frame_waxs(num_scan)
-            for frame in scan.frames:
-                data_x.append(frame.data["2th_deg"])
-                data_y.append(frame.data["I"])
+            for cycle in num_cycle:
+                for waxs_sample in self._cycles[cycle].waxs:
+                    print(len(waxs_sample.scans))
+                    if num_scan is None:
+                        _num_scan = [i for i in range(len(waxs_sample.scans))]
+                    else:
+                        _num_scan = num_scan
+                    for num in _num_scan:
+                        for i, frame in enumerate(waxs_sample.scans[num].frames):
+                            data_x = frame.data["2th_deg"]
+                            data_y = frame.data["I"]
 
-        elif type == "saxs":
-            scan = self._cycles[num_cycle].get_frame_saxs(num_scan)
-            for frame in scan.frames:
-                data_x.append(frame.data["q_A^-1"])
-                data_y.append(frame.data["I"])
+                            data_unit_x = Data_unit(data_x, x_unit)
+                            data_unit_y = Data_unit(data_y, y_unit)
 
-        if color_arg is not None:
-            if color_arg not in Resource.COLOR_MAP:
-                self.resource.print_color(color_arg + " : couleur invalide", "fail")
-                color_arg = None
+                            legend = "time/h " + str(frame.data["time/s"] / 3600)[0:5] + " z " + str(i + 1)
 
-        color_y1 = []
-        if color_arg is not None:
-            color_map = Resource.get_color_map(color_arg)
-            color_y1.append(Traitement_cycle_outils.create_array_color(color_map, len(data_x)))
+                            fig_general.add_data_x_Data(Data_array(data_unit_x, "2th_deg", self.name, legend))
+                            fig_general.add_data_y1_Data(Data_array(data_unit_y, "current", self.name, legend))
+        else:
+            for cycle in num_cycle:
+                for saxs_sample in self._cycles[cycle].saxs:
+                    print(len(saxs_sample.scans))
+                    if num_scan is None:
+                        _num_scan = [i for i in range(len(saxs_sample.scans))]
+                    else:
+                        _num_scan = num_scan
+                    for num in _num_scan:
+                        for frame in saxs_sample.scans[num].frames:
+                            data_x = frame.data["q_A^-1"]
+                            data_y = frame.data["I"]
 
-        for i in range(len(data_x)):
-            if type == "waxs":
-                temp_x = Data_array(data_x[i], "2 θ[°]", self.name, "time " + str(num_scan + 1) + " z " + str(i))
+                            data_unit_x = Data_unit(data_x, x_unit)
+                            data_unit_y = Data_unit(data_y, y_unit)
 
-            else:
-                temp_x = Data_array(data_x[i], "q(A\u207b\u00B9)", self.name, "time " + str(num_scan + 1) + " z " + str(i))
+                            legend = "time/h " + str(frame.data["time/s"] / 3600)[0:5] + " z " + str(num + 1)
 
-            temp_x.extra_info = ["scan", i]
-            fig_general.add_data_x_Data(temp_x)
+                            fig_general.add_data_x_Data(Data_array(data_unit_x, "q_A^-1", self.name, legend))
+                            fig_general.add_data_y1_Data(Data_array(data_unit_y, "current", self.name, legend))
 
-            if color_arg is None:
-                temp_y = Data_array(data_y[i], "Saxs intensity (u.a)", self.name, "time " + str(num_scan + 1) + " z " + str(i))
-
-            else:
-                temp_y = Data_array(data_y[i], "Saxs intensity (u.a)", self.name, "time " + str(num_scan + 1) + " z " + str(i), color_y1[0][i])
-
-            temp_y.extra_info = ["scan", i]
-            fig_general.add_data_y1_Data(temp_y)
 
         fig_general.name = self.unique_name(fig_general.name)
-        self.figures.append(fig_general)
-        self.current_figure = fig_general
+        return [fig_general]
 
     """----------------------------------------------------------------------------------"""
 
     def get_operation_available(self):
-        return ["à faire"]
-
-    def create_figure_cycle(self, *args, **kwargs):
-        raise ValueError
+        return ["Ihch 1501 plot"]
 
     def get_cycle_available(self):
         raise ValueError
@@ -552,7 +505,6 @@ class Ihch_1501(Abstract_data):
 
                 axe.plot(figure.data_x[index].data, figure.data_y1[index].data, "x", color='b', label=leg_name[0])
                 axe.get_xaxis().set_visible(False)
-                self.resize_axe_y(axe, None, -7.5)
                 index += 1
                 if i == 0:
                     axe.set_ylabel(leg_name[0])
@@ -564,7 +516,6 @@ class Ihch_1501(Abstract_data):
                     break
                 axe.plot(figure.data_x[index].data, figure.data_y1[index].data, "x", color='g', label=leg_name[1])
                 axe.get_xaxis().set_visible(False)
-                self.resize_axe_y(axe, None, -7.5)
                 index += 1
                 if i == 0:
                     axe.set_ylabel(leg_name[1])
@@ -574,7 +525,6 @@ class Ihch_1501(Abstract_data):
                     fig.delaxes(axe)
                     break
                 axe.plot(figure.data_x[index].data, figure.data_y1[index].data, "x", color='r', label=leg_name[2])
-                self.resize_axe_y(axe, None, -7.5)
                 index += 1
                 if i == 0:
                     axe.set_ylabel(leg_name[2])
@@ -621,7 +571,6 @@ class Ihch_1501(Abstract_data):
                     break
 
                 axe.plot(figure.data_x[index].data, figure.data_y1[index].data, "x", color='b', label=leg_name[0])
-                self.resize_axe_y(axe, None, -7.5)
                 index += 1
                 if i == 0:
                     axe.set_ylabel(leg_name[0])
@@ -635,7 +584,6 @@ class Ihch_1501(Abstract_data):
                 for j in range(len(figure.data_x[index].data)):
                     axe.plot(figure.data_x[index].data[j], figure.data_y1[index].data[j], color='g', label=leg_name[1])
 
-                self.resize_axe_y(axe, None, -7.5)
                 axe.set_xscale('log')
                 index += 1
                 if i == 0:
@@ -649,7 +597,6 @@ class Ihch_1501(Abstract_data):
                 for j in range(len(figure.data_x[index].data)):
                     axe.plot(figure.data_x[index].data[j], figure.data_y1[index].data[j], color='r', label=leg_name[2])
 
-                self.resize_axe_y(axe, None, -7.5)
                 axe.set_xscale('log')
                 index += 1
                 if i == 0:
@@ -682,6 +629,10 @@ class Ihch_1501(Abstract_data):
         raise ValueError("Opération invalide pour un fichier de Ihch 1501 (get_data)")
 
     @property
+    def cycles(self):
+        return self._cycles
+
+    @property
     def name(self):
         return self._name
 
@@ -704,6 +655,10 @@ class Ihch_1501(Abstract_data):
     @data.setter
     def data(self, data):
         raise ValueError("Opération invalide pour un fichier de Ihch 1501 (set_data)")
+
+    @cycles.setter
+    def cycles(self, cycles):
+        self._cycles = cycles
 
     @name.setter
     def name(self, name):
@@ -798,6 +753,3 @@ class Ihch_1501_frame:
     def __init__(self, name):
         self.name = name
         self.data = {}
-        time = None
-        potentiel = None
-        courrant = None

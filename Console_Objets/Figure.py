@@ -21,6 +21,8 @@ class Figure:
         "res_fitting_temperature": [],   # figure résultat d'un fit
         "res_fitting_temps": [],  # figure résultat d'un fit
         "contour": [],  # figure résultat d'un fit
+        "saxs": [],
+        "waxs": [],
     }
 
     def __init__(self, name, dirty=None, **kwarks):
@@ -485,7 +487,7 @@ class Figure:
     """----------------------------------------------------------------------------------"""
 
     def is_data_set(self):
-        if len(self.x_axe) == 0 or len(self.y1_axe) == 0:
+        if self.x_axe is None or self.y1_axe is None:
             return 0
         else:
             return 1
