@@ -22,6 +22,7 @@ from Console_Objets.Figure import Figure
 from Data_type import Abstract_data
 from Data_type.CCCV_data import CCCV_data
 from Data_type.Diffraction_data import Diffraction_data
+from Data_type.Gitt_data import Gitt_data
 from Data_type.Ihch_1501 import Ihch_1501
 from Math.Fitting import Fitting
 from Resources_file import Resources
@@ -197,46 +198,77 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def open_gitt(self):
         """
-        je m'en sers comme affichage test pour le moment
+        Gestion de l'ouverture d'une expérience de gitt
+        Un thread est créée pour faire la lecture des 3 fichiers
 
         :return: None
         """
+        files = []
 
-        """print("current data : " + self.console.current_data.name)
-        print("current figure : " + self.console.current_data.current_figure.name)"""
+        dialog = QFileDialog()
+        # si il y a une sauvegarde d'état elle est utilisée
+        if self.save_state_dialog is not None:
+            dialog.restoreState(self.save_state_dialog)
 
-        f1 = Figure("f1")
-        f2 = Figure("f2")
-        f3 = Figure("f3")
-        f4 = Figure("f4")
-        f5 = Figure("f5")
-        f6 = Figure("f6")
-        f7 = Figure("f7")
-        f8 = Figure("f8")
-        f9 = Figure("f9")
+        dialog.setWindowTitle('Open potentiel file')
+        dialog.setNameFilter('EC_lab file (*.mpt *.txt)')
 
-        f2.created_from = f1
-        f3.created_from = f2
-        f4.created_from = f3
-        f5.created_from = f4
+        if dialog.exec_() == QDialog.Accepted:
+            files.append(dialog.selectedFiles()[0])
+            # on sauvegarde l'état de la fenêtre d'ouverture de fichiers
+            self.save_state_dialog = dialog.saveState()
+        else:
+            return
 
-        f8.created_from = f2
 
-        self.treeWidget.add_data("cccv", "cccv1")
+        # on sauvegarde l'état de la fenêtre d'ouverture de fichiers
+        self.save_state_dialog = dialog.saveState()
 
-        self.treeWidget.add_figure(f1, "cccv1")
-        self.treeWidget.add_figure(f2, "cccv1")
-        self.treeWidget.add_figure(f3, "cccv1")
-        self.treeWidget.add_figure(f4, "cccv1")
-        self.treeWidget.add_figure(f5, "cccv1")
-        self.treeWidget.add_figure(f6, "cccv1")
-        self.treeWidget.add_figure(f7, "cccv1")
-        self.treeWidget.add_figure(f8, "cccv1")
-        self.treeWidget.add_figure(f9, "cccv1")
+        # si il y a une sauvegarde d'état elle est utilisée
+        if self.save_state_dialog is not None:
+            dialog.restoreState(self.save_state_dialog)
 
-        print("-----------------")
-        self.treeWidget.info()
-        print("-----------------")
+        dialog.setWindowTitle('Open pulse file')
+        dialog.setNameFilter('EC_lab file (*.mpt *.txt)')
+
+        if dialog.exec_() == QDialog.Accepted:
+            files.append(dialog.selectedFiles()[0])
+            # on sauvegarde l'état de la fenêtre d'ouverture de fichiers
+            self.save_state_dialog = dialog.saveState()
+        else:
+            return
+
+
+        # on sauvegarde l'état de la fenêtre d'ouverture de fichiers
+        self.save_state_dialog = dialog.saveState()
+
+        # si il y a une sauvegarde d'état elle est utilisée
+        if self.save_state_dialog is not None:
+            dialog.restoreState(self.save_state_dialog)
+
+        dialog.setWindowTitle('Open relaxation file')
+        dialog.setNameFilter('EC_lab file (*.mpt *.txt)')
+
+        if dialog.exec_() == QDialog.Accepted:
+            files.append(dialog.selectedFiles()[0])
+            # on sauvegarde l'état de la fenêtre d'ouverture de fichiers
+            self.save_state_dialog = dialog.saveState()
+        else:
+            return
+
+        # création d'un nouveau thread
+        t = QThread()
+
+        # création du worker
+        worker = Threads_UI.Open_file_gitt(files)
+        worker.moveToThread(t)
+
+        # connection
+        t.started.connect(worker.run)
+        worker.finished.connect(self.fin_thread_lecture)
+
+        self.threads.append([t, worker])
+        t.start()
 
     """---------------------------------------------------------------------------------"""
 
@@ -880,6 +912,15 @@ class Window(QMainWindow, Ui_MainWindow):
 
                 # on affiche le widget
                 self.edit_plot_figure_w.show()
+            elif name == "complete_gitt":
+                # on récupére les données
+                value = self.argument_selection_creation_w.value
+
+                # delet de la fenêtre
+                self.argument_selection_creation_w.deleteLater()
+                self.argument_selection_creation_w = None
+
+                self.console.current_data.pulse["Is"] = value
 
     """---------------------------------------------------------------------------------"""
 
@@ -1175,6 +1216,59 @@ class Window(QMainWindow, Ui_MainWindow):
 
                     # on le suprime de la liste
                     del self.threads[index]
+                break
+            elif type(self.threads[index][1]).__name__ == "Open_file_gitt" and self.threads[index][1].finish:
+                if event == -1:
+                    # on termine le thread
+                    self.threads[index][0].terminate()
+
+                    # on le suprime de la liste
+                    del self.threads[index]
+
+                    self.fichier_invalide_error()
+                elif event == 1:
+                    # on créer un objet data cccv
+                    obj_data = Gitt_data()
+
+                    # on lui ajoute les data lu par le thread
+                    obj_data.potentiel = self.threads[index][1].data[0]
+                    obj_data.pulse = self.threads[index][1].data[1]
+                    obj_data.relaxation = self.threads[index][1].data[2]
+
+                    # créer son nom
+                    obj_data.name = obj_data.pulse["name"]
+
+                    # on ajoute l'objet data à la console
+                    self.console.add_data(obj_data)
+
+                    # on update le tree widget
+                    self.treeWidget.add_data("gitt", obj_data.name)
+
+                    # on update current data avec ne nom du nouveau fichier
+                    _translate = QtCore.QCoreApplication.translate
+                    self.label.setText(
+                        _translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                                 "Current data : "
+                                   + obj_data.name + " </span></p></body></html>"))
+
+                    self.update_console({"str": "Done", "foreground_color": "green"})
+
+                    # on récupére les actions disponibles pour ce type de fichier pour update
+                    # current data comboBox_5
+                    self.update_new_plot_combo()
+
+                    # on termine le thread
+                    self.threads[index][0].terminate()
+
+                    # on le suprime de la liste
+                    del self.threads[index]
+
+                    if not "Is" in self.console.current_data.pulse:
+                        self.argument_selection_creation_w = Ask_Value(self, "float",
+                                                                       "Data Is not found, please fill it in",
+                                                                       "Is ? (µA) : ")
+                        self.argument_selection_creation_w.finish_signal.connect(
+                            lambda event: self.create_figure_callback(event, "complete_gitt"))
                 break
 
         else:
@@ -1698,6 +1792,12 @@ class Window(QMainWindow, Ui_MainWindow):
                         break
 
             self.treeWidget.delete_figure(self.console.current_data.current_figure.name, self.console.current_data.name)
+
+            # toutes les figure étant créée à partir de la figure suprimé ont leurs created from passé a None
+            for figure in self.console.current_data.figures:
+                if figure.created_from is not None and figure.created_from.name == self.console.current_data.current_figure.name:
+                    figure.created_from = None
+
 
             for i in range(len(self.console.current_data.figures)):
                 if self.console.current_data.figures[i].name == self.console.current_data.current_figure.name:

@@ -21,43 +21,41 @@ class Ihch_1501(Abstract_data):
     """----------------------------------------------------------------------------------"""
 
     def capa(self):
-        self.resource.print_color("Opération invalide pour un fichier de Ihch 1501", "fail")
         raise ValueError
 
     """----------------------------------------------------------------------------------"""
 
     def potentio(self, cycle=None):
-        self.resource.print_color("Opération invalide pour un fichier de Ihch 1501", "fail")
         raise ValueError
 
     """----------------------------------------------------------------------------------"""
 
     def derive(self, pas=None):
-        self.resource.print_color("Opération invalide pour un fichier de Ihch 1501", "fail")
         raise ValueError
 
     """----------------------------------------------------------------------------------"""
 
     def shift_axe(self, info):
-        self.resource.print_color("Opération invalide pour un fichier de Ihch 1501", "fail")
         raise ValueError
 
     """----------------------------------------------------------------------------------"""
 
     def get_dics(self):
-        self.resource.print_color("Opération invalide pour un fichier de Ihch 1501", "fail")
         raise ValueError
 
     """----------------------------------------------------------------------------------"""
 
     def diffraction_contour_temperature(self, color_arg=None):
-        self.resource.print_color("Opération invalide pour un fichier de Ihch 1501", "fail")
         raise ValueError
 
     """----------------------------------------------------------------------------------"""
 
     def create_diffraction(self):
-        self.resource.print_color("Opération invalide pour un fichier de Ihch 1501", "fail")
+        raise ValueError
+
+    """----------------------------------------------------------------------------------"""
+
+    def create_GITT(self):
         raise ValueError
 
     """----------------------------------------------------------------------------------"""

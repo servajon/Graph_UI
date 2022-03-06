@@ -13,10 +13,15 @@ UNITS = {
     "time/h": "hours",
     "dq/mA.h": "milliampere_heure",
     "(Q-Qo)/mA.h": "milliampere_heure",
+    "Q_charge/discharge/mA.h": "milliampere_heure",
+    "dQ/C": "coulomb",
+    "(Q-Qo)/C": "coulomb",
+    "half_cycle": None,
     "control/V/mA": "volt_par_milliampere",
     "Ecell/V": "volt",
     "I_Range": None,
     "<I>/mA": "milliampere",
+    "I/mA": "milliampere",
     "x": None,
     "Q_discharge/mA.h": "milliampere_heure",
     "Q_charge/mA.h": "milliampere_heure",
@@ -74,8 +79,12 @@ UNITS = {
     # nom des unitées sans conversion
 
     "%": "pourcentage",
-    "ua": "ua"
+    "ua": "ua",
 
+    "Energy_charge/W.h": None,
+    "Energy_discharge/W.h": None,
+    "Capacitance_charge/µF": None,
+    "Capacitance_discharge/µF": None,
 
 
 }

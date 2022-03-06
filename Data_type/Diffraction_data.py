@@ -14,8 +14,12 @@ class Diffraction_data(Abstract_data):
         self.__name__ = "diffraction"
         self.res_calc = []
 
+    """----------------------------------------------------------------------------------"""
+
     def get_operation_available(self):
         return ["Diffraction", "Contour"]
+
+    """----------------------------------------------------------------------------------"""
 
     def create_diffraction(self):
         """
@@ -57,16 +61,29 @@ class Diffraction_data(Abstract_data):
 
         return figure
 
+    """----------------------------------------------------------------------------------"""
+
     def capa(self):
         raise ValueError
+
+    """----------------------------------------------------------------------------------"""
 
     def potentio(self, cycle):
         raise ValueError
 
+    """----------------------------------------------------------------------------------"""
+
     def derive(self, *args, **kwargs):
         raise ValueError
 
+    """----------------------------------------------------------------------------------"""
+
     def shift_axe(self, *args, **kwargs):
+        raise ValueError
+
+    """----------------------------------------------------------------------------------"""
+
+    def create_GITT(self):
         raise ValueError
 
     """----------------------------------------------------------------------------------"""

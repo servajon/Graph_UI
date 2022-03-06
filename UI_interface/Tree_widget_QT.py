@@ -140,7 +140,11 @@ class Tree_widget(QtWidgets.QTreeWidget):
 
         child_item = item.get_array()[res[-1]].get_array()
         item.get_array().pop(res[-1])
-        item.get_array().extend(child_item)
+
+        for i, item in enumerate(self.items):
+            if item.name == data_name:
+                item.get_array().extend(child_item)
+                break
 
     """---------------------------------------------------------------------------------"""
 

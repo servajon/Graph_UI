@@ -205,8 +205,9 @@ def extract_data_cccv(file):
         return data
 
 
-def extract_data_gitt(file, format_time=None):
-    print("Lecture du fichier en cours")
+def extract_data_gitt(file):
+    emit = Emit()
+    emit.emit("msg_console", type="msg_console", str="Lecture du fichier en cours", foreground_color="yellow")
 
 
     data_data = file.readlines()
@@ -260,13 +261,14 @@ def extract_data_gitt(file, format_time=None):
                 index += 1
 
         elif data_data[index] == "":
-            print("Fichier invalide")
+            emit.emit("msg_console", type="msg_console", str="Fichier invalide", foreground_color="red")
             raise ValueError
     elif data_data[index] == "":
-        print("Fichier invalide")
+        emit.emit("msg_console", type="msg_console", str="Fichier invalide", foreground_color="red")
         raise ValueError
     else:
-        print("L'entête du fichier est introuvable")
+        emit.emit("msg_console", type="msg_console", str="L'entête du fichier est introuvable",
+                  foreground_color="yellow")
         name = "no_name_found"
 
     if data_data[index][0:4] != "mode":
@@ -287,7 +289,7 @@ def extract_data_gitt(file, format_time=None):
         index += 1
         miss_loop = False
     else:
-        """On n'a pas trouvé le loops, il faut les construirent"""
+        # On n'a pas trouvé le loops, il faut les construirent
         miss_loop = True
 
     data_row = []
@@ -296,22 +298,18 @@ def extract_data_gitt(file, format_time=None):
     for i in range(len(data_data[index])):
         if data_data[index][i] == '\t':
             if mot == "time/s":
-                if format_time == "s":
-                    data_row.append("time/s")
-                    data["time/s"] = []
-                elif format_time == "min":
-                    data_row.append("time/min")
-                    data["time/min"] = []
-                else:
-                    data_row.append("time/h")
-                    data["time/h"] = []
-                    """Pour un fichier de CV on n'a pas Ecell/V mais Ewe/V, on le remplace par Ecell/V"""
+                data_row.append("time/h")
+                data["time/h"] = Data_unit(None, UNITS["time/h"])
+                # Pour un fichier de CV on n'a pas Ecell/V mais Ewe/V, on le remplace par Ecell/V
             elif mot == "Ewe/V":
                 data_row.append("Ecell/V")
-                data["Ecell/V"] = []
+                data["Ecell/V"] = Data_unit(None, UNITS["Ecell/V"])
+            elif mot == "Ewe/V":
+                data_row.append("I/mA")
+                data["<I>/mA"] = Data_unit(None, UNITS["<I>/mA"])
             else:
                 data_row.append(mot)
-                data[mot] = []
+                data[mot] = Data_unit(None, UNITS[mot])
 
             mot = ''
         else:
@@ -323,12 +321,7 @@ def extract_data_gitt(file, format_time=None):
     data["name"] = name
     if "cycle_number" not in data_row and miss_loop:
         data = create_data(data_data[index + 1:], data, data_row, -1)
-        if format_time == "s":
-            res = create_loop(data["time/s"])
-        elif format_time == "min":
-            res = create_loop(data["time/min"])
-        else:
-            res = create_loop(data["time/h"])
+        res = create_loop(data["time/h"])
         if len(res) == 1:
             print("Fichier invalide, impossible de créer les loops")
             raise ValueError
@@ -341,7 +334,9 @@ def extract_data_gitt(file, format_time=None):
         else:
             data = create_data(data_data[index+1:], data, data_row)
     except ValueError:
-        print("Fichier contenant des valeurs invalides : UNKVAR / mauvais export")
+        emit.emit("msg_console", type="msg_console", str="file containing invalid values: UNKVAR / bad export",
+                  foreground_color="yellow")
+
         raise ValueError
     else:
         return data

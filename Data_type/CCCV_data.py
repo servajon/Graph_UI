@@ -607,7 +607,12 @@ class CCCV_data(Abstract_data):
     """----------------------------------------------------------------------------------"""
 
     def diffraction_contour_temperature(self):
-        pass
+        raise ValueError
+
+    """----------------------------------------------------------------------------------"""
+
+    def create_GITT(self):
+        raise ValueError
 
     """                                                  """
     """                      getter                      """
