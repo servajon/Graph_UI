@@ -413,7 +413,7 @@ class Data_unit(list):
     def copy(self):
         new_data_unit = Data_unit()
 
-        new_data_unit.data = copy.copy(self.data)
+        new_data_unit.data = [value for value in self.data]
 
         units = Units()
         new_data_unit.unit = units.get_unit(self.unit.name)

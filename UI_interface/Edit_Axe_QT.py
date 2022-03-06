@@ -20,7 +20,7 @@ class Edit_Axe(QWidget):
         self.verticalLayout = QtWidgets.QVBoxLayout(Dialog)
         self.verticalLayout.setObjectName("verticalLayout")
         self.label = QtWidgets.QLabel(Dialog)
-        self.label.setMaximumSize(QtCore.QSize(16777215, 21))
+        self.label.setMaximumSize(QtCore.QSize(16777215, 30))
         self.label.setObjectName("label")
         self.verticalLayout.addWidget(self.label)
         self.gridLayout = QtWidgets.QGridLayout()
@@ -109,7 +109,7 @@ class Edit_Axe(QWidget):
         self.label_16.setText(_translate("Dialog",
                                          "<html><head/><body><p><span style=\" font-size:12pt;\">Scale</span></p></body></html>"))
         self.comboBox_18.setItemText(0, _translate("Dialog", "Linear"))
-        self.comboBox_18.setItemText(1, _translate("Dialog", "log"))
+        self.comboBox_18.setItemText(1, _translate("Dialog", "Log"))
         self.label_17.setText(_translate("Dialog",
                                          "<html><head/><body><p><span style=\" font-size:12pt;\">Unite</span></p></body></html>"))
         self.label_18.setText(_translate("Dialog",

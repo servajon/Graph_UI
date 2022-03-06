@@ -109,7 +109,7 @@ class Tree_widget(QtWidgets.QTreeWidget):
     def delete_figure(self, name, data_name):
         """
         On suprime la figure portant le nom name appartenant au fichier data_name de l'arbre physique
-        et logique
+        et logique, si la figure posséde des enfants, alors on les ajoute au niveau au dessus
         :param name: nom de la figure
         :param data_name: nom du fichier de donnée de la figure
         :return: None
@@ -117,7 +117,9 @@ class Tree_widget(QtWidgets.QTreeWidget):
         for i, item in enumerate(self.items):
             if item.name == data_name:
                 item = self.get_item(name)
+                child_item = item.takeChildren()
                 self.topLevelItem(i).removeChild(item)
+                self.topLevelItem(i).addChildren(child_item)
 
         res = None
         for i, conteneur in enumerate(self.items):
@@ -135,7 +137,10 @@ class Tree_widget(QtWidgets.QTreeWidget):
         item = self.items[res[0]]
         for index in res[1:-1]:
             item = item.get(index)
+
+        child_item = item.get_array()[res[-1]].get_array()
         item.get_array().pop(res[-1])
+        item.get_array().extend(child_item)
 
     """---------------------------------------------------------------------------------"""
 

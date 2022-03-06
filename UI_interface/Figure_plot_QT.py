@@ -258,9 +258,10 @@ class Figure_plot(QWidget):
                                                  "\">Edit " + self.abstract_affiche.figure.x_axe.name +
                                                  " :</span></p></body></html>"))
             self.edit_w.lineEdit_2.setText(self.abstract_affiche.figure.x_axe.name)
-            if self.abstract_affiche.figure.x_axe.scale == "linear":
+
+            if self.abstract_affiche.figure.x_axe.scale == "Linear":
                 self.edit_w.comboBox_18.setCurrentIndex(0)
-            elif self.abstract_affiche.figure.x_axe.scale == "log":
+            elif self.abstract_affiche.figure.x_axe.scale == "Log":
                 self.edit_w.comboBox_18.setCurrentIndex(1)
 
             # création de la combo box avec les unités disponibles
@@ -289,9 +290,9 @@ class Figure_plot(QWidget):
                                                  "\">Edit " + self.abstract_affiche.figure.y1_axe.name +
                                                  " :</span></p></body></html>"))
             self.edit_w.lineEdit_2.setText(self.abstract_affiche.figure.y1_axe.name)
-            if self.abstract_affiche.figure.y1_axe.scale == "linear":
+            if self.abstract_affiche.figure.y1_axe.scale == "Linear":
                 self.edit_w.comboBox_18.setCurrentIndex(0)
-            elif self.abstract_affiche.figure.y1_axe.scale == "log":
+            elif self.abstract_affiche.figure.y1_axe.scale == "Log":
                 self.edit_w.comboBox_18.setCurrentIndex(1)
 
             # création de la combo box avec les unités disponibles
@@ -320,9 +321,9 @@ class Figure_plot(QWidget):
                                                  "\">Edit " + self.abstract_affiche.figure.y2_axe.name +
                                                  " :</span></p></body></html>"))
             self.edit_w.lineEdit_2.setText(self.abstract_affiche.figure.y2_axe.name)
-            if self.abstract_affiche.figure.y2_axe.scale == "linear":
+            if self.abstract_affiche.figure.y2_axe.scale == "Linear":
                 self.edit_w.comboBox_18.setCurrentIndex(0)
-            elif self.abstract_affiche.figure.y2_axe.scale == "log":
+            elif self.abstract_affiche.figure.y2_axe.scale == "Log":
                 self.edit_w.comboBox_18.setCurrentIndex(1)
 
             # création de la combo box avec les unités disponibles

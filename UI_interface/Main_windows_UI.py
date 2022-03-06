@@ -124,6 +124,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.tabWidget.break_tab.connect(self.break_tab)
         self.tabWidget.change_current.connect(self.tab_changed)
 
+        self.console_txt._input.connect(self.process_input_console_txt)
+
         # sert pour faire passer des signaux pour l'affichage de text dans la zone par n'importe
         # quel class, en j'en suis très fière :)
         self.emit.connect("msg_console", self.message_console)
@@ -188,7 +190,8 @@ class Window(QMainWindow, Ui_MainWindow):
         self.figure_plot = Figure_plot(obj, self)
         self.figure_plot.show()"""
         print(self.threads)
-        self.console.current_data.get_info_data()
+        print(self.console.current_data.figures)
+        self.treeWidget.info()
 
     """---------------------------------------------------------------------------------"""
 
@@ -1573,34 +1576,27 @@ class Window(QMainWindow, Ui_MainWindow):
         dans le widget "console"
 
         :param signal: dict : str
-                              background-color:
-                              foreground-color
-                              font
+                  background_color:
+                  foreground_color
+                  font
 
         :return: None
         """
+        self.console_txt.edit.textCursor().insertHtml('<div style=color:' + signal["foreground_color"] + '>' +
+                                                      signal["str"] + '<br></div>')
+        self.console_txt.update_prompt_pos()
 
-        # on crééer un nouvel item
-        item = QtWidgets.QListWidgetItem()
-        # il ne doit pas être interactif
-        item.setFlags(QtCore.Qt.NoItemFlags)
-        # on set le text
-        item.setText(signal["str"])
+    """---------------------------------------------------------------------------------"""
 
-        # on check dans le dict de signal les arguments pour la mise en forme du text
-        if "background_color:" in signal:
-            item.setBackground(QColor(signal["background_color:"]))
+    def process_input_console_txt(self, event):
+        """
+        Callback de _input de la console_txt
 
-        if "foreground_color" in signal:
-            item.setForeground(QColor(signal["foreground_color"]))
+        :param event: commande str tapé dans la console txt
+        :return:
+        """
 
-        if "font" in signal:
-            item.setFont(QFont(signal["font"]))
-        else:
-            item.setFont(QFont(*self.resource.default_font))
-
-        # on add l'item à la listWidget
-        self.listWidget.addItem(item)
+        print(event)
 
     """---------------------------------------------------------------------------------"""
 
@@ -2085,7 +2081,7 @@ class Window(QMainWindow, Ui_MainWindow):
             return
 
         # création d'une nouvelle figure avec pour nom la légende du cycle sélectionné
-        new_figure = Figure(self.edit_plot_w.listWidget.currentItem().text(), 1)
+        new_figure = Figure(self.edit_plot_w.console_txt.currentItem().text(), 1)
 
         # on ajoute à la nouvelle figure interactive une copie de data_x correspondant à l'index sélectionné
         new_figure.add_data_x_Data(copy.copy(self.figure_edited.x_axe.data[signal]))
@@ -2140,9 +2136,9 @@ class Window(QMainWindow, Ui_MainWindow):
         """
 
         # on update current figure pour passer en hide les éléments indiqué
-        for i in range(self.edit_plot_w.listWidget.count()):
+        for i in range(self.edit_plot_w.console_txt.count()):
             # si la couleur du text est rouge, la courbe doit être cachée
-            if self.edit_plot_w.listWidget.item(i).foreground().color() == QColor("red"):
+            if self.edit_plot_w.console_txt.item(i).foreground().color() == QColor("red"):
                 # on update Data_array
                 self.figure_edited.get_data_yaxe_i(i).visible = False
                 self.figure_edited.x_axe.data[i].visible = False

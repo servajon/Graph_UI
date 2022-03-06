@@ -580,15 +580,13 @@ class Figure:
         file = open(path, "w")
 
         for i in range(len(self.y1_axe.data)):
-            temp = unicodedata.normalize('NFKD', str(self.y1_axe.data[i].legend)).encode('ascii', 'replace').decode()
-            file.write(temp + "_" + self.y1_axe.name_unit + "\t")
-            file.write(temp + "_" + self.x_axe.name_unit + "\t")
+            file.write(self.y1_axe.name_unit + "\t")
+            file.write(self.x_axe.name_unit + "\t")
 
         if self.y2_axe is not None:
             for i in range(len(self.y2_axe.data)):
-                temp = unicodedata.normalize('NFKD', str(self.y2_axe.data[i].legend)).encode('ascii', 'replace').decode()
-                file.write(temp + "_" + self.y2_axe.name_unit + "\t")
-                file.write(temp + "_" + self.x_axe.name_unit + "\t")
+                file.write(self.y2_axe.name_unit + "\t")
+                file.write(self.x_axe.name_unit + "\t")
 
         file.write("\n")
 
