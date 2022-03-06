@@ -611,7 +611,7 @@ class CCCV_data(Abstract_data):
 
     """----------------------------------------------------------------------------------"""
 
-    def create_GITT(self):
+    def create_GITT(self, *args, **kwargs):
         raise ValueError
 
     """                                                  """

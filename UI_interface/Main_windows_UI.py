@@ -6,7 +6,7 @@ import matplotlib
 
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import QThread
-from PyQt5.QtGui import QColor, QFont
+from PyQt5.QtGui import QColor, QFont, QTextCursor
 from PyQt5.QtWidgets import (
     QApplication, QDialog, QMainWindow, QMessageBox, QFileDialog
 )
@@ -31,6 +31,7 @@ from UI_interface import Threads_UI
 from UI_interface.Ask_Value_QT import Ask_Value
 from UI_interface.Create_figure import Create_figure
 from UI_interface.Create_figure_ihch_1501 import Create_figure_ihch_1501
+from UI_interface.Create_gitt import Create_gitt
 from UI_interface.Cycle_selection_creation import Cycle_selection_creation
 from UI_interface.Derive_Selection_QT import Derive_Selection
 from UI_interface.Edit_plot_contour import Edit_plot_contour
@@ -537,6 +538,12 @@ class Window(QMainWindow, Ui_MainWindow):
                     lambda signal: self.callback_create_current_data(signal, "Ihch 1501 plot"))
                 self.argument_selection_creation_w.show()
 
+            elif self.comboBox_5.currentText() == "Create gitt":
+                self.argument_selection_creation_w = Create_gitt(self)
+                self.argument_selection_creation_w.finish_signal.connect(
+                    lambda signal: self.callback_create_current_data(signal, "Create_gitt"))
+                self.argument_selection_creation_w.show()
+
     """---------------------------------------------------------------------------------"""
 
     def callback_create_current_data(self, event, name):
@@ -715,6 +722,45 @@ class Window(QMainWindow, Ui_MainWindow):
                     self.console.current_data.figures.append(figure)
 
                 self.console.current_data.current_figure = self.console.current_data.figures[-1]
+
+            elif name == "Create_gitt":
+                print("ok")
+                surface = self.argument_selection_creation_w.surface
+                vm = self.argument_selection_creation_w.vm
+                constante_d_n = self.argument_selection_creation_w.delta_nb
+
+                if self.argument_selection_creation_w.radioButton_2.isChecked():
+                    constante_d_n = constante_d_n / len(self.console.current_data.pulse["loop_data"])
+
+                print(self.argument_selection_creation_w.input)
+
+                if self.argument_selection_creation_w.input is not None:
+                    if self.argument_selection_creation_w.input[0] > self.argument_selection_creation_w.input[1]:
+                        b1 = [self.argument_selection_creation_w.input[0] for i in
+                              range(len(self.console.current_data.pulse["loop_data"]))]
+                        b2 = [self.argument_selection_creation_w.input[1] for i in
+                              range(len(self.console.current_data.pulse["loop_data"]))]
+                    else:
+                        b1 = [self.argument_selection_creation_w.input[1] for i in
+                              range(len(self.console.current_data.pulse["loop_data"]))]
+                        b2 = [self.argument_selection_creation_w.input[0] for i in
+                              range(len(self.console.current_data.pulse["loop_data"]))]
+                else:
+                    for i in range(len(self.console.current_data.pulse["loop_data"])):
+                        pass
+
+                # on a récupérer les info, on délect la fenêtre
+                self.argument_selection_creation_w.deleteLater()
+                self.argument_selection_creation_w = None
+
+                figures = self.console.current_data.create_GITT(surface, vm, constante_d_n, b1, b2)
+
+                for figure in reversed(figures):
+                    self.treeWidget.add_figure(figure, self.console.current_data.name)
+                    self.console.current_data.figures.append(figure)
+
+                self.console.current_data.current_figure = self.console.current_data.figures[-1]
+
 
             _translate = QtCore.QCoreApplication.translate
             self.label_5.setText(
@@ -1676,6 +1722,11 @@ class Window(QMainWindow, Ui_MainWindow):
 
         :return: None
         """
+        cursor = self.console_txt.edit.textCursor()
+        cursor.removeSelectedText()
+        cursor.movePosition(QTextCursor.End)
+        self.console_txt.edit.setTextCursor(cursor)
+
         self.console_txt.edit.textCursor().insertHtml('<div style=color:' + signal["foreground_color"] + '>' +
                                                       signal["str"] + '<br></div>')
         self.console_txt.update_prompt_pos()

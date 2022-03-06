@@ -193,7 +193,7 @@ class Abstract_data(ABC):
         pass
 
     @abstractmethod
-    def create_GITT(self):
+    def create_GITT(self, *args, **kwargs):
         pass
 
     def unique_name(self, name):

@@ -1,6 +1,7 @@
 import math
 
 from scipy.stats import linregress
+import matplotlib.colors as mcolors
 
 from Console_Objets.Data_array import Data_array
 from Console_Objets.Figure import Figure
@@ -24,7 +25,7 @@ class Gitt_data(Abstract_data):
     """----------------------------------------------------------------------------------"""
 
     def get_operation_available(self):
-        return ["create gitt"]
+        return ["Create gitt"]
 
     """----------------------------------------------------------------------------------"""
 
@@ -73,17 +74,14 @@ class Gitt_data(Abstract_data):
 
     """----------------------------------------------------------------------------------"""
 
-    def create_GITT(self):
+    def create_GITT(self, surface, vm, constante_d_n, bornes1, bornes2):
         # On reset tout avant de recréer les graphs de gitt"""
-        self._borne1 = []
-        self._borne2 = []
-        self.figures = []
         self.current_figure = None
-        self.create_gitt_methode()
+        self.create_gitt_methode(surface, vm, constante_d_n, bornes1, bornes2)
 
     """----------------------------------------------------------------------------------"""
 
-    def create_gitt_methode(self):
+    def create_gitt_methode(self, surface, vm, constante_d_n, bornes1, bornes2):
         loop_potentiel = self.potentiel.get("loop_data")
         loop_pulse = self.pulse.get("loop_data")
         loop_relax = self.relaxation.get("loop_data")
@@ -113,42 +111,7 @@ class Gitt_data(Abstract_data):
                 print("Nombre de loop différent entre les fichiers")
                 raise ValueError
 
-        surface = Resource.get_float("Surface de l'électrode ? (cm\u00B2) ? >> ")
-        vm = Resource.get_float("VM ? (cm\u00B3.mol\u207b\u00B9) >> ")
-        rep = Resource.get_rep_Y_N("Delta n connu ? (yes/no) >> ")
-        if rep:
-            constante_d_n = Resource.get_float("Delta n ? >> ")
-        else:
-            nb_electron = Resource.get_float("Nombre d'électrons ? >> ")
-            constante_d_n = nb_electron / len(loop_pulse)
-
         constante_a = (4 / math.pi) * ((vm * abs(self._pulse.get("Is")) * 10 ** -6) / (surface * 96486)) ** 2
-
-        rep = Resource.get_rep("Selection des bornes ? (input / graph) >> ", ["input", "graph"])
-        if rep == "input":
-            born1 = Resource.get_float("Valeur de la born1 ? (sqtr(s)) >> ")
-            born2 = Resource.get_float("Valeur de la born2 ? (sqtr(s)) >> ")
-
-            if born1 == born2:
-                print("Les 2 bornes ne peuvent être identique")
-                raise ValueError
-
-            born1 = born1 ** 2
-            born2 = born2 ** 2
-            for i in range(len(loop_pulse)):
-                self._borne1.append(born1)
-                self._borne2.append(born2)
-        else:
-            self.create_born(loop_pulse)
-            if self.interupt:
-                self.current_figure = None
-                return
-            for i in range(len(self._borne1)):
-                self._borne1[i] = self._borne1[i] ** 2
-                self._borne2[i] = self._borne2[i] ** 2
-
-        born1 = self._borne1
-        born2 = self._borne2
 
         plot_1 = Figure("GITT_général", 1)
         plot_1.plot_name = "GITT général"
@@ -220,23 +183,17 @@ class Gitt_data(Abstract_data):
         array_x_plot3 = []
         array_y_plot3 = []
 
-        """On place la borne 1 comme étant la plus petite"""
-        if born1 > born2:
-            temp = born1
-            born1 = born2
-            born2 = temp
-
         self.export_gitt_array.append(["surface:" + str(surface) + "\tVM:" + str(vm) + "\tdelta n:" + str(constante_d_n)])
         self.export_gitt_array.append(["Cycle", "borne1", "borne2", "slope", "coef_difusion", "E-", "E+", "deltaE"])
 
         for i in range(len(loop_pulse)):
-            array_export = [str(self.nom_cell) + "_loop_" + str(i + 1), str(math.sqrt(born1[i])),
-                            str(math.sqrt(born2[i]))]
+            array_export = [str(self.nom_cell) + "_loop_" + str(i + 1), str(math.sqrt(bornes1[i])),
+                            str(math.sqrt(bornes2[i]))]
 
             num = (array_plot_2_y_green[i] - array_plot_2_y_green[i + 1]) / constante_d_n
             start_x = self._pulse.get("time/s")[loop_pulse[i][0]]
             j = loop_pulse[i][0]
-            while j < loop_pulse[i][1] and self._pulse.get("time/s")[j] < start_x + born1[i]:
+            while j < loop_pulse[i][1] and self._pulse.get("time/s")[j] < start_x + bornes1[i]:
                 j += 1
 
             if j == loop_pulse[i][1]:
@@ -245,7 +202,7 @@ class Gitt_data(Abstract_data):
 
             index_min = j
 
-            while j < loop_pulse[i][1] and self._pulse.get("time/s")[j] < start_x + born2[i]:
+            while j < loop_pulse[i][1] and self._pulse.get("time/s")[j] < start_x + bornes2[i]:
                 j += 1
 
             if j == loop_pulse[i][1]:
@@ -303,11 +260,7 @@ class Gitt_data(Abstract_data):
         plot_3.name = self.unique_name(plot_3.name)
         plot_controle.name = self.unique_name(plot_controle.name)
 
-        self.figures.append(plot_1)
-        self.figures.append(plot_2)
-        self.figures.append(plot_3)
-        self.figures.append(plot_controle)
-        self.current_figure = plot_1
+        return [plot_1, plot_2, plot_3, plot_controle]
 
     """----------------------------------------------------------------------------------"""
 
