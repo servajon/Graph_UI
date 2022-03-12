@@ -140,6 +140,9 @@ class Create_gitt(QtWidgets.QWidget):
         self.buttonGroup_2.addButton(self.radioButton_3)
         self.buttonGroup_2.addButton(self.radioButton_4)
 
+        self.radioButton.setChecked(True)
+        self.radioButton_3.setChecked(True)
+
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
 

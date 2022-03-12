@@ -1,3 +1,5 @@
+import copy
+
 from Console_Objets.Data_Unit import Units, Data_unit
 from Console_Objets.Data_array import Data_array
 from Console_Objets.Figure import Figure
@@ -60,6 +62,21 @@ class Ihch_1501(Abstract_data):
 
     """----------------------------------------------------------------------------------"""
 
+    def impedance_res(self, freqs):
+        raise ValueError
+
+    """"----------------------------------------------------------------------------------"""
+
+    def impedance_bode(self):
+        raise ValueError
+
+    """"----------------------------------------------------------------------------------"""
+
+    def create_impedance_3d(self, axe_y_name):
+        raise ValueError
+
+    """"----------------------------------------------------------------------------------"""
+
     def get_info_data(self):
         print("info sur les données : " + self.name + "\n")
         for cycle in self._cycles:
@@ -90,7 +107,7 @@ class Ihch_1501(Abstract_data):
 
     """----------------------------------------------------------------------------------"""
 
-    def create_figure_cycle(self, arg, type, cycles, numbers):
+    def create_figure_cycle(self, arg, type, cycles, numbers, samples):
         """
         On créer la figure associé à la selection, on check ici que les paramètres sont
         cohérent. Les list sont ordonnée du plus petit au plus grand, on ne chexk donc que
@@ -101,6 +118,7 @@ class Ihch_1501(Abstract_data):
         :param type: frame / scan
         :param cycles: list des cycle selectionnés
         :param numbers: list des frame/scan selectionnés si None => toute
+        :param samples: indes des samples selectionnée
         :return: figure / None : figure si tout c'est bien passé, None sinon
         """
 
@@ -117,22 +135,17 @@ class Ihch_1501(Abstract_data):
             s += str(i) + " "
         name = s[0:-1]
 
-        print(cycles)
-        print(arg)
-        print(type)
-        print(numbers)
-
         if type == "frame":
             # on check que le dernier nombres de la liste (le plus grand) est infè
-            if numbers is not None and numbers[-1] >= self._cycles[0].get_nb_frame():
+            """if numbers is not None and numbers[-1] >= self._cycles[0].get_nb_frame():
                 emit.emit("msg_console", type="msg_console", str="There is only " + str(len(self._cycles)) + " frames"
                           , foreground_color="red")
-                return
+                return"""
 
-            figures = self.trace_frame(arg, cycles, numbers)
+            figures = self.trace_frame(arg, cycles, numbers, samples)
 
         elif type == "scan":
-            if arg == "saxs":
+            """if arg == "saxs":
                 if numbers is not None and numbers[-1] >= self._cycles[cycles[-1] - 1].get_nb_scan_saxs():
                     emit.emit("msg_console", type="msg_console",
                               str="There is only " + str(self._cycles[cycles[-1]].get_nb_frame()) + " scans on saxs"
@@ -144,15 +157,15 @@ class Ihch_1501(Abstract_data):
                     emit.emit("msg_console", type="msg_console",
                               str="There is only " + str(self._cycles[cycles[-1] - 1].get_nb_frame()) + " scans on waxs"
                               , foreground_color="red")
-                    return
+                    return"""
 
-            figures = self.trace_scan(arg, cycles, numbers)
+            figures = self.trace_scan(arg, cycles, numbers, samples)
 
         else:
             raise NotImplementedError
 
-        for figure in figures:
-            figure.name = self.unique_name(self.nom_cell + " cycle " + name + " " + figure.name)
+        """for figure in figures:
+            figure.name = self.unique_name(self.nom_cell + " cycle " + name + " " + figure.name)"""
 
         return figures
 
@@ -290,47 +303,72 @@ class Ihch_1501(Abstract_data):
     """                               methode de class                               """
     """                                                                              """
 
-    def trace_frame(self, type, num_cycle, num_fram):
+    def trace_frame(self, type, num_cycle, num_fram, sample):
         """
 
+        :param sample: nom des sample a tracer
         :param type: saxs/waxs
         :param num_cycle: list des cycles que l'on souhaite traiter
         :param num_fram: list des frame que l'on souhaite traiter, si None => toutes
         :return: 3 figures
         """
 
-        if num_fram is None:
-            s = " all"
+        if type == "saxs":
+            name = "Saxs "
         else:
-            s = ""
-            for num in num_fram:
-                s += " " + str(num + 1)
+            name = "Waxs "
+
+        for i in range(len(num_cycle) - 1):
+            name += self._cycles[num_cycle[i]].name + " / "
+
+        name += self._cycles[num_cycle[-1]].name + " Sample "
+
+        # nom des samples
+        for i in range(len(sample) - 1):
+            waxs_sample = self._cycles[num_cycle[0]].waxs[i].name
+            name += waxs_sample.name + " / "
+
+        name += self._cycles[num_cycle[0]].waxs[sample[-1]].name + " Frame "
+
+        # nom des Frame
+        if num_fram is None:
+            name += " all"
+        elif len(num_fram) > 1:
+            name += str(num_fram[0] + 1) + " to " + str(num_fram[-1] + 1)
+        else:
+            name += str(num_fram[0] + 1)
 
         if type == "saxs":
-            fig_general = Figure("saxs_Frame" + s + " general")
-            fig_lit = Figure("saxs_Frame" + s + " lithiation")
-            fig_del = Figure("saxs Frame" + s + " delithiation")
-            fig_general.type = "saxs"
-            fig_lit.type = "saxs"
-            fig_del.type = "saxs"
+            fig_general = Figure(name + " general")
+            fig_lit = Figure(name + " lithiation")
+            fig_del = Figure(name + " delithiation")
+
+            type = "saxs frame"
+            fig_general.type = "saxs frame"
+            fig_lit.type = "saxs frame"
+            fig_del.type = "saxs frame"
         elif type == "waxs":
-            fig_general = Figure("waxs Frame " + s + " general")
-            fig_lit = Figure("waxs Frame" + s + " lithiation")
-            fig_del = Figure("waxs Frame" + s + " delithiation")
-            fig_general.type = "waxs"
-            fig_lit.type = "waxs"
-            fig_del.type = "waxs"
+            fig_general = Figure(name + " general")
+            fig_lit = Figure(name + " lithiation")
+            fig_del = Figure(name + " delithiation")
+
+            type = "waxs frame"
+            fig_general.type = "waxs frame"
+            fig_lit.type = "waxs frame"
+            fig_del.type = "waxs frame"
         else:
             raise ValueError
 
         units = Units()
         x_unit = units.get_unit("degrees")
-        y_unit = units.get_unit("<I>/mA")
+        y_unit = units.get_unit("ua")
 
+        array_time = []
 
-        if type == "waxs":
+        if type == "waxs frame":
             for cycle in num_cycle:
-                for waxs_sample in self._cycles[cycle].waxs:
+                for i in sample:
+                    waxs_sample = self._cycles[cycle].waxs[i]
                     for frame in waxs_sample.scans:
                         if num_fram is None:
                             _num_fram = [i for i in range(len(frame.frames))]
@@ -344,22 +382,24 @@ class Ihch_1501(Abstract_data):
                             data_unit_x = Data_unit(data_x, x_unit)
                             data_unit_y = Data_unit(data_y, y_unit)
 
-                            legend = "time/h " + str(frame.frames[num].data["time/s"] / 3600)[0:5] + " z " + str(num + 1)
+                            legend = "time/h " + str(frame.frames[num].data["time/s"] / 3600)[0:5] + " " + frame.name
+                            array_time.append(frame.frames[num].data["time/s"] / 3600)
 
                             fig_general.add_data_x_Data(Data_array(data_unit_x, "2th_deg", self.name, legend))
-                            fig_general.add_data_y1_Data(Data_array(data_unit_y, "current", self.name, legend))
+                            fig_general.add_data_y1_Data(Data_array(data_unit_y, "Intesity", self.name, legend))
 
                             if "lithiation" in waxs_sample.name:
                                 fig_lit.add_data_x_Data(Data_array(data_unit_x, "2th_deg", self.name, legend))
-                                fig_lit.add_data_y1_Data(Data_array(data_unit_y, "current", self.name, legend))
+                                fig_lit.add_data_y1_Data(Data_array(data_unit_y, "Intesity", self.name, legend))
 
                             elif "delithiation" in waxs_sample.name:
                                 fig_del.add_data_x_Data(Data_array(data_unit_x, "2th_deg", self.name, legend))
-                                fig_del.add_data_y1_Data(Data_array(data_unit_y, "current", self.name, legend))
+                                fig_del.add_data_y1_Data(Data_array(data_unit_y, "Intesity", self.name, legend))
 
         else:
             for cycle in num_cycle:
-                for saxs_sample in self._cycles[cycle].saxs:
+                for i in sample:
+                    saxs_sample = self._cycles[cycle].saxs[i]
                     for frame in saxs_sample.scans:
                         if num_fram is None:
                             _num_fram = [i for i in range(len(frame.frames))]
@@ -373,67 +413,99 @@ class Ihch_1501(Abstract_data):
                             data_unit_x = Data_unit(data_x, x_unit)
                             data_unit_y = Data_unit(data_y, y_unit)
 
-                            legend = "time/h " + str(frame.frames[num].data["time/s"] / 3600)[0:5] + " z " + str(num + 1)
+                            legend = "time/h " + str(frame.frames[num].data["time/s"] / 3600)[0:5] + " z " + str(
+                                num + 1)
+                            array_time.append(frame.frames[num].data["time/s"] / 3600)
 
                             fig_general.add_data_x_Data(Data_array(data_unit_x, "q_A^-1", self.name, legend))
-                            fig_general.add_data_y1_Data(Data_array(data_unit_y, "current", self.name, legend))
+                            fig_general.add_data_y1_Data(Data_array(data_unit_y, "Intesity", self.name, legend))
 
                             if "lithiation" in saxs_sample.name:
                                 fig_lit.add_data_x_Data(Data_array(data_unit_x, "q_A^-1", self.name, legend))
-                                fig_lit.add_data_y1_Data(Data_array(data_unit_y, "current", self.name, legend))
+                                fig_lit.add_data_y1_Data(Data_array(data_unit_y, "Intesity", self.name, legend))
 
                             elif "delithiation" in saxs_sample.name:
                                 fig_del.add_data_x_Data(Data_array(data_unit_x, "q_A^-1", self.name, legend))
-                                fig_del.add_data_y1_Data(Data_array(data_unit_y, "current", self.name, legend))
+                                fig_del.add_data_y1_Data(Data_array(data_unit_y, "Intesity", self.name, legend))
+
+        fig_general.kwarks["array_time"] = array_time
 
 
         fig_general.name = self.unique_name(fig_general.name)
         fig_lit.name = self.unique_name(fig_lit.name)
         fig_del.name = self.unique_name(fig_del.name)
 
-        return [fig_general, fig_lit, fig_del]
+        figure_electroch = self.create_electroch(num_cycle[0])
+        if figure_electroch is None:
+            # return [fig_general, fig_lit, fig_del]
+            return [fig_general]
+        else:
+            # return [fig_general, fig_lit, fig_del, figure_electroch]
+            return [fig_general, figure_electroch]
 
     """----------------------------------------------------------------------------------"""
 
-    def trace_scan(self, type, num_cycle, num_scan):
+    def trace_scan(self, type, num_cycle, num_scan, sample):
         """
+        num scan correspond à son numéro h5, on récupérera son index
 
         :param type:
         :param cycles:
         :param num_scan:
-        :param color_arg:
         :return:
         """
-
-        if num_scan is None:
-            s = " all"
+        # nom des cycles
+        if type == "saxs":
+            name = "Saxs "
         else:
-            s = ""
-            for num in num_scan:
-                s += " " + str(num + 1)
+            name = "Waxs "
+
+        for i in range(len(num_cycle) - 1):
+            name += self._cycles[num_cycle[i]].name + " / "
+
+        name += self._cycles[num_cycle[-1]].name + " Sample "
+
+        # nom des samples
+        for i in range(len(sample) - 1):
+            waxs_sample = self._cycles[num_cycle[0]].waxs[i].name
+            name += waxs_sample.name + " / "
+
+        name += self._cycles[num_cycle[0]].waxs[sample[-1]].name + " Scan "
+
+        # nom des scans
+        if num_scan is None:
+            name += " all"
+        elif len(num_scan) > 1:
+            name += num_scan[0] + " to " + num_scan[-1]
+        else:
+            name += num_scan[0]
 
         if type == "saxs":
-            fig_general = Figure("saxs Scan " + s + " general")
-            fig_general.type = "saxs"
+            type = "saxs scan"
+            fig_general = Figure(name)
+            fig_general.type = "saxs scan"
         elif type == "waxs":
-            fig_general = Figure("waxs Scan " + s + " general")
-            fig_general.type = "waxs"
+            type = "waxs scan"
+            fig_general = Figure(name)
+            fig_general.type = "waxs scan"
         else:
             raise ValueError
 
         units = Units()
         x_unit = units.get_unit("degrees")
-        y_unit = units.get_unit("<I>/mA")
+        y_unit = units.get_unit("ua")
 
+        array_time = []
 
-        if type == "waxs":
+        if type == "waxs scan":
             for cycle in num_cycle:
-                for waxs_sample in self._cycles[cycle].waxs:
-                    print(len(waxs_sample.scans))
+                for i in sample:
+                    waxs_sample = self._cycles[cycle].waxs[i]
                     if num_scan is None:
                         _num_scan = [i for i in range(len(waxs_sample.scans))]
                     else:
-                        _num_scan = num_scan
+                        _num_scan = waxs_sample.get_scans(num_scan)
+
                     for num in _num_scan:
                         for i, frame in enumerate(waxs_sample.scans[num].frames):
                             data_x = frame.data["2th_deg"]
@@ -443,17 +515,19 @@ class Ihch_1501(Abstract_data):
                             data_unit_y = Data_unit(data_y, y_unit)
 
                             legend = "time/h " + str(frame.data["time/s"] / 3600)[0:5] + " z " + str(i + 1)
+                            array_time.append(frame.data["time/s"] / 3600)
 
                             fig_general.add_data_x_Data(Data_array(data_unit_x, "2th_deg", self.name, legend))
-                            fig_general.add_data_y1_Data(Data_array(data_unit_y, "current", self.name, legend))
+                            fig_general.add_data_y1_Data(Data_array(data_unit_y, "Intensity", self.name, legend))
         else:
             for cycle in num_cycle:
-                for saxs_sample in self._cycles[cycle].saxs:
-                    print(len(saxs_sample.scans))
+                for i in sample:
+                    saxs_sample = self._cycles[cycle].saxs[i]
                     if num_scan is None:
                         _num_scan = [i for i in range(len(saxs_sample.scans))]
                     else:
-                        _num_scan = num_scan
+                        _num_scan = saxs_sample.get_scans(num_scan)
+
                     for num in _num_scan:
                         for frame in saxs_sample.scans[num].frames:
                             data_x = frame.data["q_A^-1"]
@@ -463,21 +537,56 @@ class Ihch_1501(Abstract_data):
                             data_unit_y = Data_unit(data_y, y_unit)
 
                             legend = "time/h " + str(frame.data["time/s"] / 3600)[0:5] + " z " + str(num + 1)
+                            array_time.append(frame.data["time/s"] / 3600)
 
                             fig_general.add_data_x_Data(Data_array(data_unit_x, "q_A^-1", self.name, legend))
-                            fig_general.add_data_y1_Data(Data_array(data_unit_y, "current", self.name, legend))
-
+                            fig_general.add_data_y1_Data(Data_array(data_unit_y, "Intensity", self.name, legend))
 
         fig_general.name = self.unique_name(fig_general.name)
-        return [fig_general]
+        fig_general.kwarks["array_time"] = array_time
+
+        figure_electroch = self.create_electroch(num_cycle[0])
+        if figure_electroch is None:
+            return [fig_general]
+        else:
+            return [fig_general, figure_electroch]
 
     """----------------------------------------------------------------------------------"""
 
     def get_operation_available(self):
         return ["Ihch 1501 plot"]
 
+    """----------------------------------------------------------------------------------"""
+
+    def get_edit_data_available(self):
+        return []
+
+    """----------------------------------------------------------------------------------"""
+
+    def process_edit_data(self, array_res):
+        pass
+
+    """----------------------------------------------------------------------------------"""
+
     def get_cycle_available(self):
         raise ValueError
+
+    """----------------------------------------------------------------------------------"""
+
+    def create_impedance(self):
+        raise ValueError
+
+    """----------------------------------------------------------------------------------"""
+
+    def export_gitt(self, path):
+        raise ValueError
+
+    """----------------------------------------------------------------------------------"""
+
+    def export_impedance_res(self, path):
+        raise ValueError
+
+    """----------------------------------------------------------------------------------"""
 
     def load_graph_affichage(self, figure, path_save=None):
         if figure.type == "res_waxs":
@@ -622,6 +731,97 @@ class Ihch_1501(Abstract_data):
         else:
             raise ValueError
 
+    def create_electroch(self, num_cycle):
+        saxs_time = []
+        saxs_potentiel = []
+        saxs_courrant = []
+
+        waxs_time = []
+        waxs_potentiel = []
+        waxs_courrant = []
+
+        time = []
+        potentiel = []
+        courrant = []
+
+        for sample_saxs in self._cycles[num_cycle].saxs:
+            for scan in sample_saxs.scans:
+                for frame in scan.frames:
+                    try:
+                        saxs_time.append(frame.data["time/s"])
+                        saxs_potentiel.append(frame.data["Ecell/V"])
+                        saxs_courrant.append(frame.data["<I>/mA"])
+                    except KeyError:
+                        print(sample_saxs.name)
+                        print(scan.name)
+                        print(frame.name)
+                        print(frame.data)
+
+
+
+        for sample_waxs in self._cycles[num_cycle].waxs:
+            for scan in sample_waxs.scans:
+                for frame in scan.frames:
+                    try:
+                        waxs_time.append(frame.data["time/s"])
+                        waxs_potentiel.append(frame.data["Ecell/V"])
+                        waxs_courrant.append(frame.data["<I>/mA"])
+                    except ValueError:
+                        print(sample_waxs.name)
+                        print(scan.name)
+                        print(frame.name)
+                        print(frame.data)
+
+        while len(saxs_time) != 0 and len(waxs_time) != 0:
+            if saxs_time[0] < waxs_time[0]:
+                time.append(saxs_time.pop(0))
+                potentiel.append(saxs_potentiel.pop(0))
+                courrant.append(saxs_courrant.pop(0))
+            else:
+                time.append(waxs_time.pop(0))
+                potentiel.append(waxs_potentiel.pop(0))
+                courrant.append(waxs_courrant.pop(0))
+
+        if len(saxs_time) != 0:
+            time.extend(saxs_time)
+            potentiel.extend(saxs_potentiel)
+            courrant.extend(saxs_courrant)
+        else:
+            time.extend(waxs_time)
+            potentiel.extend(waxs_potentiel)
+            courrant.extend(waxs_courrant)
+
+        figure = Figure("check ec lab", 1)
+        figure.type = "saxs"
+
+        units = Units()
+        x_unit = units.get_unit("s")
+        y1_unit = units.get_unit("Ecell/V")
+        y2_unit = units.get_unit("<I>/mA")
+
+        data_unit_x1 = Data_unit(time, x_unit)
+        data_unit_x2 = Data_unit(copy.copy(time), x_unit)
+
+        data_unit_y1 = Data_unit(potentiel, y1_unit)
+        data_unit_y2 = Data_unit(courrant, y2_unit)
+
+        data_array_x1 = Data_array(data_unit_x1, "time", self.name, None)
+        data_array_y1 = Data_array(data_unit_y1, "Ecell", self.name, "potentiel")
+
+        data_array_x2 = Data_array(data_unit_x2, "time", self.name, None)
+        data_array_y2 = Data_array(data_unit_y2, "<I>", self.name, "courrant")
+
+        figure.add_data_x_Data(data_array_x1)
+        figure.add_data_y1_Data(data_array_y1)
+
+        figure.add_data_x_Data(data_array_x2)
+        figure.add_data_y2_Data(data_array_y2)
+
+        figure.name = self.unique_name(figure.name)
+
+        return figure
+
+
     @property
     def data(self):
         raise ValueError("Opération invalide pour un fichier de Ihch 1501 (get_data)")
@@ -633,10 +833,6 @@ class Ihch_1501(Abstract_data):
     @property
     def name(self):
         return self._name
-
-    @property
-    def nom_cell(self):
-        return self._nom_cell
 
     @property
     def figures(self):
@@ -663,11 +859,6 @@ class Ihch_1501(Abstract_data):
         """On replace les espaces par des '_'"""
         self._name = name
 
-    @nom_cell.setter
-    def nom_cell(self, name):
-        """On replace les espaces par des '_'"""
-        self._nom_cell = name
-
     @figures.setter
     def figures(self, figures):
         print("Impossible d'utiliser le setter de figures de la class abstract data")
@@ -687,46 +878,8 @@ class Ihch_1501_cycle:
         self.waxs = []
         self.saxs = []
 
-        self._nb_frame = None
-        self._nb_scan_saxs = None
-        self._nb_scan_waxs = None
-
     def get_nb_frame(self):
-        if self._nb_frame is None:
-            self._nb_frame = len(self.waxs[0].scans[0].frames)
-        return self._nb_frame
-
-    def get_nb_scan_saxs(self):
-        if self._nb_scan_saxs is None:
-            nb = 0
-            for sample in self.saxs:
-                nb += len(sample.scans)
-            self._nb_scan_saxs = nb
-        return self._nb_scan_saxs
-
-    def get_nb_scan_waxs(self):
-        if self._nb_scan_waxs is None:
-            nb = 0
-            for sample in self.waxs:
-                nb += len(sample.scans)
-            self._nb_scan_waxs = nb
-        return self._nb_scan_waxs
-
-    def get_frame_saxs(self, nb):
-        count = 0
-        for sample in self.saxs:
-            for scan in sample.scans:
-                if count == nb:
-                    return scan
-                count += 1
-
-    def get_frame_waxs(self, nb):
-        count = 0
-        for sample in self.waxs:
-            for scan in sample.scans:
-                if count == nb:
-                    return scan
-                count += 1
+        return len(self.saxs[0].scans[0].frames)
 
 
 class Ihch_1501_sample_waxs:
@@ -734,11 +887,120 @@ class Ihch_1501_sample_waxs:
         self.name = name
         self.scans = []
 
+    def get_scans(self, array):
+        array_res = []
+        while len(array) != 0:
+            name = array[0]
+            while len(name) < 4:
+                name = "0" + name
+
+            i = 0
+            while i < len(self.scans) and self.scans[i].name != name:
+                i += 1
+
+            # on n'a pas trouvé un nom
+            if i == len(self.scans):
+                raise ValueError
+            else:
+                array_res.append(i)
+                array.pop(0)
+        return array_res
+
+    def is_scan_exist(self, scan_name):
+        if len(scan_name) > 4:
+            return False
+
+        while len(scan_name) < 4:
+            scan_name = "0" + scan_name
+
+        i = 0
+        while i < len(self.scans) and self.scans[i].name != scan_name:
+            i += 1
+
+        if i == len(self.scans):
+            return False
+        else:
+            return True
+
+    def get_range(self, name_start, name_end):
+        res = []
+
+        while len(name_start) < 4:
+            name_start = "0" + name_start
+
+        while len(name_end) < 4:
+            name_end = "0" + name_end
+
+        i = 0
+        while i < len(self.scans) and self.scans[i].name != name_start:
+            i += 1
+
+        while i < len(self.scans) and self.scans[i].name != name_end:
+            res.append(self.scans[i].name)
+            i += 1
+
+        res.append(self.scans[i].name)
+
+        return res
+
 
 class Ihch_1501_sample_saxs:
     def __init__(self, name):
         self.name = name
         self.scans = []
+
+    def get_scans(self, array):
+        array_res = []
+        while len(array) != 0:
+            name = array[0]
+            while len(name) < 4:
+                name = "0" + name
+
+            i = 0
+            while i < len(self.scans) and self.scans[i].name != name:
+                i += 1
+
+            # on n'a pas trouvé un nom
+            if i == len(self.scans):
+                raise ValueError
+            else:
+                array_res.append(i)
+        return array_res
+
+    def is_scan_exist(self, scan_name):
+        if len(scan_name) > 4:
+            return False
+
+        while len(scan_name) < 4:
+            scan_name = "0" + scan_name
+
+        i = 0
+        while i < len(self.scans) and self.scans[i].name != scan_name:
+            i += 1
+
+        if i == len(self.scans):
+            return False
+        else:
+            return True
+
+    def get_range(self, name_start, name_end):
+        res = []
+
+        while len(name_start) < 4:
+            name_start = "0" + name_start
+
+        while len(name_end) < 4:
+            name_end = "0" + name_end
+
+        i = 0
+        while i < len(self.scans) and self.scans[i].name != name_start:
+            i += 1
+
+        while i < len(self.scans) and self.scans[i].name != name_end:
+            res.append(self.scans[i].name)
+            i += 1
+
+        return res
 
 
 class Ihch_1501_scan:

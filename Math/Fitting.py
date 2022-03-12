@@ -29,7 +29,7 @@ def get_index_pics(pics):
     return _min, _max
 
 
-def baseline_als(y, lam, p, niter=5):
+def baseline_(y, lam, p, niter=5):
     L = len(y)
     D = sparse.csc_matrix(np.diff(np.eye(L), 2))
     w = np.ones(L)
@@ -51,7 +51,7 @@ def fit_pics(_x_array, _y_array, pics):
     y_array = _y_array[index_min:index_max]
 
     """pplot.plot(x_array, y_array)"""
-    baseline = baseline_als(y_array, 10000, 0.0001)
+    baseline = baseline_(y_array, 10000, 0.0001)
 
     """pplot.plot(x_array, baseline)"""
 
@@ -78,6 +78,10 @@ def fit_pics(_x_array, _y_array, pics):
         else:
             param.update(model.make_params())
 
+        print(pic.x_max)
+        print(pic.integral)
+        print(pic.fwhm)
+
         param[name + "_center"].set(pic.x_max)
         param[name + "_amplitude"].set(pic.integral)
         param[name + "_sigma"].set(pic.fwhm)
@@ -91,6 +95,8 @@ def fit_pics(_x_array, _y_array, pics):
         else:
             mod += value
 
+    print(x_array)
+    print(y_array)
     out = mod.fit(y_array, param, x=x_array)
 
     for i, pic in enumerate(pics):
@@ -99,16 +105,21 @@ def fit_pics(_x_array, _y_array, pics):
         pic.integral = out.values[key + "_amplitude"]
         pic.fwhm = out.values[key + "_fwhm"]
 
+        print(pic.fwhm)
+
         pic.index_min = get_index(_x_array, pic.x_max - pic.fwhm * 2 * 1.5)
         pic.index_max = get_index(_x_array, pic.x_max + pic.fwhm * 2 * 1.5)
 
-    """pplot.plot(x_array, y_array)
-    pplot.plot(x_array, out.best_fit)
-    pplot.show()"""
+    fig, (ax1, leg1) = pplot.subplots(ncols=2, gridspec_kw={"width_ratios": [10, 1]})
+    fig.suptitle("index min = " + str(index_min) + " index max = " + str(index_max) + " fwhm = " + str(pic.fwhm) + " integral = " + str(pic.integral)
+                 + " x_max = " + str(pic.x_max))
+    ax1.plot(x_array, y_array)
+    ax1.plot(x_array, out.best_fit)
+    pplot.show()
 
 
 def VoigtModel_fit(x_array, y_array, name, pic):
-    baseline = baseline_als(y_array, 10000, 0.0001)
+    baseline = baseline_(y_array, 10000, 0.0001)
     y_array -= baseline
 
     # y_array = scipy.signal.savgol_filter(y_array, 21, 7)
@@ -132,7 +143,7 @@ def VoigtModel_fit(x_array, y_array, name, pic):
 
 
 def PseudoVoigtModel_fit(x_array, y_array, name, pic):
-    baseline = baseline_als(y_array, 10000, 0.0001)
+    baseline = baseline_(y_array, 10000, 0.0001)
     y_array -= baseline
 
     # y_array = scipy.signal.savgol_filter(y_array, 21, 7)
@@ -156,7 +167,7 @@ def PseudoVoigtModel_fit(x_array, y_array, name, pic):
 
 
 def GaussianModel_fit(x_array, y_array, name, pic):
-    baseline = baseline_als(y_array, 10000, 0.0001)
+    baseline = baseline_(y_array, 10000, 0.0001)
     y_array -= baseline
 
     # y_array = scipy.signal.savgol_filter(y_array, 21, 7)
@@ -192,20 +203,20 @@ def get_delta_centre_moyen(past_param):
 class Fitting(QObject):
     finished = pyqtSignal(int)
 
-    def __init__(self, figure, pics):
+    def __init__(self, x, y, pics):
         QObject.__init__(self)
 
-        self.figure = figure
-        self.new_figure = None
+        """self.figure = figure
+        self.new_figure = None"""
 
-        x_datas = []
+        """ x_datas = []
         y_datas = []
         for i in range(len(self.figure.x_axe.data)):
             x_datas.append(self.figure.x_axe.data[i].data)
-            y_datas.append(self.figure.y1_axe.data[i].data)
+            y_datas.append(self.figure.y1_axe.data[i].data)"""
 
-        self.x_datas = x_datas
-        self.y_datas = y_datas
+        self.x_datas = x
+        self.y_datas = y
 
         self.pics = []
         self.create_pic(pics)
@@ -226,11 +237,6 @@ class Fitting(QObject):
 
     def run(self):
         # on regarde le meilleur fit pour chaque fit
-        for pic in self.pics:
-            self.best_fit(pic)
-
-        for pic in self.pics:
-            print(pic.fit)
 
         # on fit tous les pics
         for i in range(len(self.x_datas)):
@@ -247,10 +253,10 @@ class Fitting(QObject):
             self.area.append(area)
             self.fwhm.append(fwhm)
 
-        self.finished.emit(1)
+        # self.finished.emit(1)
 
 
-    def best_fit(self, pic):
+    """def best_fit(self, pic):
         x_array = pic.slice(self.x_datas[0])
         y_array = pic.slice(self.y_datas[0])
 
@@ -262,15 +268,24 @@ class Fitting(QObject):
         sum_voigt = 0
         sum_pseudovoigt = 0
         for param in result_gauss.params:
-            sum_gauss += result_gauss.params[param].stderr / result_gauss.params[param].value
+            try:
+                sum_gauss += result_gauss.params[param].stderr / result_gauss.params[param].value
+            except TypeError:
+                sum_gauss += sys.maxsize
 
         for param in result_voigt.params:
             if not "_gamma" in param:
-                sum_voigt += result_voigt.params[param].stderr / result_voigt.params[param].value
+                try:
+                    sum_voigt += result_voigt.params[param].stderr / result_voigt.params[param].value
+                except TypeError:
+                    sum_voigt += sys.maxsize
 
         for param in result_pseudovoigt.params:
             if not "_fraction" in param:
-                sum_pseudovoigt += result_pseudovoigt.params[param].stderr / result_pseudovoigt.params[param].value
+                try:
+                    sum_pseudovoigt += result_pseudovoigt.params[param].stderr / result_pseudovoigt.params[param].value
+                except TypeError:
+                    sum_pseudovoigt += sys.maxsize
 
         _min = min(sum_gauss, sum_voigt, sum_pseudovoigt)
         if _min == sum_gauss:
@@ -278,7 +293,7 @@ class Fitting(QObject):
         elif _min == sum_voigt:
             pic.fit = "_VoigtModel"
         else:
-            pic.fit = "_PseudoVoigtModel"
+            pic.fit = "_PseudoVoigtModel"""
 
 
 class Pic:
@@ -290,7 +305,7 @@ class Pic:
         self.index_min = index_min
         self.index_max = index_max
 
-        self.fit = None
+        self.fit = "_PseudoVoigtModel"
 
     def update(self, x_max, integral, fwhm):
         self.x_max = x_max
@@ -313,28 +328,30 @@ if __name__ == '__main__':
 
     data = file.readlines()
 
-    index = 0
-    while index < len(data):
-        line = data[index].split("\t")
-        line[-1] = line[-1][-1]
-        for i in range(len(line) - 1):
-            line[i] = float(line[i])
-        x_arrays.append(line[:-1])
+    for i in range(len(data)):
+        temp = []
+        _data_temp = data[i].split("\t")
+        for j in range(len(_data_temp)):
+            temp.append(float(_data_temp[j]))
 
-        index += 1
+        if i % 2 == 0:
+            x_arrays.append(temp)
+        else:
+            y_arrays.append(temp)
 
-        line = data[index].split("\t")
-        line[-1] = line[-1][-1]
-        for i in range(len(line) - 1):
-            line[i] = float(line[i])
-        y_arrays.append(line[:-1])
+    pplot.plot(x_arrays[0], y_arrays[0])
+    pplot.show()
 
-        index += 1
+    """self, x_max, integral, fwhm, index_min, index_max"""
 
-    p1 = [3886, 3927, 23.8239, 2843.3179328999577, 0.01351489612034243]
-    p2 = [3938, 3979, 24.0999, 3684.581274899939, 0.03926934953668848]
 
-    pics = [p1, p2]
+
+    p1 = [5.1, 1, 0.08, None, None]
+    p2 = [5.2, 1, 0.08, 3684.581274899939, 0.03926934953668848]
+    p3 = [5.4, 0.5, 0.08, 2843.3179328999577, 0.01351489612034243]
+    p4 = [5.6, 1, 0.08, 3684.581274899939, 0.03926934953668848]
+
+    pics = [p1, p2, p3, p4]
     fitting = Fitting(x_arrays, y_arrays, pics)
     fitting.run()
 

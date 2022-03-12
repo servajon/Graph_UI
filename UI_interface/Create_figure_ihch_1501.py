@@ -18,7 +18,7 @@ from UI_interface.Cycle_Selection_QT import Line_edit
 class Create_figure_ihch_1501(QtWidgets.QWidget):
     finish_signal = pyqtSignal(str)
 
-    def __init__(self, parent, kwargs):
+    def __init__(self, parent, cycles_data):
         super(Create_figure_ihch_1501, self).__init__(parent)
 
         self.cycles_base = None
@@ -26,10 +26,13 @@ class Create_figure_ihch_1501(QtWidgets.QWidget):
         self.setWindowModality(QtCore.Qt.ApplicationModal)
 
         self.emit = Emit()
-        self.kwargs = kwargs
+        self.cycles_data = cycles_data
 
         # variable qui stock les cycles selectionnés
         self.cycles = None
+
+        # variable qui stock les samples selectionnés
+        self.samples = None
 
         # variable qui stock si saxs ou waxs est selectionné
         self.s_w = None
@@ -38,9 +41,6 @@ class Create_figure_ihch_1501(QtWidgets.QWidget):
         self.f_s = None
 
         self.setupUi(self)
-
-        print(kwargs)
-
 
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
@@ -58,11 +58,25 @@ class Create_figure_ihch_1501(QtWidgets.QWidget):
         self.lineEdit = Line_edit(self)
         self.lineEdit.setMaximumSize(QtCore.QSize(16777215, 16777215))
         self.lineEdit.setObjectName("lineEdit")
-
         self.horizontalLayout.addWidget(self.lineEdit)
         spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem1)
         self.verticalLayout_2.addLayout(self.horizontalLayout)
+
+        self.horizontalLayout_3 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_3.setObjectName("horizontalLayout_3")
+        self.label_9 = QtWidgets.QLabel(Dialog)
+        self.label_9.setObjectName("label")
+        self.horizontalLayout_3.addWidget(self.label_9)
+        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_3.addItem(spacerItem)
+        self.lineEdit_4 = Line_edit(self)
+        self.lineEdit_4.setMaximumSize(QtCore.QSize(16777215, 16777215))
+        self.lineEdit_4.setObjectName("lineEdit_4")
+        self.horizontalLayout_3.addWidget(self.lineEdit_4)
+        spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_3.addItem(spacerItem1)
+        self.verticalLayout_2.addLayout(self.horizontalLayout_3)
 
         self.horizontalLayout_5 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_5.setObjectName("horizontalLayout_5")
@@ -125,7 +139,6 @@ class Create_figure_ihch_1501(QtWidgets.QWidget):
         self.cycle_numbers_layout = None
         self.cycle_all_layout = None
 
-
         self.horizontalLayout_4 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_4.setObjectName("horizontalLayout_4")
         self.pushButton_3 = QtWidgets.QPushButton(Dialog)
@@ -160,12 +173,16 @@ class Create_figure_ihch_1501(QtWidgets.QWidget):
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
-        self.label.setText(_translate("Dialog", "<html><head/><body><p><span style=\" font-size:12pt;\">Cycle</span></p></body></html>"))
+        self.label.setText(_translate("Dialog",
+                                      "<html><head/><body><p><span style=\" font-size:12pt;\">Cycle</span></p></body></html>"))
+        self.label_9.setText(_translate("Dialog",
+                                        "<html><head/><body><p><span style=\" font-size:12pt;\">Sample</span></p></body></html>"))
         self.radioButton_4.setText(_translate("Dialog", "Saxs"))
         self.radioButton_5.setText(_translate("Dialog", "Waxs"))
         self.radioButton_2.setText(_translate("Dialog", "Frame"))
         self.radioButton_3.setText(_translate("Dialog", "Scan"))
-        self.label_2.setText(_translate("Dialog", "<html><head/><body><p><span style=\" font-size:12pt;\">Frame Selection</span></p></body></html>"))
+        self.label_2.setText(_translate("Dialog",
+                                        "<html><head/><body><p><span style=\" font-size:12pt;\">Frame Selection</span></p></body></html>"))
         self.radioButton.setText(_translate("Dialog", "All"))
         self.radioButton_6.setText(_translate("Dialog", "Manual sélection"))
         self.radioButton_7.setText(_translate("Dialog", "Range"))
@@ -231,7 +248,7 @@ class Create_figure_ihch_1501(QtWidgets.QWidget):
         self.cycle_to_layout.addWidget(self.lineEdit_3)
         spacerItem2 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.cycle_to_layout.addItem(spacerItem2)
-        self.verticalLayout_2.insertLayout(4, self.cycle_to_layout)
+        self.verticalLayout_2.insertLayout(5, self.cycle_to_layout)
         _translate = QtCore.QCoreApplication.translate
         self.label_3.setText(_translate("Dialog",
                                         "<html><head/><body><p><span style=\" font-size:12pt;\">Numbers :"
@@ -266,7 +283,7 @@ class Create_figure_ihch_1501(QtWidgets.QWidget):
         self.lineEdit_5.setObjectName("lineEdit_2")
         self.cycle_numbers_layout.addWidget(self.lineEdit_5)
 
-        self.verticalLayout_2.insertLayout(4, self.cycle_numbers_layout)
+        self.verticalLayout_2.insertLayout(5, self.cycle_numbers_layout)
 
         _translate = QtCore.QCoreApplication.translate
         self.label_8.setText(_translate("Dialog",
@@ -302,7 +319,7 @@ class Create_figure_ihch_1501(QtWidgets.QWidget):
         spacerItem3 = QtWidgets.QSpacerItem(10, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.cycle_all_layout.addItem(spacerItem3)
 
-        self.verticalLayout_2.insertLayout(4, self.cycle_all_layout)
+        self.verticalLayout_2.insertLayout(5, self.cycle_all_layout)
         _translate = QtCore.QCoreApplication.translate
         self.label_5.setText(_translate("Dialog",
                                         "<html><head/><body><p><span style=\" font-size:12pt;\">Numbers :"
@@ -335,11 +352,10 @@ class Create_figure_ihch_1501(QtWidgets.QWidget):
         """
 
         if self.lineEdit.text() == "":
-            self.emit.emit("msg_console", type="msg_console", str="Empty selection",
+            self.emit.emit("msg_console", type="msg_console", str="Empty cycle selection",
                            foreground_color="red")
             return
         else:
-
             temp = self.lineEdit.text().split(" ")
             array = []
             for data in temp:
@@ -348,41 +364,41 @@ class Create_figure_ihch_1501(QtWidgets.QWidget):
                     array.append(data - 1)
 
             array.sort()
+
+            if array[-1] >= len(self.cycles_data) or array[0] < 0:
+                self.emit.emit("msg_console", type="msg_console", str="Cycle number between " + str(1) + " and " +
+                                                                      str(len(self.cycles_data)),
+                               foreground_color="red")
+                return
+
             self.cycles_base = array
 
-        if self.cycle_to_layout is not None:
-            if self.lineEdit_2.text() == "" or self.lineEdit_3.text() == "":
-                self.emit.emit("msg_console", type="msg_console", str="Empty selection",
-                               foreground_color="red")
-                return
-            elif int(self.lineEdit_2.text()) > int(self.lineEdit_3.text()):
-                self.emit.emit("msg_console", type="msg_console", str="Left number is largeur than the right one",
-                               foreground_color="red")
-                return
 
-            else:
-                self.cycles = [int(self.lineEdit_2.text()), "to", int(self.lineEdit_3.text())]
-
-
-        elif self.cycle_numbers_layout is not None:
-            s = self.lineEdit_5.text()
-            if s == "":
-                self.emit.emit("msg_console", type="msg_console", str="Empty selection",
-                               foreground_color="red")
-                return
-
-            temp = s.split(" ")
+        if self.lineEdit_4.text() == "":
+            self.emit.emit("msg_console", type="msg_console", str="Empty sample selection",
+                           foreground_color="red")
+            return
+        else:
+            temp = self.lineEdit_4.text().split(" ")
             array = []
             for data in temp:
                 data = int(data)
                 if data not in array:
+                    for num_cycle in self.cycles_base:
+                        if data > len(self.cycles_data[num_cycle].saxs):
+                            self.emit.emit("msg_console", type="msg_console",
+                                           str="Sample number between " + str(1) + " and " +
+                                               str(len(self.cycles_data[num_cycle].saxs)) +
+                                               " for the cycle " + self.cycles_data[
+                                                   num_cycle].name,
+                                           foreground_color="red")
+                            return
+
+
                     array.append(data - 1)
 
             array.sort()
-            self.cycles = array
-
-        else:
-            self.cycles = None
+            self.samples = array
 
         if self.radioButton_4.isChecked():
             self.s_w = "saxs"
@@ -393,6 +409,126 @@ class Create_figure_ihch_1501(QtWidgets.QWidget):
             self.f_s = "frame"
         else:
             self.f_s = "scan"
+
+        if self.cycle_to_layout is not None:
+            if self.lineEdit_2.text() == "" or self.lineEdit_3.text() == "":
+                self.emit.emit("msg_console", type="msg_console", str="Empty " + self.f_s + " selection",
+                               foreground_color="red")
+                return
+            elif int(self.lineEdit_2.text()) > int(self.lineEdit_3.text()):
+                self.emit.emit("msg_console", type="msg_console", str="Left number is largeur than the right one",
+                               foreground_color="red")
+                return
+            else:
+                if self.f_s == "frame":
+                    if int(self.lineEdit_2.text()) < 1:
+                        self.emit.emit("msg_console", type="msg_console",
+                                       str="Frame number should be larger than 0", foreground_color="red")
+                        return
+
+                    for num_cycle in self.cycles_base:
+                        if int(self.lineEdit_3.text()) > self.cycles_data[num_cycle].get_nb_frame():
+                            self.emit.emit("msg_console", type="msg_console",
+                                           str="Frame number " + self.lineEdit_3.text() + " invalid for the cycle " +
+                                               self.cycles_data[num_cycle].name, foreground_color="red")
+                            return
+
+                    self.cycles = [value - 1 for value in range(int(self.lineEdit_2.text()), int(self.lineEdit_3.text()) + 1)]
+                else:
+                    for num_cycle in self.cycles_base:
+                        for i in self.samples:
+                            if self.s_w == "saxs":
+                                sample_saxs = self.cycles_data[num_cycle].saxs[i]
+
+                                if not sample_saxs.is_scan_exist(self.lineEdit_2.text()):
+                                    self.emit.emit("msg_console", type="msg_console",
+                                                   str="Scan number " + self.lineEdit_2.text() + " invalid for the cycle " +
+                                                       self.cycles_data[num_cycle].name, foreground_color="red")
+                                    return
+
+                                elif not sample_saxs.is_scan_exist(self.lineEdit_3.text()):
+                                    self.emit.emit("msg_console", type="msg_console",
+                                                   str="Scan number " + self.lineEdit_3.text() + " invalid for the cycle " +
+                                                       self.cycles_data[num_cycle].name, foreground_color="red")
+                                    return
+
+                            else:
+                                sample_waxs = self.cycles_data[num_cycle].waxs[i]
+                                if not sample_waxs.is_scan_exist(self.lineEdit_2.text()):
+                                    self.emit.emit("msg_console", type="msg_console",
+                                                   str="Scan number " + self.lineEdit_2.text() + " invalid for the cycle " +
+                                                       self.cycles_data[num_cycle].name, foreground_color="red")
+                                    return
+
+                                elif not sample_waxs.is_scan_exist(self.lineEdit_3.text()):
+                                    self.emit.emit("msg_console", type="msg_console",
+                                                   str="Scan number " + self.lineEdit_3.text() + " invalid for the cycle " +
+                                                       self.cycles_data[num_cycle].name, foreground_color="red")
+                                    return
+
+                    if self.s_w == "waxs":
+                        sample_waxs = self.cycles_data[self.cycles_base[0]].waxs[self.samples[0]]
+                        self.cycles = sample_waxs.get_range(self.lineEdit_2.text(), self.lineEdit_3.text())
+                    else:
+                        sample_saxs = self.cycles_data[self.cycles_base[0]].saxs[self.samples[0]]
+                        self.cycles = sample_saxs.get_range(self.lineEdit_2.text(), self.lineEdit_3.text())
+
+
+        elif self.cycle_numbers_layout is not None:
+            s = self.lineEdit_5.text()
+            if s == "":
+                self.emit.emit("msg_console", type="msg_console", str="Empty selection",
+                               foreground_color="red")
+                return
+            else:
+                temp = s.split(" ")
+                array = []
+                for data in temp:
+                    if data not in array:
+                        for num_cycle in self.cycles_base:
+                            if self.f_s == "scan":
+                                if self.s_w == "saxs":
+                                    for i in self.samples:
+                                        sample_saxs = self.cycles_data[num_cycle].saxs[i]
+
+                                        if not sample_saxs.is_scan_exist(data):
+                                            self.emit.emit("msg_console", type="msg_console",
+                                                           str="Saxs scan number " + str(data) + " invalid for the sample " +
+                                                               sample_saxs.name, foreground_color="red")
+                                            return
+                                else:
+                                    for i in self.samples:
+                                        sample_waxs = self.cycles_data[num_cycle].waxs[i]
+                                        if not sample_waxs.is_scan_exist(data):
+                                            self.emit.emit("msg_console", type="msg_console",
+                                                           str="Waxs scan number " + str(data) + " invalid for the sample " +
+                                                               sample_waxs.name, foreground_color="red")
+                                            return
+
+                                while len(data) < 4:
+                                    data = "0" + data
+
+                                array.append(data)
+
+                            else:
+                                if int(data) > self.cycles_data[num_cycle].get_nb_frame() or int(data) < 1:
+                                    self.emit.emit("msg_console", type="msg_console",
+                                                   str="Frame number " + data + " invalid for the cycle " +
+                                                       self.cycles_data[num_cycle].name, foreground_color="red")
+                                    return
+
+                                array.append(int(data) - 1)
+
+                self.cycles = array
+
+        else:
+            self.cycles = None
+
+        """print(self.cycles_base)
+        print(self.samples)
+        print(self.f_s)
+        print(self.s_w)
+        print(self.cycles)"""
 
         self.finish_signal.emit("save")
 

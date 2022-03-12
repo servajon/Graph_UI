@@ -48,7 +48,9 @@ def open_ihch_1501(_dir_path):
 
                     cycles[-1].saxs[-1].scans[-1].frames.append(Ihch_1501_frame(file_path[-8:-4]))
                     file = open(file_path)
-                    cycles[-1].saxs[-1].scans[-1].frames[-1].data = read_frame(file)
+                    frame = read_frame(file)
+                    if frame is not None:
+                        cycles[-1].saxs[-1].scans[-1].frames[-1].data = frame
 
             for waxs_path in waxs_paths:
                 cycles[-1].waxs.append(Ihch_1501_sample_waxs(waxs_path.split("/")[-1]))
@@ -59,13 +61,20 @@ def open_ihch_1501(_dir_path):
                 current = file_paths[0][-13:-9]
                 cycles[-1].waxs[-1].scans.append(Ihch_1501_scan(current))
                 for file_path in file_paths:
-                    if file_path[-13:-9] != current:
-                        current = file_path[-13:-9]
-                        cycles[-1].waxs[-1].scans.append(Ihch_1501_scan(current))
-
-                    cycles[-1].waxs[-1].scans[-1].frames.append(Ihch_1501_frame(file_path[-8:-4]))
                     file = open(file_path)
-                    cycles[-1].waxs[-1].scans[-1].frames[-1].data = read_frame(file)
+                    frame = read_frame(file)
+                    if frame is not None:
+                        if file_path[-13:-9] != current:
+                            current = file_path[-13:-9]
+                            cycles[-1].waxs[-1].scans.append(Ihch_1501_scan(current))
+
+                        cycles[-1].waxs[-1].scans[-1].frames.append(Ihch_1501_frame(file_path[-8:-4]))
+                        cycles[-1].waxs[-1].scans[-1].frames[-1].data = frame
+                    """else:
+                        print(file_path)
+                        emit.emit("msg_console", type="msg_console", str=file_path + " invalid",
+                                  foreground_color="red")"""
+
     except TypeError:
         return len(dir_path)
     else:
@@ -77,22 +86,24 @@ def read_frame(file):
 
     data_data = file.readlines()
 
-    if "# time/s electroch:" not in data_data[0]:
+    if not "valid" in data_data[0] and not "invalid" in data_data[0]:
         print(file.name)
         print(data_data)
         raise TypeError
     else:
+        if "invalid" in data_data[0]:
+            return
 
-        data["time/s"] = float(data_data[0][19:-1])
-        if data_data[1][21:-1] == "not started":
+        data["time/s"] = float(data_data[1][19:-1])
+        if data_data[2][21:-1] == "not started":
             data["Ecell/V"] = None
         else:
-            data["Ecell/V"] = float(data_data[1][21:-1])
+            data["Ecell/V"] = float(data_data[2][21:-1])
 
-        if data_data[2][20:-1] == "not started":
+        if data_data[3][20:-1] == "not started":
             data["<I>/mA"] = None
         else:
-            data["<I>/mA"] = float(data_data[2][20:-1])
+            data["<I>/mA"] = float(data_data[3][20:-1])
 
     index = 3
 
@@ -227,6 +238,9 @@ def create_time(ec_lab_paths, root_folder):
         raise ValueError
     else:
         emit.emit("msg_console", type="msg_console", str="rewriting in progress", foreground_color="yellow")
+
+        fail = None
+
         for i, cycle_folder in enumerate(cycle_folders):
 
             ec_lab_file = ec_lab_files[i]
@@ -257,6 +271,29 @@ def create_time(ec_lab_paths, root_folder):
                     if 'measurement' in value:
                         if 'p3' in value["measurement"]:
                             try:
+                                srcur = np.array(value['instrument']['srcur']['data'])
+                                index = 0
+                                try:
+                                    while index < len(srcur) and int(srcur[index]) > 180:
+                                        index += 1
+
+                                    if index != len(srcur):
+                                        fail = srcur[index]
+                                        print(key)
+                                        print(fail)
+                                    else:
+                                        fail = None
+                                except TypeError:
+                                    if srcur < 180:
+                                        fail = srcur
+                                        print(key)
+                                        print(fail)
+                                    else:
+                                        fail = None
+                            except KeyError:
+                                print(key)
+
+                            try:
                                 list_time = []
 
                                 epoch = np.array(value['measurement/epoch'])
@@ -280,17 +317,22 @@ def create_time(ec_lab_paths, root_folder):
                                     lines = file.readlines()
                                     file.close()
 
-                                    lines.insert(0, "# time/s electroch: " + str(list_time[i]) + "\n")
+                                    if fail is None:
+                                        lines.insert(0, "# valid data\n")
+                                    else:
+                                        lines.insert(0, "# invalid data: beam " + str(fail) + "\n")
+
+                                    lines.insert(1, "# time/s electroch: " + str(list_time[i]) + "\n")
 
                                     if list_time[i] >= 0:
                                         index = get_index(ec_lab_file["time/s"], list_time[i])
-                                        lines.insert(1,
-                                                     "# Ecell/V electroch: " + str(ec_lab_file["Ecell/V"][index]) + "\n")
                                         lines.insert(2,
+                                                     "# Ecell/V electroch: " + str(ec_lab_file["Ecell/V"][index]) + "\n")
+                                        lines.insert(3,
                                                      "# <I>/mA electroch: " + str(ec_lab_file["<I>/mA"][index]) + "\n")
                                     else:
-                                        lines.insert(1, "# Ecell/V electroch: not started\n")
-                                        lines.insert(2, "# <I>/mA electroch: not started\n")
+                                        lines.insert(2, "# Ecell/V electroch: not started\n")
+                                        lines.insert(3, "# <I>/mA electroch: not started\n")
 
                                     file = open(outfile, "w")
                                     file.writelines(lines)
@@ -299,6 +341,31 @@ def create_time(ec_lab_paths, root_folder):
                             except Exception:
                                 pass
                         else:
+
+                            try:
+                                srcur = np.array(value['instrument']['srcur']['data'])
+                                index = 0
+                                try:
+                                    while index < len(srcur) and int(srcur[index]) > 180:
+                                        index += 1
+
+                                    if index != len(srcur):
+                                        fail = srcur[index]
+                                        print(key)
+                                        print(fail)
+                                    else:
+                                        fail = None
+                                except TypeError:
+                                    if srcur < 180:
+                                        fail = srcur
+                                        print(key)
+                                        print(fail)
+                                    else:
+                                        fail = None
+                            except KeyError:
+                                print(key)
+
+
                             try:
                                 list_time = []
 
@@ -328,17 +395,22 @@ def create_time(ec_lab_paths, root_folder):
                                         lines = file.readlines()
                                         file.close()
 
-                                        lines.insert(0, "# time/s electroch: " + str(list_time[i]) + "\n")
+                                        if fail is None:
+                                            lines.insert(0, "# valid data\n")
+                                        else:
+                                            lines.insert(0, "# invalid data: beam " + str(fail) + "\n")
+
+                                        lines.insert(1, "# time/s electroch: " + str(list_time[i]) + "\n")
 
                                         if list_time[i] >= 0:
                                             index = get_index(ec_lab_file["time/s"], list_time[i])
-                                            lines.insert(1, "# Ecell/V electroch: " + str(
+                                            lines.insert(2, "# Ecell/V electroch: " + str(
                                                 ec_lab_file["Ecell/V"][index]) + "\n")
-                                            lines.insert(2, "# <I>/mA electroch: " + str(
+                                            lines.insert(3, "# <I>/mA electroch: " + str(
                                                 ec_lab_file["<I>/mA"][index]) + "\n")
                                         else:
-                                            lines.insert(1, "# Ecell/V electroch: not started\n")
-                                            lines.insert(2, "# <I>/mA electroch: not started\n")
+                                            lines.insert(2, "# Ecell/V electroch: not started\n")
+                                            lines.insert(3, "# <I>/mA electroch: not started\n")
 
                                         file = open(outfile, "w")
                                         file.writelines(lines)

@@ -1,6 +1,6 @@
 import copy
+import math
 import sys
-import time
 
 import matplotlib
 
@@ -13,8 +13,7 @@ from PyQt5.QtWidgets import (
 
 import matplotlib.pyplot as pplot
 
-import Console_Objets.Figure
-from Console_Objets.Affiche_objet import Classique_affiche, Edit_affiche, Pic_selection
+from Console_Objets.Affiche_objet import Classique_affiche, Edit_affiche, Pic_selection, Gitt_affiche, Impedance_affiche
 from Console_Objets.Console import Console
 from Console_Objets.Data_Unit import Data_unit, Units
 from Console_Objets.Data_array import Data_array
@@ -24,6 +23,8 @@ from Data_type.CCCV_data import CCCV_data
 from Data_type.Diffraction_data import Diffraction_data
 from Data_type.Gitt_data import Gitt_data
 from Data_type.Ihch_1501 import Ihch_1501
+from Data_type.Impedance_data import Impedance_data
+from Data_type.Traitement_cycle import Traitements_cycle_outils
 from Math.Fitting import Fitting
 from Resources_file import Resources
 from Resources_file.Emit import Emit
@@ -34,17 +35,18 @@ from UI_interface.Create_figure_ihch_1501 import Create_figure_ihch_1501
 from UI_interface.Create_gitt import Create_gitt
 from UI_interface.Cycle_selection_creation import Cycle_selection_creation
 from UI_interface.Derive_Selection_QT import Derive_Selection
+from UI_interface.Edit_data import Edit_data
 from UI_interface.Edit_plot_contour import Edit_plot_contour
 from UI_interface.Figure_plot_QT import Figure_plot
 from UI_interface.Main_window_QT import Ui_MainWindow
 from UI_interface.Edit_view_data_QT import Edit_view_data
 from UI_interface.Cycle_Selection_QT import Cycle_Selection
 from UI_interface.Edit_plot_QT import Edit_plot
+from UI_interface.Selection_combo import Selection_combo
 
 """----------------------------------------------------------------------------------"""
 """                                   Main window                                    """
 """----------------------------------------------------------------------------------"""
-
 
 
 class Window(QMainWindow, Ui_MainWindow):
@@ -111,12 +113,13 @@ class Window(QMainWindow, Ui_MainWindow):
         self.actiongitt.triggered.connect(self.open_gitt)
         self.actiondiffracion.triggered.connect(self.open_diffraction)
         self.actionIhch_1501.triggered.connect(self.open_ihch_1501)
+        self.actionimpedance.triggered.connect(self.open_impedance)
 
         self.actionEdit_Current_Plot.triggered.connect(self.edit_current_plot)
         self.actionview_data_Current_Plot.triggered.connect(self.view_data_Current_Plot)
         self.actionDelete_Current_Plot.triggered.connect(self.delet_current_plot)
         self.export_actionPlot.triggered.connect(self.export_plot)
-
+        self.actionEdit_data.triggered.connect(self.edit_data)
 
         self.pushButton_5.clicked.connect(self.create_current_data)
         self.pushButton_4.clicked.connect(self.create_figure)
@@ -155,7 +158,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         if dialog.exec_() == QDialog.Accepted:
             filename = dialog.selectedFiles()[0]
-            filename = r"C:\Users\Maxime\Desktop\fichier_test\test.txt"
+            # filename = r"C:\Users\Maxime\Desktop\fichier_test\test.txt"
 
             # création d'un nouveau thread
             t = QThread()
@@ -192,8 +195,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.figure_plot = Figure_plot(obj, self)
         self.figure_plot.show()"""
         print(self.threads)
-        print(self.console.current_data.figures)
-        self.treeWidget.info()
+        self.console.current_data.get_info_data()
 
     """---------------------------------------------------------------------------------"""
 
@@ -206,7 +208,7 @@ class Window(QMainWindow, Ui_MainWindow):
         """
         files = []
 
-        dialog = QFileDialog()
+        dialog = QFileDialog(self)
         # si il y a une sauvegarde d'état elle est utilisée
         if self.save_state_dialog is not None:
             dialog.restoreState(self.save_state_dialog)
@@ -221,9 +223,11 @@ class Window(QMainWindow, Ui_MainWindow):
         else:
             return
 
-
         # on sauvegarde l'état de la fenêtre d'ouverture de fichiers
         self.save_state_dialog = dialog.saveState()
+        # dialog.destroy()
+
+        # dialog = QFileDialog()
 
         # si il y a une sauvegarde d'état elle est utilisée
         if self.save_state_dialog is not None:
@@ -239,9 +243,11 @@ class Window(QMainWindow, Ui_MainWindow):
         else:
             return
 
-
         # on sauvegarde l'état de la fenêtre d'ouverture de fichiers
         self.save_state_dialog = dialog.saveState()
+        # dialog.destroy()
+
+        # dialog = QFileDialog()
 
         # si il y a une sauvegarde d'état elle est utilisée
         if self.save_state_dialog is not None:
@@ -378,11 +384,13 @@ class Window(QMainWindow, Ui_MainWindow):
         # on sauvegarde l'état de la fenêtre d'ouverture de fichiers
         self.save_state_dialog = dialog.saveState()
 
+    """---------------------------------------------------------------------------------"""
+
     def fin_lecteur_ihch_time(self, event):
         """
         callback de la fonction open_ihch_time
 
-        :param event: 0 : ok, -1: fail, -2: fail time creation, -3: fail avec création du temps fait
+        :param event: 0 : ok, -1: fail, -2: fail time creation, -3: fail avec création du temps
         :return: None
         """
         index = 0
@@ -451,6 +459,50 @@ class Window(QMainWindow, Ui_MainWindow):
             else:
                 index += 1
 
+    """---------------------------------------------------------------------------------"""
+
+    def open_impedance(self):
+        """
+        Gestion de l'ouverture d'une expérience d'impedance
+        Un thread est créée pour faire la lecture du fichier
+
+        :return: None
+        """
+
+        # création de l'objet QFileDialog
+        dialog = QFileDialog()
+
+        # si il y a une sauvegarde d'état elle est utilisée
+        if self.save_state_dialog is not None:
+            dialog.restoreState(self.save_state_dialog)
+
+        dialog.setWindowTitle('Open impedance File')
+        dialog.setNameFilter('EC_lab file (*.mpt *.txt)')
+        dialog.setFileMode(QFileDialog.ExistingFile)
+
+        if dialog.exec_() == QDialog.Accepted:
+            filename = dialog.selectedFiles()[0]
+            filename = r"C:\Users\Maxime\Desktop\fichier_test\adrien_impedance.mpt"
+
+            # création d'un nouveau thread
+            t = QThread()
+
+            # création du worker
+            worker = Threads_UI.Open_file_impedance(filename)
+            worker.moveToThread(t)
+
+            # connection
+            t.started.connect(worker.run)
+            worker.finished.connect(self.fin_thread_lecture)
+
+            self.threads.append([t, worker])
+            t.start()
+
+            # on sauvegarde l'état de la fenêtre d'ouverture de fichiers
+            self.save_state_dialog = dialog.saveState()
+
+    """---------------------------------------------------------------------------------"""
+
     def create_current_data(self):
         """
         Methode appellé par le button create de current data (new plot)
@@ -471,7 +523,6 @@ class Window(QMainWindow, Ui_MainWindow):
 
             # capa
             if self.comboBox_5.currentText() == "capa":
-
                 if self.console.current_data.data["mass_electrode"] == -1:
                     self.argument_selection_creation_w = Ask_Value(self, "float", "Invalide mass Electode",
                                                                    "New Mass (mg) : ")
@@ -511,7 +562,7 @@ class Window(QMainWindow, Ui_MainWindow):
                                            self.argument_selection_creation_w.listWidget_3.sizeHintForRow(index),
                                            self.argument_selection_creation_w.listWidget_4.sizeHintForRow(index))
                             index += 1
-                self.argument_selection_creation_w.resize(max_size * 10 +100, 400)
+                self.argument_selection_creation_w.resize(max_size * 10 + 100, 400)
                 self.argument_selection_creation_w.show()
 
             elif self.comboBox_5.currentText() == "Diffraction":
@@ -521,19 +572,10 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.callback_create_current_data("save", "Contour")
 
             elif self.comboBox_5.currentText() == "Ihch 1501 plot":
+
                 # on est sur un ihch 1501, donc pas de data ici, mais cycles
-                kwargs = {}
-                for i in range(len(self.console.current_data.cycles)):
-                    nb_scan_saxs = self.console.current_data.cycles[i].get_nb_scan_saxs()
-                    nb_scan_waxs = self.console.current_data.cycles[i].get_nb_scan_waxs()
+                self.argument_selection_creation_w = Create_figure_ihch_1501(self, self.console.current_data.cycles)
 
-                    nb_frame_saxs = self.console.current_data.cycles[i].get_nb_frame()
-                    nb_frame_waxs = self.console.current_data.cycles[i].get_nb_frame()
-
-                    kwargs["cycle" + str(i)] = {"saxs_frame": nb_frame_saxs, "waxs_frame": nb_frame_waxs,
-                                                "saxs_scan": nb_scan_saxs, "waxs_scan": nb_scan_waxs}
-
-                self.argument_selection_creation_w = Create_figure_ihch_1501(self, kwargs)
                 self.argument_selection_creation_w.finish_signal.connect(
                     lambda signal: self.callback_create_current_data(signal, "Ihch 1501 plot"))
                 self.argument_selection_creation_w.show()
@@ -541,8 +583,31 @@ class Window(QMainWindow, Ui_MainWindow):
             elif self.comboBox_5.currentText() == "Create gitt":
                 self.argument_selection_creation_w = Create_gitt(self)
                 self.argument_selection_creation_w.finish_signal.connect(
-                    lambda signal: self.callback_create_current_data(signal, "Create_gitt"))
+                    lambda signal: self.callback_create_current_data(signal, "Create gitt"))
                 self.argument_selection_creation_w.show()
+
+            elif self.comboBox_5.currentText() == "Impedance":
+                self.callback_create_current_data("save", "Impedance")
+
+            elif self.comboBox_5.currentText() == "Resistance":
+                self.argument_selection_creation_w = Ask_Value(self, "int", "Cycle selection",
+                                                               "Cycle : ")
+                self.argument_selection_creation_w.finish_signal.connect(
+                    lambda signal: self.callback_create_current_data(signal, "Resistance"))
+
+                self.argument_selection_creation_w.show()
+
+            elif self.comboBox_5.currentText() == "Bode":
+                self.callback_create_current_data("save", "Bode")
+
+            elif self.comboBox_5.currentText() == "3d":
+                self.argument_selection_creation_w = Selection_combo(self, "Value used for the z-axis?", ["time", "potentiel"])
+
+                self.argument_selection_creation_w.finish_signal.connect(
+                    lambda signal: self.callback_create_current_data(signal, "3d"))
+
+                self.argument_selection_creation_w.show()
+
 
     """---------------------------------------------------------------------------------"""
 
@@ -647,7 +712,7 @@ class Window(QMainWindow, Ui_MainWindow):
                     res = y1_items[i].split("\t")
                     data_unit = self.console.create_data_unit(res[0], res[1])
                     data_array_y1 = Data_array(data_unit, res[1], res[0], res[1])
-                    data_array_y1.global_index = [index for index in range(len(data_unit.data))]
+                    # data_array_y1.global_index = [index for index in range(len(data_unit.data))]
 
                     figure.add_data_y1_Data(data_array_y1)
 
@@ -656,7 +721,7 @@ class Window(QMainWindow, Ui_MainWindow):
                     res = y2_items[i].split("\t")
                     data_unit = self.console.create_data_unit(res[0], res[1])
                     data_array_y2 = Data_array(data_unit, res[1], res[0], res[1])
-                    data_array_y2.global_index = [index for index in range(len(data_unit.data))]
+                    # data_array_y2.global_index = [index for index in range(len(data_unit.data))]
 
                     figure.add_data_y2_Data(data_array_y2)
 
@@ -706,6 +771,7 @@ class Window(QMainWindow, Ui_MainWindow):
             elif name == "Ihch 1501 plot":
                 cycles_base = self.argument_selection_creation_w.cycles_base
                 cycles = self.argument_selection_creation_w.cycles
+                samples = self.argument_selection_creation_w.samples
                 s_w = self.argument_selection_creation_w.s_w
                 f_s = self.argument_selection_creation_w.f_s
 
@@ -713,7 +779,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.argument_selection_creation_w.deleteLater()
                 self.argument_selection_creation_w = None
 
-                figures = self.console.current_data.create_figure_cycle(s_w, f_s, cycles_base, cycles)
+                figures = self.console.current_data.create_figure_cycle(s_w, f_s, cycles_base, cycles, samples)
 
                 # on parcours le vecteur, update tree widget ave le nom des figure créées
                 # on ajoute les figure a current_data
@@ -723,43 +789,159 @@ class Window(QMainWindow, Ui_MainWindow):
 
                 self.console.current_data.current_figure = self.console.current_data.figures[-1]
 
-            elif name == "Create_gitt":
-                print("ok")
-                surface = self.argument_selection_creation_w.surface
-                vm = self.argument_selection_creation_w.vm
-                constante_d_n = self.argument_selection_creation_w.delta_nb
+            elif name == "Create gitt":
+                # un peu différent du reste, si une création des bornes avec des graph est requis
+                # on va passer par une autre function pour faire cela
+                kwarks_create_borne = {"surface": self.argument_selection_creation_w.surface,
+                                       "vm": self.argument_selection_creation_w.vm}
 
                 if self.argument_selection_creation_w.radioButton_2.isChecked():
-                    constante_d_n = constante_d_n / len(self.console.current_data.pulse["loop_data"])
-
-                print(self.argument_selection_creation_w.input)
+                    kwarks_create_borne["constante_d_n"] = self.argument_selection_creation_w.delta_nb / \
+                                                           len(self.console.current_data.pulse["loop_data"])
+                else:
+                    kwarks_create_borne["constante_d_n"] = self.argument_selection_creation_w.delta_nb
 
                 if self.argument_selection_creation_w.input is not None:
                     if self.argument_selection_creation_w.input[0] > self.argument_selection_creation_w.input[1]:
-                        b1 = [self.argument_selection_creation_w.input[0] for i in
+                        b1 = [(self.argument_selection_creation_w.input[1] ** 2) / 3600 for i in
                               range(len(self.console.current_data.pulse["loop_data"]))]
-                        b2 = [self.argument_selection_creation_w.input[1] for i in
+                        b2 = [(self.argument_selection_creation_w.input[0] ** 2) / 3600 for i in
                               range(len(self.console.current_data.pulse["loop_data"]))]
                     else:
-                        b1 = [self.argument_selection_creation_w.input[1] for i in
+                        b1 = [(self.argument_selection_creation_w.input[0] ** 2) / 3600 for i in
                               range(len(self.console.current_data.pulse["loop_data"]))]
-                        b2 = [self.argument_selection_creation_w.input[0] for i in
+                        b2 = [(self.argument_selection_creation_w.input[1] ** 2) / 3600 for i in
                               range(len(self.console.current_data.pulse["loop_data"]))]
+                    kwarks_create_borne["b1"] = b1
+                    kwarks_create_borne["b2"] = b2
+
+                    kwarks_create_borne["figures"] = []
+
                 else:
-                    for i in range(len(self.console.current_data.pulse["loop_data"])):
-                        pass
+                    kwarks_create_borne["b1"] = []
+                    kwarks_create_borne["b2"] = []
+
+                    figures = []
+
+                    loop_pulse = self.console.current_data.pulse.get("loop_data")
+
+                    for i in range(len(loop_pulse)):
+                        figure_temp = Figure("", 1)
+
+                        array_x = []
+                        array_y = []
+                        start = self.console.current_data.pulse.get("time/h")[loop_pulse[i][0]]
+                        for j in range(loop_pulse[i][0], loop_pulse[i][1]):
+                            array_x.append(math.sqrt(self.console.current_data.pulse.get("time/h")[j] - start) * 60)
+                            array_y.append(self.console.current_data.pulse.get("Ecell/V")[j])
+
+                        figure_temp.name = "loop " + str(i + 1)
+                        data_unit_x = Data_unit(array_x, None)
+                        data_unit_y = Data_unit(array_y, None)
+
+                        figure_temp.add_data_x_Data(Data_array(data_unit_x, "", "", None))
+                        figure_temp.add_data_y1_Data(Data_array(data_unit_y, "", "", "loop " + str(i + 1)))
+
+                        figures.append(figure_temp)
+                    kwarks_create_borne["figures"] = figures
 
                 # on a récupérer les info, on délect la fenêtre
                 self.argument_selection_creation_w.deleteLater()
                 self.argument_selection_creation_w = None
 
-                figures = self.console.current_data.create_GITT(surface, vm, constante_d_n, b1, b2)
+                self.create_gitt(kwarks_create_borne)
 
-                for figure in reversed(figures):
+                # la création des figure se fera dans la fonction create_gitt
+                return
+
+            elif name == "Impedance":
+                figures = self.console.current_data.create_impedance()
+
+                # on update le tree widget
+                # on ajoute la figure a current_data
+                for figure in figures:
                     self.treeWidget.add_figure(figure, self.console.current_data.name)
                     self.console.current_data.figures.append(figure)
 
-                self.console.current_data.current_figure = self.console.current_data.figures[-1]
+                # on passe la figure en figure courante
+                self.console.current_data.current_figure = figures[0]
+
+            elif name == "Resistance":
+                # on récupére le cycle selectionné
+                cycle_number = self.argument_selection_creation_w.value
+
+                # on delete la fenêtre
+                self.argument_selection_creation_w.deleteLater()
+                self.argument_selection_creation_w = None
+
+                if cycle_number <= 0 or cycle_number >= len(self.console.current_data.data["loop_data"]):
+                    self.update_console({"str": "Cycle selection invalid", "foreground_color": "red"})
+                    return
+
+                figure_temp = Figure("Frequencies selection", 1)
+                figure_temp.plot_name = "Frequencies selection\ndouble left click to have the selector\n" \
+                                        "double right click to select a point\n'r' to reset and 's' or close to save"
+                figure_temp.type = "impedance"
+                start = self.console.current_data.data.get("loop_data")[cycle_number - 1][0]
+                end = self.console.current_data.data.get("loop_data")[cycle_number - 1][1]
+
+                res = Traitements_cycle_outils.mode_del(self.console.current_data.data.get("Re(Z)/Ohm")[start:end],
+                                                        self.console.current_data.data.get("-Im(Z)/Ohm")[start:end],
+                                                        None, start, end, self.console.current_data.data.get("mode"), 3)
+
+                units = Units()
+                unit_x = units.get_unit("Re(Z)/Ohm")
+                unit_y = units.get_unit("-Im(Z)/Ohm")
+
+                for j in range(len(res[0])):
+                    if j > 10 and res[0][j] * 1.5 < res[1][j]:
+                        data_unit_x = Data_unit(res[0][0:j], unit_x)
+                        data_unit_y = Data_unit(res[1][0:j], unit_y)
+
+                        figure_temp.add_data_x_Data(Data_array(data_unit_x, "Re(Z)/Ohm",
+                                                               self.console.current_data.name, "cycle " +
+                                                               str(cycle_number)))
+                        figure_temp.add_data_y1_Data(Data_array(data_unit_y, "-Im(Z)/Ohm",
+                                                                self.console.current_data.name, "cycle " +
+                                                                str(cycle_number)))
+                        figure_temp.aspect = "equal"
+                        break
+
+                self.create_impedance_res(figure_temp)
+
+                # la création des figure se fera dans la fonction create_impedance_res
+                return
+
+            elif name == "Bode":
+                figure = self.console.current_data.impedance_bode()
+
+                # on update le tree widget
+                # on ajoute la figure a current_data
+                self.treeWidget.add_figure(figure, self.console.current_data.name)
+                self.console.current_data.figures.append(figure)
+
+                # on passe la figure en figure courante
+                self.console.current_data.current_figure = figure
+
+            elif name == "3d":
+                if self.argument_selection_creation_w.comboBox.currentText() == "time":
+                    arg = "time/h"
+                else:
+                    arg = "Ecell/V"
+
+                # on delete la fenêtre
+                self.argument_selection_creation_w.deleteLater()
+                self.argument_selection_creation_w = None
+
+                figure = self.console.current_data.create_impedance_3d(arg)
+
+                # on update le tree widget
+                # on ajoute la figure a current_data
+                self.treeWidget.add_figure(figure, self.console.current_data.name)
+                self.console.current_data.figures.append(figure)
+
+                # on passe la figure en figure courante
+                self.console.current_data.current_figure = figure
 
 
             _translate = QtCore.QCoreApplication.translate
@@ -772,6 +954,121 @@ class Window(QMainWindow, Ui_MainWindow):
             self.update_action_combo()
 
     """---------------------------------------------------------------------------------"""
+
+    def create_gitt(self, _dict, signal=None):
+        """
+        On utilise cette methode pour créer une boucle, si call est True c'est que l'on vient
+        de faire un loop, le traitement sera différent
+
+        :param _dict: dict d'arguement qui évolura dans le cas ou une selection des bornes
+        avec un graph sera effectué
+        :param signal: None si cette function n'est pas issus d'un callback, signal du callback sinon
+        :return: None
+        """
+
+        if signal is not None:
+            b1 = (self.argument_selection_creation_w.abstract_affiche.coords[0][0] ** 2) / 3600
+            b2 = (self.argument_selection_creation_w.abstract_affiche.coords[1][0] ** 2) / 3600
+            if b1 is None or b2 is None:
+                self.emit.emit("msg_console", type="msg_console", str="Mark 1 or 2 missing",
+                               foreground_color="red")
+                return
+            if b1 == b2:
+                self.emit.emit("msg_console", type="msg_console", str="Mark 1 and 2 should be different",
+                               foreground_color="red")
+                return
+
+            if b1 > b2:
+                _dict["b1"].append(b2)
+                _dict["b2"].append(b1)
+            else:
+                _dict["b1"].append(b1)
+                _dict["b2"].append(b2)
+
+            _dict["figures"].pop(0)
+            pplot.close(self.argument_selection_creation_w.abstract_affiche.pplot_fig)
+            pass
+
+        if len(_dict["figures"]) == 0:
+            try:
+                figures = self.console.current_data.create_GITT(_dict["surface"], _dict["vm"], _dict["constante_d_n"],
+                                                                _dict["b1"], _dict["b2"])
+            except ValueError:
+                return
+
+            for figure in figures:
+                self.treeWidget.add_figure(figure, self.console.current_data.name)
+                self.console.current_data.figures.append(figure)
+
+            self.console.current_data.current_figure = self.console.current_data.figures[-1]
+
+            _translate = QtCore.QCoreApplication.translate
+            self.label_5.setText(
+                _translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                         "Current plot : "
+                           + self.console.current_data.current_figure.name + " </span></p></body></html>"))
+
+            # on update les actions disponibles pour cette figure
+            self.update_action_combo()
+
+        else:
+            # on créer un obj Edit_affiche, fille de Abstract_objet_affiche servant à l'édition de points
+            edit_affiche = Gitt_affiche(self.console.current_data, _dict["figures"][0])
+
+            # on garde une ref de l'objet créée
+            self.argument_selection_creation_w = Figure_plot(edit_affiche, self)
+
+            # on connect de callback, on utilise lambda pour passer signal comme arg suplémentaire
+            self.argument_selection_creation_w.closed.connect(lambda event: self.create_gitt(_dict, event))
+
+            # on passe le plot d'édition en modal
+            self.argument_selection_creation_w.setWindowModality(QtCore.Qt.ApplicationModal)
+
+            # on affiche le widget
+            self.argument_selection_creation_w.show()
+
+    def create_impedance_res(self, figure, signal=None):
+        """
+        même principe que pour create_gitt, si signal est pas None c'est que c'est un callback
+
+        :param figure: Figure dont on se sert pour la selection des pics
+        :param signal: None si cette function n'est pas issus d'un callback, signal du callback sinon
+        :return: None
+        """
+        if signal is not None:
+            res = self.argument_selection_creation_w.abstract_affiche.val_freq
+            figures = self.console.current_data.impedance_res(res)
+
+            for figure in figures:
+                self.treeWidget.add_figure(figure, self.console.current_data.name)
+                self.console.current_data.figures.append(figure)
+
+            self.console.current_data.current_figure = figures[0]
+
+            _translate = QtCore.QCoreApplication.translate
+            self.label_5.setText(
+                _translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                         "Current plot : "
+                           + self.console.current_data.current_figure.name + " </span></p></body></html>"))
+
+            # on update les actions disponibles pour cette figure
+            self.update_action_combo()
+
+        else:
+            # on créer un obj Edit_affiche, fille de Abstract_objet_affiche servant à l'édition de points
+            edit_affiche = Impedance_affiche(self.console.current_data, figure)
+
+            # on garde une ref de l'objet créée
+            self.argument_selection_creation_w = Figure_plot(edit_affiche, self)
+
+            # on connect de callback, on utilise lambda pour passer signal comme arg suplémentaire
+            self.argument_selection_creation_w.closed.connect(lambda event: self.create_impedance_res(None, event))
+
+            # on passe le plot d'édition en modal
+            self.argument_selection_creation_w.setWindowModality(QtCore.Qt.ApplicationModal)
+
+            # on affiche le widget
+            self.argument_selection_creation_w.show()
 
     def create_figure(self):
         """
@@ -805,13 +1102,17 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.argument_selection_creation_w.finish_signal.connect(
                     lambda event: self.create_figure_callback(event, "shift y"))
             elif self.comboBox_4.currentText() == "cycle":
-                self.argument_selection_creation_w = Cycle_selection_creation\
+                self.argument_selection_creation_w = Cycle_selection_creation \
                     (self.console.current_data.get_cycle_available(), self)
 
                 self.argument_selection_creation_w.finish_signal.connect(
                     lambda event: self.create_figure_callback(event, "cycle"))
             elif self.comboBox_4.currentText() == "fit":
                 self.create_figure_callback("save", "fit")
+            elif self.comboBox_4.currentText() == "export gitt":
+                self.create_figure_callback("save", "export gitt")
+            elif self.comboBox_4.currentText() == "export resistances":
+                self.create_figure_callback("save", "export resistances")
 
             # il n'y a pas toujours de fenêtre de selection de paramètre, on check si elle est None ou pas
             if self.argument_selection_creation_w is not None:
@@ -833,8 +1134,8 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.argument_selection_creation_w = None
 
                 figure_res = self.console.current_data.derive(nb_point,
-                                                 window_length,
-                                                 polyorder)
+                                                              window_length,
+                                                              polyorder)
 
                 # on update le tree widget
                 # on ajoute la figure a current_data
@@ -892,7 +1193,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 dict = self.console.create_dictioanaries_loop()
 
                 try:
-                    figure_res = self.console.current_data.create_figure_cycle\
+                    figure_res = self.console.current_data.create_figure_cycle \
                         (dict=dict, type=cycle_type, cycles=cycles)
                 except ValueError:
                     return
@@ -900,7 +1201,6 @@ class Window(QMainWindow, Ui_MainWindow):
                 # si plusieurs figure ont été crée
                 if isinstance(figure_res, list):
                     for figure in figure_res:
-                        print(figure.name)
                         # on update le tree widget
                         # on ajoute la figure a current_data
                         self.treeWidget.add_figure(figure, self.console.current_data.name)
@@ -968,6 +1268,34 @@ class Window(QMainWindow, Ui_MainWindow):
 
                 self.console.current_data.pulse["Is"] = value
 
+            elif name == "export gitt":
+                if not self.console.current_data.export_gitt_array:
+                    self.update_console({"str": "No data to be exported", "foreground_color": "red"})
+                    return
+
+                dialog = QFileDialog.getSaveFileName(filter="Text files (*.txt)")
+
+                if dialog[0] != "":
+                    self.console.current_data.export_gitt(dialog[0])
+                    self.update_console({"str": "Done", "foreground_color": "green"})
+                    return
+                else:
+                    return
+
+            elif name == "export resistances":
+                if not self.console.current_data.export_resistance_array:
+                    self.update_console({"str": "No data to be exported", "foreground_color": "red"})
+                    return
+
+                dialog = QFileDialog.getSaveFileName(filter="Text files (*.txt)")
+
+                if dialog[0] != "":
+                    self.console.current_data.export_impedance_res(dialog[0])
+                    self.update_console({"str": "Done", "foreground_color": "green"})
+                    return
+                else:
+                    return
+
     """---------------------------------------------------------------------------------"""
 
     def tree_click(self):
@@ -988,8 +1316,8 @@ class Window(QMainWindow, Ui_MainWindow):
 
         :return: None
         """
-        _translate = QtCore.QCoreApplication.translate
 
+        _translate = QtCore.QCoreApplication.translate
         if self.treeWidget.currentItem().text(1) == "figure":
             # on update current_data de la console on fonction du parent de l'item sélectionné
             temp_item = self.treeWidget.selectedItems()[0]
@@ -1010,7 +1338,7 @@ class Window(QMainWindow, Ui_MainWindow):
                     for i in range(self.tabWidget.count()):
 
                         # si elle est ouverte dans une tab
-                        if self.tabWidget.tabText(i) == figure.name:
+                        if self.tabWidget.tabText(i) == figure.name and self.tabWidget.widget(i).abstract_affiche.data.name == self.console.current_data.name:
 
                             # on récupére le current index de tab pour regarder si il sera effectivemeent modifié
                             # si oui l'update de current_figure et des label se fera dans le changement de tab
@@ -1040,8 +1368,6 @@ class Window(QMainWindow, Ui_MainWindow):
                                 # update de current tab
                                 self.tabWidget.setCurrentIndex(i)
 
-                            # on passe les fenêtre plot en lower
-                            self.lower_plot_w()
                             return
 
                     # check si la figure est ouverte en fenêtre
@@ -1059,6 +1385,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
                     new_tab.setObjectName(figure.name)
                     new_tab.name_changed.connect(self.name_changed_plot)
+                    new_tab.focus_in.connect(self.focus_in_w_plot)
 
                     # on ajoute la tab
                     self.tabWidget.addTab(new_tab, figure.name)
@@ -1317,6 +1644,51 @@ class Window(QMainWindow, Ui_MainWindow):
                             lambda event: self.create_figure_callback(event, "complete_gitt"))
                 break
 
+            if type(self.threads[index][1]).__name__ == "Open_file_impedance" and self.threads[index][1].finish:
+                if event == -1:
+                    # on termine le thread
+                    self.threads[index][0].terminate()
+
+                    # on le suprime de la liste
+                    del self.threads[index]
+
+                    self.fichier_invalide_error()
+                elif event == 1:
+                    # on créer un objet data impedance
+                    obj_data = Impedance_data()
+
+                    # on lui ajoute les data lu par le thread
+                    obj_data.data = self.threads[index][1].data
+
+                    # créer son nom
+                    obj_data.name = obj_data.data["name"]
+
+                    # on ajoute l'objet data à la console
+                    self.console.add_data(obj_data)
+
+                    # on update le tree widget
+                    self.treeWidget.add_data("impedance", obj_data.name)
+
+                    # on update current data avec ne nom du nouveau fichier
+                    _translate = QtCore.QCoreApplication.translate
+                    self.label.setText(
+                        _translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                                 "Current data : "
+                                   + obj_data.name + " </span></p></body></html>"))
+
+                    self.update_console({"str": "Done", "foreground_color": "green"})
+
+                    # on récupére les actions disponibles pour ce type de fichier pour update
+                    # current data comboBox_5
+                    self.update_new_plot_combo()
+
+                    # on termine le thread
+                    self.threads[index][0].terminate()
+
+                    # on le suprime de la liste
+                    del self.threads[index]
+                break
+
         else:
             index += 1
 
@@ -1339,7 +1711,6 @@ class Window(QMainWindow, Ui_MainWindow):
         # on cherche la figure portant l'ancien nom
         for figure in self.console.current_data.figures:
             if figure.name == old_name:
-
                 # le nouveau nom est celui de la tab
                 self.tabWidget.setTabText(self.tabWidget.currentIndex(), new_name)
 
@@ -1471,6 +1842,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
                 # connection de la nouvelle tab
                 new_tab.name_changed.connect(self.name_changed_plot)
+                new_tab.focus_in.connect(self.focus_in_w_plot)
 
                 # on ajoute cette nouvelle tab au widget
                 self.tabWidget.addTab(new_tab, signal)
@@ -1495,6 +1867,10 @@ class Window(QMainWindow, Ui_MainWindow):
         :param signal: nom de la fenêtre qui vient d'être passée en focus
         :return: None
         """
+
+        if signal == self.console.current_data.current_figure.name:
+            return
+
         _translate = QtCore.QCoreApplication.translate
         # update du label affichant la figure courrante
         self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
@@ -1507,11 +1883,10 @@ class Window(QMainWindow, Ui_MainWindow):
         # on update les actions disponibles pour cette figure
         self.update_action_combo()
 
+        item = self.treeWidget.get_item(self.console.current_data.name, signal)
+
         # update du focus du tree widget
-        for i in range(self.treeWidget.topLevelItem(0).childCount()):
-            if self.treeWidget.topLevelItem(0).child(i).text(0) == signal:
-                self.treeWidget.setCurrentItem(self.treeWidget.topLevelItem(0).child(i))
-                break
+        self.treeWidget.setCurrentItem(item)
 
     """---------------------------------------------------------------------------------"""
 
@@ -1535,7 +1910,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.console.current_data.current_figure.name = new_name
 
         # update du nom du tree widget associé
-        item = self.treeWidget.get_item(old_name)
+        item = self.treeWidget.get_item(self.console.current_data.name, old_name)
         item.setText(0, new_name)
 
         # on update le label current plot
@@ -1543,17 +1918,6 @@ class Window(QMainWindow, Ui_MainWindow):
         self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
                                                       "Current plot : "
                                         + new_name + " </span></p></body></html>"))
-
-    """---------------------------------------------------------------------------------"""
-
-    def lower_plot_w(self):
-        """
-        Passe toutes les fenêtre plot en arrière plan
-
-        :return: None
-        """
-        for figure in self.figure_w:
-            figure.on_back()
 
     """---------------------------------------------------------------------------------"""
 
@@ -1609,12 +1973,13 @@ class Window(QMainWindow, Ui_MainWindow):
         if new_name == "":
             return
 
-        parent = self.treeWidget.get_top_item(new_name)
+
+        parent = self.treeWidget.get_top_item(self.console.current_data.name, new_name)
 
         # on reset la selection du treewidget
         self.treeWidget.clearSelection()
         # on récupére l'item
-        item = self.treeWidget.get_item(new_name)
+        item = self.treeWidget.get_item(self.console.current_data.name, new_name)
         # on set le focus sur lui
         item.setSelected(True)
 
@@ -1640,58 +2005,6 @@ class Window(QMainWindow, Ui_MainWindow):
 
         # on update les actions disponibles pour cette figure
         self.update_action_combo()
-
-    """---------------------------------------------------------------------------------"""
-
-    def focusInEvent(self, signal):
-        """
-        Si la fenêtre princial repasse en focus, on update les informations
-        pour quelles soit cohérente
-
-        Si aucune tab n'est présente lors du focus aucune erreur est déclenchée, le nom
-        sera juste ""
-
-        :param signal: inutile ici
-        :return: None
-        """
-
-        # si current figure n'est pas pas setup on return
-        # pour ne pas déclancher des erreurs à la création de la fenêtre
-        # si current_index == -1 c'est qu'il n'y a plus de tab parce qu'elle a été détachée
-        # on update pas les lable et la console dans ce cas
-        if self.console.current_data is None or self.console.current_data.current_figure is None or \
-                self.tabWidget.currentIndex() == -1:
-            return
-
-
-
-        # le nom de la figure courrante est donc celui de la tab courrante
-        new_name = self.tabWidget.tabText(self.tabWidget.currentIndex())
-
-        # si le nom est le même que celui de la figure courante, il est inutile d'update quoi que ce soit
-        # rien n'a été modifié, c'est jsute un clique sur l'interface
-        if new_name == self.console.current_data.current_figure.name:
-            return
-
-        _translate = QtCore.QCoreApplication.translate
-
-        # on update le label current plot
-        self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
-                                                      "Current plot : "
-                                        + new_name +
-                                        " </span></p></body></html>"))
-
-        # on update la figure courrante de la console
-        self.console.current_data.set_current_figure_name(new_name)
-
-        # on update les actions disponibles pour cette figure
-        self.update_action_combo()
-
-        # on update l'item focus par tree widget
-        for i in range(self.treeWidget.topLevelItem(0).childCount()):
-            if self.treeWidget.topLevelItem(0).child(i).text(0) == new_name:
-                self.treeWidget.setCurrentItem(self.treeWidget.topLevelItem(0).child(i))
-                break
 
     """---------------------------------------------------------------------------------"""
 
@@ -1849,7 +2162,6 @@ class Window(QMainWindow, Ui_MainWindow):
                 if figure.created_from is not None and figure.created_from.name == self.console.current_data.current_figure.name:
                     figure.created_from = None
 
-
             for i in range(len(self.console.current_data.figures)):
                 if self.console.current_data.figures[i].name == self.console.current_data.current_figure.name:
                     self.console.current_data.figures.pop(i)
@@ -1864,7 +2176,7 @@ class Window(QMainWindow, Ui_MainWindow):
         si la figure n'a pas pu être tracé, ce plot est delete
         :return: None
         """
-        self.update_console({"str": "Done", obj.figure.name + " is invalide": "red"})
+        self.update_console({"str": obj.figure.name + " is invalide", "foreground_color": "red"})
 
         self.treeWidget.delete_figure(obj.figure.name, self.console.current_data.name)
 
@@ -1882,6 +2194,8 @@ class Window(QMainWindow, Ui_MainWindow):
         elif self.console.current_data.current_figure is None:
             self.current_figure_None()
             return
+        elif not self.console.current_data.current_figure.can_export():
+            self.update_console({"str": "Cannot export this type of plot", "foreground_color": "red"})
         else:
 
             dialog = QFileDialog.getSaveFileName(filter="Text files (*.txt)")
@@ -1889,8 +2203,98 @@ class Window(QMainWindow, Ui_MainWindow):
             if dialog[0] != "":
                 self.console.current_data.current_figure.export(dialog[0])
                 self.update_console({"str": "Done", "foreground_color": "green"})
-            else:
-                return
+
+    """---------------------------------------------------------------------------------"""
+
+    def edit_data(self):
+        """
+        fonction appellé pour l'édition du fichier courrant
+
+        :return: None
+        """
+
+        array_edit = self.console.current_data.get_edit_data_available()
+
+        self.argument_selection_creation_w = Edit_data(self, self.console.current_data.name, array_edit)
+
+
+
+        self.argument_selection_creation_w.finish_signal.connect(self.edit_data_callback)
+        self.argument_selection_creation_w.show()
+
+    """---------------------------------------------------------------------------------"""
+
+    def edit_data_callback(self, signal):
+        """
+        Focntion callback de edit_data, si le signal est save, on traite les changements si il y en a
+
+        :param signal: save / cancel
+        :return: None
+        """
+
+        if signal == "cancel":
+            self.argument_selection_creation_w.deleteLater()
+            self.argument_selection_creation_w = None
+
+        # on savegarde les changements
+        elif signal == "save":
+            data_name = self.argument_selection_creation_w.lineEdit.text()
+
+            array_res = self.argument_selection_creation_w.array_res
+
+            self.argument_selection_creation_w.deleteLater()
+            self.argument_selection_creation_w = None
+
+            # si le nom des data a changé
+            if data_name != self.console.current_data.name:
+
+                # on garde l'ancien nom du fichier
+                old_name = self.console.current_data.name
+
+                # on update le nom
+                self.console.current_data.name = data_name
+
+                # on parcours toutes les figures pour changer le nom
+                for data in self.console.datas:
+                    for figure in data.figures:
+                        # si l'ancien nom est contenu dans le titre du graph, il est changé
+
+                        if len(figure.name) >= len(old_name) and figure.name[:len(old_name)] == old_name:
+                            figure.name = data_name + figure.name[len(old_name):]
+
+                        if figure.x_axe is not None:
+                            for data_array in figure.x_axe.data:
+                                if data_array.source == old_name:
+                                    data_array.source = data_name
+
+                        if figure.y1_axe is not None:
+                            for data_array in figure.y1_axe.data:
+                                if data_array.source == old_name:
+                                    data_array.source = data_name
+
+                        if figure.y2_axe is not None:
+                            for data_array in figure.y2_axe.data:
+                                if data_array.source == old_name:
+                                    data_array.source = data_name
+
+                        if figure.z1_axe is not None:
+                            for data_array in figure.z1_axe.data:
+                                if data_array.source == old_name:
+                                    data_array.source = data_name
+
+                self.treeWidget.rename_all(old_name, data_name)
+
+                for i in range(self.tabWidget.count()):
+                    self.tabWidget.widget(i).update_current_title_plot()
+                    self.tabWidget.setTabText(i, self.tabWidget.widget(i).abstract_affiche.figure.name)
+
+                for figure_plot in self.figure_w:
+                    figure_plot.update_current_title_plot()
+
+            self.console.current_data.process_edit_data(array_res)
+
+    """---------------------------------------------------------------------------------"""
+
 
     """---------------------------------------------------------------------------------"""
     """                            Edit Current Plot start                              """
@@ -2153,7 +2557,8 @@ class Window(QMainWindow, Ui_MainWindow):
                     old_margin = self.figure_edited.margin
                     self.figure_edited.margin = margin
                     if obj_figure is not None:
-                        Abstract_data.resize_axe(obj_figure.abstract_affiche.ax1, obj_figure.abstract_affiche.ax2, margin,
+                        Abstract_data.resize_axe(obj_figure.abstract_affiche.ax1, obj_figure.abstract_affiche.ax2,
+                                                 margin,
                                                  old_margin)
 
                 # on met à jours le figure
@@ -2216,7 +2621,6 @@ class Window(QMainWindow, Ui_MainWindow):
 
     """---------------------------------------------------------------------------------"""
 
-
     def create_edit_plot(self, signal):
         """
         On créer la figure qui servira a sélectionner les points a supprimer
@@ -2232,7 +2636,7 @@ class Window(QMainWindow, Ui_MainWindow):
             return
 
         # création d'une nouvelle figure avec pour nom la légende du cycle sélectionné
-        new_figure = Figure(self.edit_plot_w.console_txt.currentItem().text(), 1)
+        new_figure = Figure(self.edit_plot_w.listWidget.currentItem().text(), 1)
 
         # on ajoute à la nouvelle figure interactive une copie de data_x correspondant à l'index sélectionné
         new_figure.add_data_x_Data(copy.copy(self.figure_edited.x_axe.data[signal]))
@@ -2287,9 +2691,9 @@ class Window(QMainWindow, Ui_MainWindow):
         """
 
         # on update current figure pour passer en hide les éléments indiqué
-        for i in range(self.edit_plot_w.console_txt.count()):
+        for i in range(self.edit_plot_w.listWidget.count()):
             # si la couleur du text est rouge, la courbe doit être cachée
-            if self.edit_plot_w.console_txt.item(i).foreground().color() == QColor("red"):
+            if self.edit_plot_w.listWidget.item(i).foreground().color() == QColor("red"):
                 # on update Data_array
                 self.figure_edited.get_data_yaxe_i(i).visible = False
                 self.figure_edited.x_axe.data[i].visible = False
@@ -2419,7 +2823,7 @@ class Window(QMainWindow, Ui_MainWindow):
         if len(pics) == 0:
             return
 
-        """file = open(r"C:Users\Maxime\Desktop\export_diffraction.txt", "w")
+        file = open(r"C:\Users\Maxime\Desktop\export_diffraction.txt", "w")
 
         for i in range(len(self.console.current_data.current_figure.x_axe.data)):
             s = ""
@@ -2427,12 +2831,14 @@ class Window(QMainWindow, Ui_MainWindow):
                 s += str(self.console.current_data.current_figure.x_axe.data[i].data[j]) + "\t"
             s = s[:-1] + "\n"
             file.write(s)
+            print(s)
             s = ""
             for j in range(len(self.console.current_data.current_figure.x_axe.data[i].data)):
                 s += str(self.console.current_data.current_figure.y1_axe.data[i].data[j]) + "\t"
             s = s[:-1] + "\n"
             file.write(s)
-        file.close()"""
+            print(s)
+        file.close()
 
         # création d'un nouveau thread
         t = QThread()
@@ -2451,6 +2857,8 @@ class Window(QMainWindow, Ui_MainWindow):
         # start
         t.start()
 
+        """worker = Fitting(self.console.current_data.current_figure, pics)
+        worker.run()"""
 
     """---------------------------------------------------------------------------------"""
 
@@ -2503,94 +2911,140 @@ class Window(QMainWindow, Ui_MainWindow):
                     for j in range(len(fwhm)):
                         newlargeur[-1].append(fwhm[j][i])
 
-                figure_res = Figure("Diffraction res " + str(figure.x_axe.data[0].data[init_index_min])[0:6] + " " +
-                            str(figure.x_axe.data[0].data[init_index_max])[0:6], 1, init_center=init_center)
+                if "waxs" in figure.type:
+                    figure_res = Figure("Diffraction res " + str(figure.x_axe.data[0].data[init_index_min])[0:6] + " " +
+                                        str(figure.x_axe.data[0].data[init_index_max])[0:6], 1, init_center=init_center)
 
-                figure_res.plot_name = "Diffraction res " + str(figure.x_axe.data[0].data[init_index_min])[0:6] + " " + \
-                               str(figure.x_axe.data[0].data[init_index_max])[0:6]
-                figure_res.type = "res_fitting_temperature"
-                figure_res.created_from = figure
+                    figure_res.plot_name = "Diffraction res " + str(figure.x_axe.data[0].data[init_index_min])[
+                                                                0:6] + " " + \
+                                           str(figure.x_axe.data[0].data[init_index_max])[0:6]
+                    figure_res.type = "res_fitting_temps"
+                    figure_res.created_from = figure
 
-                units = Units()
-                x_unit = units.get_unit(figure.x_axe.get_unit().name)
-                y_unit = units.get_unit(figure.y1_axe.get_unit().name)
+                    units = Units()
+                    x_unit = units.get_unit(figure.x_axe.get_unit().name)
+                    y_unit = units.get_unit(figure.y1_axe.get_unit().name)
 
-                size_w = 0
-                size_c = 0
-                warning_x = []
-                for i in range(len(self.console.current_data.data["loop_data"])):
-                    if self.console.current_data.data["loop_data"][i][2] == "w":
-                        warning_x.append(self.console.current_data.data["loop_data"][i][3])
-                        size_w += 1
+                    array_time = figure.kwarks["array_time"]
 
-                cooling_x = []
-                for i in range(len(self.console.current_data.data["loop_data"])):
-                    if self.console.current_data.data["loop_data"][i][2] == "c":
-                        cooling_x.append(self.console.current_data.data["loop_data"][i][3])
-                        size_c += 1
-
-                # new_xmax
-                if size_w != 0:
                     for i in range(len(new_xmax)):
-                        data_unit_x = Data_unit(warning_x, x_unit)
-                        data_unit_y = Data_unit(new_xmax[i][0:size_w], y_unit)
+                        data_unit_x = Data_unit(copy.copy(array_time), x_unit)
+                        data_unit_y = Data_unit(new_xmax[i], y_unit)
 
-                        temp_x = Data_array(data_unit_x, "Température", None, "nesaisias", temperature="warning")
-                        temp_y = Data_array(data_unit_y, "diffraction", None, "nesaispas")
+                        temp_x = Data_array(data_unit_x, "time", None, "nesaisias", temperature="warning")
+                        temp_y = Data_array(data_unit_y, "ua", None, "nesaispas")
                         figure_res.add_data_x_Data(temp_x)
                         figure_res.add_data_y1_Data(temp_y)
 
-                if size_c != 0:
-                    for i in range(len(new_xmax)):
-                        data_unit_x = Data_unit(cooling_x, x_unit)
-                        data_unit_y = Data_unit(new_xmax[i][size_w:], y_unit)
-
-                        temp_x = Data_array(data_unit_x, "Température", None, "nesaisias", temperature="cooling")
-                        temp_y = Data_array(data_unit_y, "diffraction", None, "nesaispas")
-                        figure_res.add_data_x_Data(temp_x)
-                        figure_res.add_data_y1_Data(temp_y)
-
-                # new_area
-                if size_w != 0:
                     for i in range(len(new_area)):
-                        data_unit_x = Data_unit(warning_x, x_unit)
-                        data_unit_y = Data_unit(new_area[i][0:size_w], y_unit)
+                        data_unit_x = Data_unit(copy.copy(array_time), x_unit)
+                        data_unit_y = Data_unit(new_area[i], y_unit)
 
                         temp_x = Data_array(data_unit_x, "Température", None, "nesaisias", temperature="warning")
                         temp_y = Data_array(data_unit_y, "diffraction", None, "nesaispas")
                         figure_res.add_data_x_Data(temp_x)
                         figure_res.add_data_y1_Data(temp_y)
 
-                if size_c != 0:
-                    for i in range(len(new_area)):
-                        data_unit_x = Data_unit(cooling_x, x_unit)
-                        data_unit_y = Data_unit(new_area[i][size_w:], y_unit)
+                    for i in range(len(newlargeur)):
+                        data_unit_x = Data_unit(copy.copy(array_time), x_unit)
+                        data_unit_y = Data_unit(newlargeur[i], y_unit)
 
                         temp_x = Data_array(data_unit_x, "Température", None, "nesaisias", temperature="cooling")
                         temp_y = Data_array(data_unit_y, "diffraction", None, "nesaispas")
                         figure_res.add_data_x_Data(temp_x)
                         figure_res.add_data_y1_Data(temp_y)
 
-                # new fwhm
-                if size_w != 0:
-                    for i in range(len(newlargeur)):
-                        data_unit_x = Data_unit(warning_x, x_unit)
-                        data_unit_y = Data_unit(newlargeur[i][0:size_w], y_unit)
+                else:
 
-                        temp_x = Data_array(data_unit_x, "Température", None, "nesaisias", temperature="warning")
-                        temp_y = Data_array(data_unit_y, "diffraction", None, "nesaispas")
-                        figure_res.add_data_x_Data(temp_x)
-                        figure_res.add_data_y1_Data(temp_y)
+                    figure_res = Figure("Diffraction res " + str(figure.x_axe.data[0].data[init_index_min])[0:6] + " " +
+                                        str(figure.x_axe.data[0].data[init_index_max])[0:6], 1, init_center=init_center)
 
-                if size_c != 0:
-                    for i in range(len(newlargeur)):
-                        data_unit_x = Data_unit(cooling_x, x_unit)
-                        data_unit_y = Data_unit(newlargeur[i][size_w:], y_unit)
+                    figure_res.plot_name = "Diffraction res " + str(figure.x_axe.data[0].data[init_index_min])[
+                                                                0:6] + " " + \
+                                           str(figure.x_axe.data[0].data[init_index_max])[0:6]
+                    figure_res.type = "res_fitting_temperature"
+                    figure_res.created_from = figure
 
-                        temp_x = Data_array(data_unit_x, "Température", None, "nesaisias", temperature="cooling")
-                        temp_y = Data_array(data_unit_y, "diffraction", None, "nesaispas")
-                        figure_res.add_data_x_Data(temp_x)
-                        figure_res.add_data_y1_Data(temp_y)
+                    units = Units()
+                    x_unit = units.get_unit(figure.x_axe.get_unit().name)
+                    y_unit = units.get_unit(figure.y1_axe.get_unit().name)
+
+                    size_w = 0
+                    size_c = 0
+                    warning_x = []
+                    for i in range(len(self.console.current_data.data["loop_data"])):
+                        if self.console.current_data.data["loop_data"][i][2] == "w":
+                            warning_x.append(self.console.current_data.data["loop_data"][i][3])
+                            size_w += 1
+
+                    cooling_x = []
+                    for i in range(len(self.console.current_data.data["loop_data"])):
+                        if self.console.current_data.data["loop_data"][i][2] == "c":
+                            cooling_x.append(self.console.current_data.data["loop_data"][i][3])
+                            size_c += 1
+
+                    # new_xmax
+                    if size_w != 0:
+                        for i in range(len(new_xmax)):
+                            data_unit_x = Data_unit(copy.copy(warning_x), x_unit)
+                            data_unit_y = Data_unit(new_xmax[i][0:size_w], y_unit)
+
+                            temp_x = Data_array(data_unit_x, "Température", None, "nesaisias", temperature="warning")
+                            temp_y = Data_array(data_unit_y, "diffraction", None, "nesaispas")
+                            figure_res.add_data_x_Data(temp_x)
+                            figure_res.add_data_y1_Data(temp_y)
+
+                    if size_c != 0:
+                        for i in range(len(new_xmax)):
+                            data_unit_x = Data_unit(copy.copy(cooling_x), x_unit)
+                            data_unit_y = Data_unit(new_xmax[i][size_w:], y_unit)
+
+                            temp_x = Data_array(data_unit_x, "Température", None, "nesaisias", temperature="cooling")
+                            temp_y = Data_array(data_unit_y, "diffraction", None, "nesaispas")
+                            figure_res.add_data_x_Data(temp_x)
+                            figure_res.add_data_y1_Data(temp_y)
+
+                    # new_area
+                    if size_w != 0:
+                        for i in range(len(new_area)):
+                            data_unit_x = Data_unit(copy.copy(warning_x), x_unit)
+                            data_unit_y = Data_unit(new_area[i][0:size_w], y_unit)
+
+                            temp_x = Data_array(data_unit_x, "Température", None, "nesaisias", temperature="warning")
+                            temp_y = Data_array(data_unit_y, "diffraction", None, "nesaispas")
+                            figure_res.add_data_x_Data(temp_x)
+                            figure_res.add_data_y1_Data(temp_y)
+
+                    if size_c != 0:
+                        for i in range(len(new_area)):
+                            data_unit_x = Data_unit(copy.copy(cooling_x), x_unit)
+                            data_unit_y = Data_unit(new_area[i][size_w:], y_unit)
+
+                            temp_x = Data_array(data_unit_x, "Température", None, "nesaisias", temperature="cooling")
+                            temp_y = Data_array(data_unit_y, "diffraction", None, "nesaispas")
+                            figure_res.add_data_x_Data(temp_x)
+                            figure_res.add_data_y1_Data(temp_y)
+
+                    # new fwhm
+                    if size_w != 0:
+                        for i in range(len(newlargeur)):
+                            data_unit_x = Data_unit(copy.copy(warning_x), x_unit)
+                            data_unit_y = Data_unit(newlargeur[i][0:size_w], y_unit)
+
+                            temp_x = Data_array(data_unit_x, "Température", None, "nesaisias", temperature="warning")
+                            temp_y = Data_array(data_unit_y, "diffraction", None, "nesaispas")
+                            figure_res.add_data_x_Data(temp_x)
+                            figure_res.add_data_y1_Data(temp_y)
+
+                    if size_c != 0:
+                        for i in range(len(newlargeur)):
+                            data_unit_x = Data_unit(copy.copy(cooling_x), x_unit)
+                            data_unit_y = Data_unit(newlargeur[i][size_w:], y_unit)
+
+                            temp_x = Data_array(data_unit_x, "Température", None, "nesaisias", temperature="cooling")
+                            temp_y = Data_array(data_unit_y, "diffraction", None, "nesaispas")
+                            figure_res.add_data_x_Data(temp_x)
+                            figure_res.add_data_y1_Data(temp_y)
 
                 # on update le tree widget
                 # on ajoute la figure a current_data
@@ -2641,6 +3095,9 @@ class Window(QMainWindow, Ui_MainWindow):
                 return
             else:
                 if plot_obj.abstract_affiche.__name__ != "Classique_affiche":
+                    self.update_console(
+                        {"str": "Impossible to view data on this type of graph", "foreground_color": "red"})
+                elif not plot_obj.abstract_affiche.figure.x_axe.data[0].global_index:
                     self.update_console(
                         {"str": "Impossible to view data on this type of graph", "foreground_color": "red"})
                 else:
@@ -2731,7 +3188,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         :return: None
         """
-        raise ValueError
+
         msgBox = QMessageBox()
         msgBox.setIcon(QMessageBox.Warning)
         msgBox.setText("File type invalid")

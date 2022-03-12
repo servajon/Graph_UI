@@ -31,20 +31,31 @@ def mode_del(array_x, array_y, global_index, val_min, val_max, mode_data, mode, 
 
     """Si le mode que l'on cherche a suprimer est au milieux du cycle, on return dans rien faire"""
     if mode_data[val_min] != mode and mode_data[val_max] != mode:
-        return [array_x, array_y, global_index]
-
-    """on suprime le mode mode, utilisé pour retirer les plateaux, correspondant au mode 2
-    Mode_data sert à déterminer le mode de chaque point"""
+        # si la dernière valeur n'est pas celle que l'on cherche mais pas 1 non plus
+        # on check si on ne tombe pas dessus avant le 1
+        if mode_data[val_max] != 1:
+            index = val_max
+            while index > val_min and mode_data[index] != 1 and mode_data[index] != mode:
+                index -= 1
+            if index == val_min or mode_data[index] == 1:
+                return [array_x, array_y, global_index]
+            else:
+                # print("cas celia")
+                return [array_x, array_y, global_index]
 
     nb_avant_centre = 0
     array_return_x = []
     array_return_y = []
     global_index_return = []
+    print(len(global_index))
+    print(len(array_x))
+
     for i in range(len(array_x)):
         if mode_data[val_min + i] != mode:
             array_return_x.append(array_x[i])
             array_return_y.append(array_y[i])
-            global_index_return.append(global_index[i])
+            if global_index is not None:
+                global_index_return.append(global_index[i])
         elif centre is not None:
             if i < centre:
                 nb_avant_centre += 1

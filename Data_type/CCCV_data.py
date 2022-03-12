@@ -5,7 +5,7 @@ from Console_Objets.Data_Unit import Data_unit, Units
 from Console_Objets.Data_array import Data_array
 from Console_Objets.Figure import Figure
 from Data_type.Abstract_data import Abstract_data
-from Data_type.Traitement_cycle import Traitements_cycle_outils, Traitement_cycle_cccv
+from Data_type.Traitement_cycle import Traitement_cycle_cccv
 from Resources_file.Emit import Emit
 
 
@@ -21,6 +21,20 @@ class CCCV_data(Abstract_data):
 
     def get_operation_available(self):
         return ["capa", "potentio", "custom"]
+
+    """----------------------------------------------------------------------------------"""
+
+    def get_edit_data_available(self):
+        if self.data["mass_electrode"] == -1:
+            return [["Mass Electrod", "None"]]
+        else:
+            return [["Mass Electrod", str(self.data["mass_electrode"])]]
+
+    """----------------------------------------------------------------------------------"""
+
+    def process_edit_data(self, array_res):
+        if array_res[0] != "None":
+            self.data["mass_electrode"] = float(array_res[0])
 
     """----------------------------------------------------------------------------------"""
 
@@ -40,7 +54,7 @@ class CCCV_data(Abstract_data):
         val = self.data["mass_electrode"]
 
         # on créer une nouvelle figure
-        figure = Figure(self.nom_cell + " capa", 1)
+        figure = Figure(self.name + " capa", 1)
 
         # avec le type capa
         figure.type = "capa"
@@ -130,14 +144,14 @@ class CCCV_data(Abstract_data):
             self.resource.print_color("ImpossibLe de tracer les graphs additionnels", "work")
             return [figure]
 
-        figure_charge = Figure(self.nom_cell + " Capacity Delithiation", 1)
-        figure_decharge = Figure(self.nom_cell + " Capacity Lithiation", 1)
+        figure_charge = Figure(self.name + " Capacity Delithiation", 1)
+        figure_decharge = Figure(self.name + " Capacity Lithiation", 1)
 
         figure_charge.type = "bar"
         figure_decharge.type = "bar"
 
-        figure_charge_pc = Figure(self.nom_cell + " Capacity Delithiation (%)", 1)
-        figure_decharge_pc = Figure(self.nom_cell + " Capacity Lithiation (%)", 1)
+        figure_charge_pc = Figure(self.name + " Capacity Delithiation (%)", 1)
+        figure_decharge_pc = Figure(self.name + " Capacity Lithiation (%)", 1)
 
         figure_charge_pc.type = "bar"
         figure_decharge_pc.type = "bar"
@@ -311,7 +325,7 @@ class CCCV_data(Abstract_data):
 
         # on créer le nom de la figure
         if cycle is not None and len(cycle) == 3 and cycle[1] == "to":
-            name = str(cycle[0]) + "_to_" + str(cycle[2])
+            name = str(cycle[0]) + " to " + str(cycle[2])
         elif cycle is None:
             name = "all"
         else:
@@ -328,9 +342,9 @@ class CCCV_data(Abstract_data):
 
         # On modifie le nom de la figure pour être sûr qu'il soit unique
         if name is None:
-            new_figure.name = self.unique_name(self.nom_cell + "_" + new_figure.name)
+            new_figure.name = self.unique_name(self.name + " " + new_figure.name)
         else:
-            new_figure.name = self.unique_name(self.nom_cell + "_cycle_" + name)
+            new_figure.name = self.unique_name(self.name + " cycle " + name)
 
         return new_figure
 
@@ -351,7 +365,7 @@ class CCCV_data(Abstract_data):
 
         # on créer le nom de la figure
         if cycle is not None and len(cycle) == 3 and cycle[1] == "to":
-            name = str(cycle[0]) + "_to_" + str(cycle[2])
+            name = str(cycle[0]) + " to " + str(cycle[2])
         elif cycle is None:
             name = "all"
         else:
@@ -381,9 +395,9 @@ class CCCV_data(Abstract_data):
         # On modifie le nom de la figure pour être sûr qu'il soit unique
         if isinstance(figure, list):
             for f in figure:
-                f.name = self.unique_name(self.nom_cell + " cycle " + name + f.name)
+                f.name = self.unique_name(self.current_figure.name + " cycle " + name + f.name)
         else:
-            figure.name = self.unique_name(self.nom_cell + " cycle " + name + figure.name)
+            figure.name = self.unique_name(self.current_figure.name + " cycle " + name + figure.name)
 
         return figure
 
@@ -458,7 +472,7 @@ class CCCV_data(Abstract_data):
     """----------------------------------------------------------------------------------"""
 
     def derivation(self, nb_point, window_length, polyorder):
-        new_figure = Figure(self.current_figure.name + "_derive", 1)
+        new_figure = Figure(self.current_figure.name + " derivate", 1)
 
         new_data_x = []
         new_data_x2 = []
@@ -562,7 +576,7 @@ class CCCV_data(Abstract_data):
                 for j in range(len(new_figure.x_axe.data[i].data)):
                     new_figure.x_axe.data[i].data[j] += val
 
-            new_figure.name += "_shift_x"
+            new_figure.name += " shift x"
 
             new_figure.name = self.unique_name(new_figure.name)
 
@@ -584,7 +598,7 @@ class CCCV_data(Abstract_data):
             for i in range(len(new_figure.y2_axe.data[0].data)):
                 new_figure.y2_axe.data[0].data[i] += val
 
-            new_figure.name += "_shift_y1"
+            new_figure.name += " shift y1"
 
             new_figure.name = self.unique_name(new_figure.name)
         else:
@@ -614,6 +628,22 @@ class CCCV_data(Abstract_data):
     def create_GITT(self, *args, **kwargs):
         raise ValueError
 
+    """----------------------------------------------------------------------------------"""
+
+    def export_gitt(self, path):
+        raise ValueError
+
+    """----------------------------------------------------------------------------------"""
+
+    def create_impedance(self):
+        raise ValueError
+
+    """----------------------------------------------------------------------------------"""
+
+    def export_impedance_res(self, path):
+        raise ValueError
+
+    """----------------------------------------------------------------------------------"""
     """                                                  """
     """                      getter                      """
     """                                                  """
@@ -625,10 +655,6 @@ class CCCV_data(Abstract_data):
     @property
     def name(self):
         return self._name
-
-    @property
-    def nom_cell(self):
-        return self._nom_cell
 
     @property
     def figures(self):
@@ -656,11 +682,6 @@ class CCCV_data(Abstract_data):
         """On replace les espaces par des '_'"""
         self._name = name
 
-    @nom_cell.setter
-    def nom_cell(self, name):
-        """On replace les espaces par des '_'"""
-        self._nom_cell = name
-
     @figures.setter
     def figures(self, figures):
         print("Impossible d'utiliser le setter de figures de la class abstract data")
@@ -673,12 +694,27 @@ class CCCV_data(Abstract_data):
     def resource(self, resource):
         self._resource = resource
 
+    """"----------------------------------------------------------------------------------"""
+
     def create_diffraction(self):
         raise ValueError
 
+    """"----------------------------------------------------------------------------------"""
 
-""""----------------------------------------------------------------------------------"""
+    def impedance_res(self, freqs):
+        raise ValueError
 
+    """"----------------------------------------------------------------------------------"""
+
+    def impedance_bode(self):
+        raise ValueError
+
+    """"----------------------------------------------------------------------------------"""
+
+    def create_impedance_3d(self, axe_y_name):
+        raise ValueError
+
+    """"----------------------------------------------------------------------------------"""
 
 def _derive_class(x_object, y_object, nb_point, window_length=None, polyorder=None):
     delta_y_moyen = 0

@@ -19,6 +19,7 @@ UNITS = {
     "half_cycle": None,
     "control/V/mA": "volt_par_milliampere",
     "Ecell/V": "volt",
+    "<Ewe>/V": "volt",
     "I_Range": None,
     "<I>/mA": "milliampere",
     "I/mA": "milliampere",
@@ -28,9 +29,67 @@ UNITS = {
     "Capacity/mA.h": "milliampere_heure",
     "Efficiency/%": "pourcentage",
     "control/V": "volt",
+    "Analog_IN_1/V": "volt",
+    "Analog_IN_2/V": "volt",
     "control/mA": "milliampere",
     "cycle_number": None,
     "P/W": None,
+    "freq/Hz": "hertz",
+    "Re(Z)/Ohm": None,
+    "-Im(Z)/Ohm": None,
+    "|Z|/Ohm": None,
+    "Phase(Z)/deg": None,
+    "Cs/µF": None,
+    "Cp/µF": None,
+    "I Range": None,
+    "|Ewe|/V": "volt",
+    "|I|/A": None,
+    "THD_Ewe/%": "pourcentage",
+    "NSD_Ewe/%": "pourcentage",
+    "NSR_Ewe/%": "pourcentage",
+    "THD_I/%": "pourcentage",
+    "NSD_I/%": "pourcentage",
+    "NSR_I/%": "pourcentage",
+    "|Ewe_h2|/V": "volt",
+    "|Ewe_h3|/V": "volt",
+
+    "|Ewe_h4|/V": "volt",
+    "|Ewe_h5|/V": "volt",
+    "|Ewe_h6|/V": "volt",
+    "|Ewe_h7|/V": "volt",
+    "|I_h2|/A": "ampere",
+    "|I_h3|/A": "ampere",
+    "|I_h4|/A": "ampere",
+    "|I_h5|/A": "ampere",
+    "|I_h6|/A": "ampere",
+    "|I_h7|/A": "ampere",
+    "Re(Y)/Ohm-1": None,
+    "Im(Y)/Ohm-1": None,
+    "|Y|/Ohm-1": None,
+    "Phase(Y)/deg": "degrees",
+    "Re(C)/nF": None,
+    "Im(C)/nF": None,
+    "|C|/nF": None,
+    "Phase(C)/deg": "degrees",
+    "Re(M)": None,
+    "Im(M)": None,
+    "|M|": None,
+    "Phase(M)/deg": "degrees",
+    "Re(Permittivity)": None,
+    "Im(Permittivity)": None,
+    "|Permittivity|": None,
+    "Phase(Permittivity)/deg": "degrees",
+    "Re(Resistivity)/Ohm.cm": None,
+    "Im(Resistivity)/Ohm.cm": None,
+    "|Resistivity|/Ohm.cm": None,
+    "Phase(Resistivity)/deg": "degrees",
+    "Re(Conductivity)/mS/cm": None,
+    "Im(Conductivity)/mS/cm": None,
+    "|Conductivity|/mS/cm": None,
+    "Phase(Conductivity)/deg": "degrees",
+    "Loss_Angle(Delta)/deg": "degrees",
+    "Tan(Delta)": None,
+
 
     # nom complet de toutes les unitées
     "centimeters": "cm",
@@ -86,6 +145,9 @@ UNITS = {
     "Capacitance_charge/µF": None,
     "Capacitance_discharge/µF": None,
 
+    # a demander pour l'unité
+    "q": "q",
+    "A°\u207b\u00b9": "q"
 
 }
 
@@ -192,9 +254,13 @@ class Units:
 
         radians = BasicUnit('rad', 'radians')
         degrees = BasicUnit('°', 'degrees')
+        q = BasicUnit('q', 'A°\u207b\u00b9')
 
         radians.add_conversion_factor(degrees, 180.0 / math.pi)
         degrees.add_conversion_factor(radians, math.pi / 180.0)
+
+        degrees.add_conversion_fn(q, lambda x: (4 * math.pi / 0.190745) * math.sin(math.radians(x / 2)))
+        q.add_conversion_fn(degrees, lambda x: math.asin(x / 4 * math.pi / 0.190745) / 2)
 
         """--------------------------------------------------"""
 
@@ -295,6 +361,7 @@ class Units:
 
         self.units["degrees"] = degrees
         self.units["radians"] = radians
+        self.units["q"] = q
 
         self.units["milliampere_heure"] = milliampere_heure
         self.units["coulomb"] = coulomb
@@ -349,8 +416,6 @@ class Data_unit(list):
             self._unit = unit
         except KeyError:
             raise ValueError('cannot convert ' + self.unit.name + ' in ' + unit.name)
-
-
 
     def __getitem__(self, item):
         if isinstance(item, slice):
@@ -425,7 +490,9 @@ class Data_unit(list):
         new_data_unit.data = [value for value in self.data]
 
         units = Units()
-        new_data_unit.unit = units.get_unit(self.unit.name)
+
+        if self.unit is not None:
+            new_data_unit.unit = units.get_unit(self.unit.name)
 
         return new_data_unit
 

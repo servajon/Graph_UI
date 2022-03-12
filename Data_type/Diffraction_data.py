@@ -21,6 +21,16 @@ class Diffraction_data(Abstract_data):
 
     """----------------------------------------------------------------------------------"""
 
+    def get_edit_data_available(self):
+        return []
+
+    """----------------------------------------------------------------------------------"""
+
+    def process_edit_data(self, array_res):
+        pass
+
+    """----------------------------------------------------------------------------------"""
+
     def create_diffraction(self):
         """
         Création du graph de diffraction
@@ -88,6 +98,36 @@ class Diffraction_data(Abstract_data):
 
     """----------------------------------------------------------------------------------"""
 
+    def export_gitt(self, path):
+        raise ValueError
+
+    """----------------------------------------------------------------------------------"""
+
+    def create_impedance(self):
+        raise ValueError
+
+    """----------------------------------------------------------------------------------"""
+
+    def impedance_res(self, freqs):
+        raise ValueError
+
+    """"----------------------------------------------------------------------------------"""
+
+    def impedance_bode(self):
+        raise ValueError
+
+    """"----------------------------------------------------------------------------------"""
+
+    def create_impedance_3d(self, axe_y_name):
+        raise ValueError
+
+    """"----------------------------------------------------------------------------------"""
+
+    def export_impedance_res(self, path):
+        raise ValueError
+
+    """----------------------------------------------------------------------------------"""
+
     def create_figure_cycle(self, *args, **kwargs):
         """
        La création de cycle passe par cette methode, en fonction du type de cycle
@@ -121,9 +161,9 @@ class Diffraction_data(Abstract_data):
         # On modifie le nom de la figure pour être sûr qu'il soit unique
         if isinstance(figure, list):
             for f in figure:
-                f.name = self.unique_name(self.nom_cell + " cycle " + name + f.name)
+                f.name = self.unique_name(self.current_figure.name + " cycle " + name + f.name)
         else:
-            figure.name = self.unique_name(self.nom_cell + " cycle " + name + figure.name)
+            figure.name = self.unique_name(self.current_figure.name + " cycle " + name + figure.name)
 
         return figure
 
@@ -249,10 +289,6 @@ class Diffraction_data(Abstract_data):
         return self._name
 
     @property
-    def nom_cell(self):
-        return self._nom_cell
-
-    @property
     def figures(self):
         return self._figures
 
@@ -276,10 +312,6 @@ class Diffraction_data(Abstract_data):
     @name.setter
     def name(self, name):
         self._name = name
-
-    @nom_cell.setter
-    def nom_cell(self, name):
-        self._nom_cell = name
 
     @figures.setter
     def figures(self, figures):

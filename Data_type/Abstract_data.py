@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 import matplotlib
 import matplotlib.pyplot as pplot
 import numpy as np
+from matplotlib import gridspec
 
 from Console_Objets.Axe import Axe
 from Console_Objets.Figure import Figure
@@ -136,8 +137,6 @@ class Abstract_data(ABC):
         self._data = None
         self._name = None
 
-        # self._nom_cell = None
-        self._nom_cell = "temp"
         self._figures = []
         self._current_figure = None
 
@@ -154,6 +153,14 @@ class Abstract_data(ABC):
 
     @abstractmethod
     def get_operation_available(self):
+        pass
+
+    @abstractmethod
+    def get_edit_data_available(self):
+        pass
+
+    @abstractmethod
+    def process_edit_data(self, array_res):
         pass
 
     @abstractmethod
@@ -194,6 +201,30 @@ class Abstract_data(ABC):
 
     @abstractmethod
     def create_GITT(self, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def export_gitt(self, path):
+        pass
+
+    @abstractmethod
+    def create_impedance(self):
+        pass
+
+    @abstractmethod
+    def impedance_res(self, freqs):
+        pass
+
+    @abstractmethod
+    def impedance_bode(self):
+        pass
+
+    @abstractmethod
+    def create_impedance_3d(self, axe_y_name):
+        pass
+
+    @abstractmethod
+    def export_impedance_res(self, path):
         pass
 
     def unique_name(self, name):
@@ -694,8 +725,88 @@ class Abstract_data(ABC):
 
             return fig
 
+        elif figure.type == "res_fitting_temps":
+            nb_pics = len(figure.y1_axe.data) / 3
+
+            index = 0
+            fig = pplot.figure(figsize=(11, 7))
+            gs = fig.add_gridspec(3, 2, hspace=0.1, wspace=0, width_ratios=[10, 1])
+            axes = gs.subplots(sharex='col', sharey='row')
+            _str = figure.name
+            _str = _str.replace("_", " ")
+            fig.suptitle(_str)
+
+            ligne_1 = axes[0]
+            ligne_2 = axes[1]
+            ligne_3 = axes[2]
+
+            leg = ["x max", "area", "fwhm"]
+
+            for i, axe in enumerate(ligne_1):
+                if i == 1:
+                    fig.delaxes(axe)
+                    break
+                for j in range(int(nb_pics)):
+                    axe.plot(figure.x_axe.data[index].data, figure.y1_axe.data[index].data, "x", color=couleurs[j],
+                             label="x_max")
+                    index += 1
+
+                axe.get_xaxis().set_visible(False)
+                resize_axe_y(axe, None, -7.5)
+                if i == 0:
+                    axe.set_ylabel("x_max")
+
+            for i, axe in enumerate(ligne_2):
+                if i == 1:
+                    leg = axe
+                    axe.axis("off")
+                    break
+                for j in range(int(nb_pics)):
+                    axe.plot(figure.x_axe.data[index].data, figure.y1_axe.data[index].data, "x", color=couleurs[j],
+                             label="area")
+                    index += 1
+
+                axe.get_xaxis().set_visible(False)
+                resize_axe_y(axe, None, -7.5)
+
+                if i == 0:
+                    axe.set_ylabel("area")
+
+            for i, axe in enumerate(ligne_3):
+                if i == 1:
+                    fig.delaxes(axe)
+                    break
+                for j in range(int(nb_pics)):
+                    axe.plot(figure.x_axe.data[index].data, figure.y1_axe.data[index].data, "x", color=couleurs[j],
+                             label="fwhm")
+                    index += 1
+
+                resize_axe_y(axe, None, -7.5)
+
+                if i == 0:
+                    axe.set_ylabel("largeur")
+                    axe.set_xlabel("temps [h]")
+            h = []
+            l = []
+            leg_axe = [axes[0, 0], axes[1, 0], axes[2, 0]]
+
+            for axe in leg_axe:
+                h1, l1 = axe.get_legend_handles_labels()
+                h.extend(h1)
+                l.extend(l1)
+
+            leg.legend(h, l, bbox_to_anchor=(2.9, 1))
+            fig.subplots_adjust(left=0.13, right=0.87)
+
         else:
-            raise NotImplementedError
+            raise NotImplementedError(figure.type)
+
+        if path_save is not None:
+            pplot.tight_layout()
+            pplot.close(fig)
+            fig.savefig(path_save, bbox_inches='tight', dpi=150)
+
+        return fig
 
     """----------------------------------------------------------------------------------"""
 
@@ -769,6 +880,95 @@ class Abstract_data(ABC):
                 fig.savefig(path_save, bbox_inches='tight', dpi=150)
 
             return fig, ax1, contourf_, cbar, None, None, None
+
+    """----------------------------------------------------------------------------------"""
+
+    def load_graph_3d(self, figure, path_save=None):
+        """Cette focntion créer une nouvelle figure avec les paramettre de la figure donné, pas de try cach ici
+        cela se fait dans les fonctions du dessus"""
+
+        pplot.rcParams.update({'font.size': 18})
+
+        fig = pplot.figure()
+
+        gs1 = gridspec.GridSpec(nrows=1, ncols=2, width_ratios=[10, 1])
+
+        ax1 = fig.add_subplot(gs1[0], projection='3d')
+        leg1 = fig.add_subplot(gs1[1])
+
+        fig.set_size_inches(11, 7)
+
+        fig.canvas.manager.set_window_title(figure.plot_name)
+
+        pplot.suptitle(figure.plot_name)
+
+        data_x = figure.x_axe.data
+        data_y1 = figure.y1_axe.data
+        data_z1 = figure.z1_axe.data
+
+        if figure.format_line_y1 is None:
+            format_line_y1 = '-'
+        else:
+            format_line_y1 = figure.format_line_y1
+
+        nb_y1 = 0
+        for i in range(len(data_y1)):
+            if data_y1[i].legend is not None and data_y1[i].visible:
+                nb_y1 += 1
+        index_modulo_y1 = 0
+        if nb_y1 > figure.nb_legende:
+            modulo_y1 = []
+            for i in range(figure.nb_legende):
+                temp = int(nb_y1 / figure.nb_legende * i)
+                if temp not in modulo_y1:
+                    modulo_y1.append(temp)
+        else:
+            modulo_y1 = []
+
+        # Pas grand chose à faire non plus, data_x et data_y1 sont associé 1 à 1, on boucle sur data_y1
+        # et prends l'index pour les deux
+        for i in range(len(data_y1)):
+            if len(modulo_y1) == 0 or (
+                    index_modulo_y1 < len(modulo_y1) and i == modulo_y1[index_modulo_y1]):
+                index_modulo_y1 += 1
+                if data_y1[i].color is not None:
+                    ax1.plot(data_x[i].data, data_y1[i].data, data_z1[i].data, format_line_y1,
+                             markersize=figure.marker_size,
+                             label=data_y1[i].legend,
+                             color=data_y1[i].color,
+                             visible=data_y1[i].visible)
+                else:
+                    ax1.plot(data_x[i].data, data_y1[i].data, data_z1[i].data, format_line_y1,
+                             markersize=figure.marker_size,
+                             label=data_y1[i].legend,
+                             visible=data_y1[i].visible)
+            else:
+                if data_y1[i].color is not None:
+                    ax1.plot(data_x[i].data, data_y1[i].data, data_z1[i].data, format_line_y1,
+                             markersize=figure.marker_size,
+                             color=data_y1[i].color,
+                             visible=data_y1[i].visible)
+                else:
+                    ax1.plot(data_x[i].data, data_y1[i].data, data_z1[i].data, format_line_y1,
+                             markersize=figure.marker_size,
+                             visible=data_y1[i].visible)
+
+        h, l = ax1.get_legend_handles_labels()
+        leg1.legend(h, l, borderaxespad=0, loc="upper right")
+        leg1.axis("off")
+
+        ax1.set_xlabel(figure.x_axe.name_unit, labelpad=20)
+        ax1.set_ylabel(figure.y1_axe.name_unit, labelpad=20)
+        ax1.set_zlabel(figure.z1_axe.name_unit, labelpad=20)
+
+        format_axes_figure(figure, ax1, None)
+
+        if path_save is not None:
+            pplot.tight_layout()
+            pplot.close(fig)
+            fig.savefig(path_save, bbox_inches='tight', dpi=150)
+
+        return fig, ax1, None, None, None, leg1, None
 
     """----------------------------------------------------------------------------------"""
 
@@ -898,11 +1098,6 @@ class Abstract_data(ABC):
 
     @property
     @abstractmethod
-    def nom_cell(self):
-        pass
-
-    @property
-    @abstractmethod
     def figures(self):
         pass
 
@@ -928,11 +1123,6 @@ class Abstract_data(ABC):
     @name.setter
     @abstractmethod
     def name(self, name):
-        pass
-
-    @nom_cell.setter
-    @abstractmethod
-    def nom_cell(self, name):
         pass
 
     @figures.setter

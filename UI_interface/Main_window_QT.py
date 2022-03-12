@@ -124,6 +124,8 @@ class Ui_MainWindow(object):
         self.menumodulo.setObjectName("menumodulo")
         self.menuPlot = QtWidgets.QMenu(self.menubar)
         self.menuPlot.setObjectName("menuPlot")
+        self.menuData = QtWidgets.QMenu(self.menubar)
+        self.menuData.setObjectName("menuData")
         self.menuExport = QtWidgets.QMenu(self.menubar)
         self.menuExport.setObjectName("menuExport")
         self.menuSave = QtWidgets.QMenu(self.menubar)
@@ -138,6 +140,8 @@ class Ui_MainWindow(object):
         self.actioncv.setObjectName("actioncv")
         self.actiongitt = QtWidgets.QAction(MainWindow)
         self.actiongitt.setObjectName("actiongitt")
+        self.actionimpedance = QtWidgets.QAction(MainWindow)
+        self.actionimpedance.setObjectName("actionimpedance")
         self.actioncp = QtWidgets.QAction(MainWindow)
         self.actioncp.setObjectName("actioncp")
         self.actiondiffracion = QtWidgets.QAction(MainWindow)
@@ -154,6 +158,12 @@ class Ui_MainWindow(object):
 
         self.actionDelete_Current_Plot = QtWidgets.QAction(MainWindow)
         self.actionDelete_Current_Plot.setObjectName("actionDelete_Current_Plot")
+
+        self.actionEdit_data = QtWidgets.QAction(MainWindow)
+        self.actionEdit_data.setObjectName("actionEdit_data")
+
+        self.actionDelete_data = QtWidgets.QAction(MainWindow)
+        self.actionDelete_data.setObjectName("actionDelete_data")
 
         self.export_actionPlot = QtWidgets.QAction(MainWindow)
         self.export_actionPlot.setObjectName("export_actionPlot")
@@ -174,6 +184,7 @@ class Ui_MainWindow(object):
         self.menuOpen.addAction(self.actioncccv)
         self.menuOpen.addAction(self.actioncv)
         self.menuOpen.addAction(self.actiongitt)
+        self.menuOpen.addAction(self.actionimpedance)
         self.menuOpen.addAction(self.actioncp)
         self.menuOpen.addAction(self.actiondiffracion)
         self.menuOpen.addAction(self.actionIhch_1501)
@@ -183,6 +194,9 @@ class Ui_MainWindow(object):
         self.menuPlot.addAction(self.export_actionPlot)
         self.menuPlot.addAction(self.actionDelete_Current_Plot)
 
+        self.menuData.addAction(self.actionEdit_data)
+        self.menuData.addAction(self.actionDelete_data)
+
         self.menuExport.addAction(self.actionR_sistance)
         self.menuExport.addAction(self.actionArea)
         self.menuExport.addAction(self.actionDiffraction)
@@ -191,8 +205,10 @@ class Ui_MainWindow(object):
         self.menuSave.addAction(self.actionAll)
         self.menubar.addAction(self.menuOpen.menuAction())
         self.menubar.addAction(self.menuPlot.menuAction())
+        self.menubar.addAction(self.menuData.menuAction())
         self.menubar.addAction(self.menuExport.menuAction())
         self.menubar.addAction(self.menuSave.menuAction())
+
 
         self.retranslateUi(MainWindow)
         self.tabWidget.setCurrentIndex(-1)
@@ -218,11 +234,13 @@ class Ui_MainWindow(object):
         self.menuOpen.setTitle(_translate("MainWindow", "Open"))
         self.menumodulo.setTitle(_translate("MainWindow", "modulo"))
         self.menuPlot.setTitle(_translate("MainWindow", "Plot"))
+        self.menuData.setTitle(_translate("MainWindow", "Data"))
         self.menuExport.setTitle(_translate("MainWindow", "Export"))
         self.menuSave.setTitle(_translate("MainWindow", "Save"))
         self.actioncccv.setText(_translate("MainWindow", "cccv"))
         self.actioncv.setText(_translate("MainWindow", "cv"))
         self.actiongitt.setText(_translate("MainWindow", "gitt"))
+        self.actionimpedance.setText(_translate("MainWindow", "impedance"))
         self.actioncp.setText(_translate("MainWindow", "cp"))
         self.actiondiffracion.setText(_translate("MainWindow", "diffraction"))
         self.actionIhch_1501.setText(_translate("MainWindow", "Ihch 1501"))
@@ -237,4 +255,7 @@ class Ui_MainWindow(object):
         self.actionCurrent_Plot.setText(_translate("MainWindow", "Current Plot"))
         self.actionCurrend_Data.setText(_translate("MainWindow", "Currend Data"))
         self.actionAll.setText(_translate("MainWindow", "All"))
+
+        self.actionEdit_data.setText(_translate("MainWindow", "Edit Current Data"))
+        self.actionDelete_data.setText(_translate("MainWindow", "Close Current Data"))
 

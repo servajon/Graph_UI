@@ -116,7 +116,7 @@ class Tree_widget(QtWidgets.QTreeWidget):
         """
         for i, item in enumerate(self.items):
             if item.name == data_name:
-                item = self.get_item(name)
+                item = self.get_item(data_name, name)
                 child_item = item.takeChildren()
                 self.topLevelItem(i).removeChild(item)
                 self.topLevelItem(i).addChildren(child_item)
@@ -177,17 +177,18 @@ class Tree_widget(QtWidgets.QTreeWidget):
 
     """---------------------------------------------------------------------------------"""
 
-    def get_item(self, name):
+    def get_item(self, conteneur_name, name):
         """
         return le QTreeWidgetItem portant le nom name
         :param name: nom de widget que l'on cherche
         :return: QTreeWidgetItem
         """
         for i, conteneur in enumerate(self.items):
-            res = conteneur.get_item(name)
-            if res is not None:
-                res.append(i)
-                break
+            if conteneur.name == conteneur_name:
+                res = conteneur.get_item(name)
+                if res is not None:
+                    res.append(i)
+                    break
 
         res = res[1:]
         res.reverse()
@@ -236,16 +237,57 @@ class Tree_widget(QtWidgets.QTreeWidget):
             item = item.get(index)
         item.name = new_name
 
-        self.info()
+    """---------------------------------------------------------------------------------"""
 
+    def rename_all(self, old_data_name, new_data_name):
+        """
+        on renome toutes les figures d'un fichier de données avec les noms contenu dans array
+
+        :param old_data_name: ancien nom du fichier de donnée
+        :param new_data_name: nouveau nom du fichier de donnée
+        :return: None
+        """
+
+        for i, conteneur in enumerate(self.items):
+            if conteneur.name == old_data_name:
+
+                conteneur.name = new_data_name
+                item = self.topLevelItem(i)
+                item.setText(0, new_data_name)
+
+                self.rename_all_physique(item, new_data_name, old_data_name)
+                self.rename_all_logique(conteneur, new_data_name, old_data_name)
+
+                return
+        raise ValueError
+
+
+    def rename_all_physique(self, item, new_name, old_name):
+        for i in range(item.childCount()):
+            _item = item.child(i)
+
+            if len(_item.text(0)) >= len(old_name) and _item.text(0)[:len(old_name)] == old_name:
+                _item.setText(0, new_name + _item.text(0)[len(old_name):])
+
+            self.rename_all_physique(_item, new_name, old_name)
 
     """---------------------------------------------------------------------------------"""
 
-    def get_top_item(self, name):
+    def rename_all_logique(self, item, new_name, old_name):
+        for _item in item.get_array():
+
+            if len(_item.name) >= len(old_name) and _item.name[0:len(old_name)] == old_name:
+                _item.name = new_name + _item.name[len(old_name):]
+
+            self.rename_all_logique(_item, new_name, old_name)
+
+
+    def get_top_item(self, conteneur_name, name):
         for i, conteneur in enumerate(self.items):
-            res = conteneur.get_item(name)
-            if res is not None:
-                return self.topLevelItem(i)
+            if conteneur.name == conteneur_name:
+                res = conteneur.get_item(name)
+                if res is not None:
+                    return self.topLevelItem(i)
         raise ValueError
 
     """---------------------------------------------------------------------------------"""

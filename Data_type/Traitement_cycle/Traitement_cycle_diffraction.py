@@ -21,5 +21,4 @@ def cycle_diffraction(figure, cycle):
         new_figure.add_data_y1_Data(data_array_y)
 
     new_figure.type = "diffraction_cycle"
-    new_figure.name = ""
     return new_figure

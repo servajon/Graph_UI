@@ -112,7 +112,6 @@ def cycle_cccv(figure, loop_data, mode_data, i_data, ecell_data, cycle):
             # si point centre n'est pas None, il faut regarder combien de point on suprime avant le centre
             if point_centre is None:
                 # On suprime les plateaux, mode 2
-
                 res = Traitements_cycle_outils.mode_del(figure.x_axe.data[j].data[val_min:val_max],
                                                         figure.y1_axe.data[j].data[val_min:val_max], global_index,
                                                         val_min, val_max, mode_data[figure.y1_axe.data[j].source], 2)
@@ -157,7 +156,7 @@ def cycle_cccv(figure, loop_data, mode_data, i_data, ecell_data, cycle):
                 data_array_y = Data_array(data_unit_y1, figure.y1_axe.data[j].name,
                                                        figure.y1_axe.data[j].source,
                                                        "cycle_" + str(cycle[i] + 1))
-                data_array_y.global_index = res[2]
+                # data_array_y.global_index = res[2]
                 new_figure.add_data_y1_Data(data_array_y)
 
             else:
@@ -176,7 +175,7 @@ def cycle_cccv(figure, loop_data, mode_data, i_data, ecell_data, cycle):
                 data_array_y = Data_array(data_unit_y1, figure.y1_axe.data[j].name,
                                                        figure.y1_axe.data[j].source,
                                                        "cycle_" + str(cycle[i] + 1))
-                data_array_y.global_index = res[2]
+                # data_array_y.global_index = res[2]
                 new_figure.add_data_y1_Data(data_array_y)
 
 
@@ -238,6 +237,7 @@ def cycle_cccv(figure, loop_data, mode_data, i_data, ecell_data, cycle):
 
                 # si point centre n'est pas None, il faut regarder combien de point on suprime avant le centre
                 if point_centre is None:
+
                     # On suprime les plateaux, mode 2
                     res = Traitements_cycle_outils.mode_del(figure.x_axe.data[j].data[val_min:val_max],
                                                             figure.y2_axe.data[j].data[val_min:val_max], global_index,
@@ -284,7 +284,7 @@ def cycle_cccv(figure, loop_data, mode_data, i_data, ecell_data, cycle):
                     data_array_y = Data_array(data_unit_y2, figure.y2_axe.data[j].name,
                                                            figure.y2_axe.data[j].source,
                                                            "cycle_" + str(cycle[i] + 1))
-                    data_array_y.global_index = global_index
+                    # data_array_y.global_index = global_index
                     new_figure.add_data_y2_Data(data_array_y)
 
                 else:
@@ -301,7 +301,7 @@ def cycle_cccv(figure, loop_data, mode_data, i_data, ecell_data, cycle):
                     data_array_y = Data_array(data_unit_y2, figure.y2_axe.data[j].name,
                                                            figure.y2_axe.data[j].source,
                                                            "cycle_" + str(cycle[i] + 1))
-                    data_array_y.global_index = global_index
+                    # data_array_y.global_index = global_index
                     new_figure.add_data_y2_Data(data_array_y)
 
     new_figure.created_from = figure
@@ -346,7 +346,7 @@ def cycle_norm_cccv(figure, loop_data, mode_data, i_data, ecell_data, cycle):
 
     emit = Emit()
 
-    unit_x = figure.x_axe.get_unit()
+    unit_x = None
     unit_y = figure.y1_axe.get_unit()
 
     # key : cycle number
@@ -425,7 +425,7 @@ def cycle_norm_cccv(figure, loop_data, mode_data, i_data, ecell_data, cycle):
 
             data_array_y = Data_array(data_unit_y1, figure.y1_axe.data[j].name, figure.y1_axe.data[j].source,
                            "cycle_" + str(cycle[i] + 1))
-            data_array_y.global_index = global_index
+            # data_array_y.global_index = global_index
             new_figure.add_data_y1_Data(data_array_y)
 
     if figure.y2_axe is not None:
@@ -488,7 +488,7 @@ def cycle_norm_cccv(figure, loop_data, mode_data, i_data, ecell_data, cycle):
 
                 data_array_y = Data_array(data_unit_y2, figure.y2_axe.data[j].name, figure.y2_axe.data[j].source,
                                "cycle_" + str(cycle[i] + 1))
-                data_array_y.global_index = global_index
+                # data_array_y.global_index = global_index
                 new_figure.add_data_y2_Data(data_array_y)
 
     new_figure.created_from = figure
@@ -641,7 +641,7 @@ def cycle_miror_cccv(figure, loop_data, mode_data, i_data, ecell_data, cycle):
 
                 data_array_y = Data_array(data_unit_y1, figure.y1_axe.data[j].name, figure.y1_axe.data[j].source,
                                "cycle_" + str(cycle[i] + 1))
-                data_array_y.global_index = global_index
+                # data_array_y.global_index = global_index
                 new_figure.add_data_y1_Data(data_array_y)
             else:
                 last_val = point_centre[0] - point_centre[1]
@@ -657,7 +657,7 @@ def cycle_miror_cccv(figure, loop_data, mode_data, i_data, ecell_data, cycle):
 
                 data_array_y = Data_array(data_unit_y1, figure.y1_axe.data[j].name, figure.y1_axe.data[j].source,
                                "cycle_" + str(cycle[i] + 1))
-                data_array_y.global_index = global_index
+                # data_array_y.global_index = global_index
                 new_figure.add_data_y1_Data(data_array_y)
 
     if figure.y2_axe is not None:
@@ -749,7 +749,7 @@ def cycle_miror_cccv(figure, loop_data, mode_data, i_data, ecell_data, cycle):
 
                     data_array_y = Data_array(data_unit_y2, figure.data_y2[j].name, figure.data_y2[j].source,
                                    "cycle_" + str(cycle[i] + 1))
-                    data_array_y.global_index = global_index
+                    # data_array_y.global_index = global_index
                     new_figure.add_data_y2_Data(data_array_y)
                 else:
                     # on utilise directemetn point_centre[0] - point_centre[1], pas besoin de faire autre chose
@@ -803,7 +803,11 @@ def cycle_split_cccv(figure, loop_data, mode_data, i_data, ecell_data, cycle, no
     """
     emit = Emit()
 
-    unit_x = figure.x_axe.get_unit()
+    if norm is None:
+        unit_x = figure.x_axe.get_unit()
+    else:
+        unit_x = None
+
     unit_y = figure.y1_axe.get_unit()
 
     figure1 = Figure("", 1)
@@ -934,14 +938,14 @@ def cycle_split_cccv(figure, loop_data, mode_data, i_data, ecell_data, cycle, no
             data_unit_y1_f1 = Data_unit(start_y1, unit_y)
             data_array_y = Data_array(data_unit_y1_f1, figure.y1_axe.data[j].name, figure.y1_axe.data[j].source,
                                                 "cycle_" + str(cycle[i] + 1))
-            data_array_y.global_index = global_index[0:point_centre[0] - point_centre[1]]
+            # data_array_y.global_index = global_index[0:point_centre[0] - point_centre[1]]
             figure1.add_data_y1_Data(data_array_y)
 
             if not demi_cycle:
                 data_unit_y1_f2 = Data_unit(end_y1, unit_y)
                 data_array_y = Data_array(data_unit_y1_f2, figure.y1_axe.data[j].name, figure.y1_axe.data[j].source,
                                                     "cycle_" + str(cycle[i] + 1))
-                data_array_y.global_index = global_index[point_centre[0] - point_centre[1]:len(res[1]) - 1]
+                # data_array_y.global_index = global_index[point_centre[0] - point_centre[1]:len(res[1]) - 1]
                 figure2.add_data_y1_Data(data_array_y)
 
     if figure.y2_axe is not None:

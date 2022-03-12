@@ -176,7 +176,8 @@ class Open_file_ihch_1501(QObject):
         if self.__ec_lab_paths is None:
             try:
                 self.__data = Lecteur_ihch_1501.open_ihch_1501(self.__file_path)
-            except ValueError:
+            except ValueError as err:
+                raise err
                 self.finished.emit([-1])
                 self.__finish = True
             else:
@@ -196,7 +197,8 @@ class Open_file_ihch_1501(QObject):
             try:
                 Lecteur_ihch_1501.create_time(self.__ec_lab_paths, self.__file_path)
                 self.__data = Lecteur_ihch_1501.open_ihch_1501(self.__file_path)
-            except ValueError:
+            except ValueError as err:
+                raise err
                 self.finished.emit([-1])
                 self.__finish = True
             else:
@@ -211,6 +213,54 @@ class Open_file_ihch_1501(QObject):
                 else:
                     self.finished.emit([1])
                     self.__finish = True
+
+    @property
+    def file_path(self):
+        return self.__file_path
+
+    @property
+    def data(self):
+        return self.__data
+
+    @property
+    def finish(self):
+        return self.__finish
+
+    @file_path.setter
+    def file_path(self, file_path):
+        self.__file_path = file_path
+
+    @data.setter
+    def data(self, data):
+        self.__data = data
+
+    @finish.setter
+    def finish(self, finish):
+        self.__finish = finish
+
+
+class Open_file_impedance(QObject):
+    finished = pyqtSignal(int)
+
+    def __init__(self, path):
+        QObject.__init__(self)
+        """
+        __file_path : [type, path]
+        path pouvant être un array
+        """
+        self.__file_path = path
+        self.__data = None
+        self.__finish = False
+
+    def run(self):
+        try:
+            self.__data = Lecteur_thread.open(self.__file_path, "impedance")
+        except ValueError:
+            self.finished.emit(-1)
+            self.__finish = True
+        else:
+            self.finished.emit(1)
+            self.__finish = True
 
     @property
     def file_path(self):

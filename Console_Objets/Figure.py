@@ -6,24 +6,6 @@ from Console_Objets.Data_array import Data_array
 
 
 class Figure:
-    __TYPE = {
-        "capa": ["shift x"],  # figure du traitement capa
-        "potentio": ["derive", "shift x", "shift y"],  # figure du traitement potentio
-        "bar": [],  # graph bar de la capa
-        "custom_y1": ["derive", "cycle", "shift x", "shift y"],  # random figure avec uniquement quelque chose en y1
-        "custom_y1_y2": ["derive", "cycle", "shift x"],  # random figure avec axe y1 ET y2
-        "cycle_y1": ["derive", "shift x", "shift y"],   # figure issus d'un traitement de cycle avec quelque chose en y1
-        "cycle_y1_y2": ["derive", "shift x"],   # figure issus d'un traitement de cycle avec quelque chose en y1 ET y2
-        "derive_y1": ["shift x", "shift y", "derive"],  # figure issus d'une dérivée avec data en y1
-        "derive_y1_y2": ["shift x", "derive"],  # figure issus d'une dérivée avec data en y1 ET y2
-        "diffraction": ["cycle", "fit"],    # figure du traitement diffraction
-        "diffraction_cycle": ["fit"],    # figure issus d'une selection de cycle d'une figure de diffraction
-        "res_fitting_temperature": [],   # figure résultat d'un fit
-        "res_fitting_temps": [],  # figure résultat d'un fit
-        "contour": [],  # figure résultat d'un fit
-        "saxs": [],
-        "waxs": [],
-    }
 
     def __init__(self, name, dirty=None, **kwarks):
         self.x_axe = None
@@ -496,7 +478,7 @@ class Figure:
 
     def is_data_set_3d(self):
         """return 1 si la figure est correct pour être affiché, 0 sinon"""
-        if (len(self.x_axe) == 0 or len(self.y1_axe) == 0 or len(self.z1_axe) == 0) or len(self.y2_axe) != 0:
+        if self.x_axe is None or self.y1_axe is None or self.z1_axe is None:
             return 0
         else:
             return 1
@@ -505,7 +487,7 @@ class Figure:
 
     def is_data_set_contour(self):
         """return 1 si la figure est correct pour être affiché, 0 sinon"""
-        if len(self.x_axe) == 0 or len(self.y1_axe) == 0 or len(self.z1_axe) == 0:
+        if self.x_axe is None or self.y1_axe is None or self.z1_axe is None:
             return 0
         else:
             return 1
@@ -571,6 +553,11 @@ class Figure:
 
     """----------------------------------------------------------------------------------"""
 
+    def can_export(self):
+        return self.__TYPE_EXPORT[self.type]
+
+    """----------------------------------------------------------------------------------"""
+
     def export(self, path):
         len_max = 0
         """On récupére l'index du vecteur en x le plus grand"""
@@ -609,3 +596,63 @@ class Figure:
                         file.write("\t")
             file.write("\n")
         file.close()
+
+    __TYPE = {
+        "capa": ["shift x"],  # figure du traitement capa
+        "potentio": ["derive", "shift x", "shift y"],  # figure du traitement potentio
+        "bar": [],  # graph bar de la capa
+        "custom_y1": ["derive", "cycle", "shift x", "shift y"],  # random figure avec uniquement quelque chose en y1
+        "custom_y1_y2": ["derive", "cycle", "shift x"],  # random figure avec axe y1 ET y2
+        "cycle_y1": ["derive", "shift x", "shift y"],  # figure issus d'un traitement de cycle avec quelque chose en y1
+        "cycle_y1_y2": ["derive", "shift x"],  # figure issus d'un traitement de cycle avec quelque chose en y1 ET y2
+        "derive_y1": ["shift x", "shift y", "derive"],  # figure issus d'une dérivée avec data en y1
+        "derive_y1_y2": ["shift x", "derive"],  # figure issus d'une dérivée avec data en y1 ET y2
+        "diffraction": ["cycle", "fit"],  # figure du traitement diffraction
+        "diffraction_cycle": ["fit"],  # figure issus d'une selection de cycle d'une figure de diffraction
+        "res_fitting_temperature": [],  # figure résultat d'un fit
+        "res_fitting_temps": [],  # figure résultat d'un fit
+        "contour": [],  # figure résultat d'un fit
+        "saxs frame": [],
+        "waxs frame": ["fit"],
+        "saxs scan": [],
+        "waxs scan": ["fit"],
+        "gitt": ["export gitt"],
+
+        "impedance": ["cycle", "derive"],
+        "impedance_cycle": ["derive"],
+
+        "impedance_res": ["export resistances"],
+
+        "bode": ["cycle", "derive"],
+        "bode_cycle": ["derive"],
+
+        "impedance_3d": ["cycle"],
+        "impedance_3d_cycle": [],
+
+    }
+
+    __TYPE_EXPORT = {
+        "capa": True,
+        "potentio": True,
+        "bar": False,
+        "custom_y1": True,
+        "custom_y1_y2": True,
+        "cycle_y1": True,
+        "cycle_y1_y2": True,
+        "derive_y1": True,
+        "derive_y1_y2": True,
+        "diffraction": True,
+        "diffraction_cycle": True,
+        "res_fitting_temperature": False,  # a modifier
+        "res_fitting_temps": False,  # a modifier
+        "contour": False,
+        "saxs frame": True,
+        "waxs frame": True,
+        "saxs scan": True,
+        "waxs scan": True,
+        "gitt": False,
+        "impedance": True,
+        "impedance_res": True,
+        "bode": True,
+        "impedance 3d": False,
+    }

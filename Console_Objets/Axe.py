@@ -111,6 +111,14 @@ class Axe:
 
     """----------------------------------------------------------------------------------"""
 
+    def set_global_index(self, array, index):
+        if self.type != "x":
+            raise ValueError
+        else:
+            self.data[index].global_index = array
+
+    """----------------------------------------------------------------------------------"""
+
     def __len__(self):
         return len(self.data)
 

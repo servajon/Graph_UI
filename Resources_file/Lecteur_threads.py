@@ -3,7 +3,6 @@ import multiprocessing as mp
 import os
 
 import Resources_file.Resources as R
-from Console_Objets.Affiche_objet import Array_Abstract_objet_affiche
 from Console_Objets.Data_Unit import Data_unit, UNITS, Units
 from Resources_file.Emit import Emit
 
@@ -123,7 +122,7 @@ def extract_data_cccv(file):
                       foreground_color="yellow")
             mass_electrode = -1
     elif data_data[index] == "":
-        emit.emit("msg_console", type="msg_console", str="Fichier invalide", foreground_color="red")
+        emit.emit("msg_console", type="msg_console", str="Invalid file", foreground_color="red")
         raise ValueError
     else:
         emit.emit("msg_console", type="msg_console", str="L'entête du fichier est introuvable",
@@ -209,7 +208,6 @@ def extract_data_gitt(file):
     emit = Emit()
     emit.emit("msg_console", type="msg_console", str="Lecture du fichier en cours", foreground_color="yellow")
 
-
     data_data = file.readlines()
     file.close()
 
@@ -261,10 +259,10 @@ def extract_data_gitt(file):
                 index += 1
 
         elif data_data[index] == "":
-            emit.emit("msg_console", type="msg_console", str="Fichier invalide", foreground_color="red")
+            emit.emit("msg_console", type="msg_console", str="Invalid file", foreground_color="red")
             raise ValueError
     elif data_data[index] == "":
-        emit.emit("msg_console", type="msg_console", str="Fichier invalide", foreground_color="red")
+        emit.emit("msg_console", type="msg_console", str="Invalid file", foreground_color="red")
         raise ValueError
     else:
         emit.emit("msg_console", type="msg_console", str="L'entête du fichier est introuvable",
@@ -342,9 +340,9 @@ def extract_data_gitt(file):
         return data
 
 
-def extract_data_impedance(file, format_time=None):
-    resource = R.Resource_class()
-    print("Lecture du fichier en cours")
+def extract_data_impedance(file):
+    emit = Emit()
+    emit.emit("msg_console", type="msg_console", str="Lecture du fichier en cours", foreground_color="yellow")
 
 
     data_data = file.readlines()
@@ -376,13 +374,13 @@ def extract_data_impedance(file, format_time=None):
             index += 1
 
         if index == len(data_data):
-            print("Fichier invalide")
+            emit.emit("msg_console", type="msg_console", str="Invalid file", foreground_color="red")
             raise ValueError
     elif index == len(data_data):
-        resource.print_color("Fichier invalide", "fail")
+        emit.emit("msg_console", type="msg_console", str="Invalid file", foreground_color="red")
         raise ValueError
     else:
-        resource.print_color("L'entête du fichier est introuvable", "fail")
+        emit.emit("msg_console", type="msg_console", str="L'entête du fichier est introuvable", foreground_color="red")
         name = "no_name_found"
         data["mass_electrode"] = -1
 
@@ -412,27 +410,19 @@ def extract_data_impedance(file, format_time=None):
         miss_loop = True
 
     data_row = []
-
     mot = ''
     for i in range(len(data_data[index])):
         if data_data[index][i] == '\t':
             if mot == "time/s":
-                if format_time == "s":
-                    data_row.append("time/s")
-                    data["time/s"] = []
-                elif format_time == "min":
-                    data_row.append("time/min")
-                    data["time/min"] = []
-                else:
-                    data_row.append("time/h")
-                    data["time/h"] = []
-                    """Pour un fichier de CV on n'a pas Ecell/V mais Ewe/V, on le remplace par Ecell/V"""
+                data_row.append("time/h")
+                data["time/h"] = Data_unit(None, UNITS["time/h"])
+                # Pour un fichier de CV on n'a pas Ecell/V mais Ewe/V, on le remplace par Ecell/V
             elif mot == "<Ewe>/V":
                 data_row.append("Ecell/V")
-                data["Ecell/V"] = []
+                data["Ecell/V"] = Data_unit(None, UNITS["Ecell/V"])
             else:
                 data_row.append(mot)
-                data[mot] = []
+                data[mot] = Data_unit(None, UNITS[mot])
 
             mot = ''
         else:
@@ -444,14 +434,10 @@ def extract_data_impedance(file, format_time=None):
     data["name"] = name
     if "cycle_number" not in data_row and miss_loop:
         data = create_data(data_data[index + 1:], data, data_row, -1)
-        if format_time == "s":
-            res = create_loop(data["time/s"])
-        elif format_time == "min":
-            res = create_loop(data["time/min"])
-        else:
-            res = create_loop(data["time/h"])
+        res = create_loop(data["time/h"])
         if len(res) == 1:
-            resource.print_color("Fichier invalide, impossible de créer les loops", "fail")
+            emit.emit("msg_console", type="msg_console", str="Fichier invalide, impossible de créer les loops",
+                      foreground_color="red")
             raise ValueError
         else:
             data["loop_data"] = res
@@ -462,7 +448,8 @@ def extract_data_impedance(file, format_time=None):
         else:
             data = create_data(data_data[index+1:], data, data_row)
     except ValueError:
-        resource.print_color("Fichier contenant des valeurs invalides : UNKVAR", "fail")
+        emit.emit("msg_console", type="msg_console", str="Fichier contenant des valeurs invalides : UNKVAR",
+                  foreground_color="red")
         raise ValueError
     else:
         return data
@@ -787,6 +774,9 @@ def create_data(data_data, data, data_row, loop_data=None):
         else:
             data = work_loop([data, data_data, data_row])
             data["row_data"] = data_row
+        for key in data.get("row_data"):
+            data.get(key).set_units()
+
         return data
     else:
         array_data = []
@@ -854,7 +844,6 @@ def create_data(data_data, data, data_row, loop_data=None):
 
         for key in data.get("row_data"):
             data.get(key).set_units()
-
 
         return data
 
@@ -931,6 +920,9 @@ def work_loop(args):
                     float(value.replace(',', '.'))) != current_loop:
                 if start_loop is None:
                     start_loop = current_loop
+
+                if int(float(value.replace(',', '.'))) < current_loop:
+                    raise EOFError("error on loop " + str(int(float(value.replace(',', '.')))))
 
                 current_loop = int(float(value.replace(',', '.')))
                 if len(loop_data) > 0:

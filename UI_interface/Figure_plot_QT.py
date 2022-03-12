@@ -109,9 +109,16 @@ class Figure_plot(QWidget):
         self.canvas.mpl_connect('close_event', self.closeEvent)
         self.canvas.mpl_connect('axes_enter_event', self.axes_enter_event)
         self.canvas.mpl_connect('axes_leave_event', self.axes_leave_event)
+        # self.canvas.mpl_connect('button_press_event', self.on_key)
 
         # on connect abstract_affiche
         self.abstract_affiche.connect_all()
+
+        # si c'est gitt_affich on lui donne une fonction de callbak pour fermer le
+        # plot, dans ce cas, à voir si il y en a besoin par la suite, probablement
+        if type(self.abstract_affiche).__name__ == "Gitt_affiche" or \
+            type(self.abstract_affiche).__name__ == "Impedance_affiche":
+            self.abstract_affiche.call_back_func = self.call_back_func
 
         self.canvas.draw()
 
@@ -127,6 +134,9 @@ class Figure_plot(QWidget):
         :param event: button_press_event
         :return: None
         """
+
+        self.focus_in.emit(self.abstract_affiche.figure.name)
+
         if self.abstract_affiche.editable and event.dblclick and event.inaxes is None and event.button == MouseButton.LEFT \
                 and not self.abstract_affiche.interactive:
             self.edit_plot(event)
@@ -462,7 +472,18 @@ class Figure_plot(QWidget):
         :param name: nom du nouveau plot a affiché
         :return:
         """
-        self.abstract_affiche.pplot_fig.suptitle(name).set_picker(True)
+        self.abstract_affiche.pplot_fig.suptitle(name)
+        self.canvas.draw()
+
+    """---------------------------------------------------------------------------------"""
+
+    def update_current_title_plot(self):
+        """
+        Methode appellé pour update le nom du plot affiché avec celui de la figure
+
+        :return: None
+        """
+        self.abstract_affiche.pplot_fig.suptitle(self.abstract_affiche.figure.plot_name)
         self.canvas.draw()
 
     """---------------------------------------------------------------------------------"""
@@ -710,16 +731,6 @@ class Figure_plot(QWidget):
 
     """---------------------------------------------------------------------------------"""
 
-    def on_back(self):
-        """
-        On passe la fenêtre en arière plan
-
-        :return: None
-        """
-        self.lower()
-
-    """---------------------------------------------------------------------------------"""
-
     def is_on_top(self):
         """
         On check si la fenêtre est active ou pas
@@ -727,18 +738,6 @@ class Figure_plot(QWidget):
         :return: bool
         """
         return self.isActiveWindow()
-
-    """---------------------------------------------------------------------------------"""
-
-    def focusInEvent(self, event):
-        """
-        Quand la fenêtre passe en focus il faut update current_figure, le tree et les label
-        Un signal est envoyé quand c'est le cas
-
-        :param event: focusInEvent de QT
-        :return: None
-        """
-        self.focus_in.emit(self.abstract_affiche.figure.name)
 
     """---------------------------------------------------------------------------------"""
 
@@ -1017,8 +1016,6 @@ class Figure_plot(QWidget):
                 self.abstract_affiche.leg2.get_legend().get_lines()[i].set_ls("-")
 
     """---------------------------------------------------------------------------------"""
-
-    """---------------------------------------------------------------------------------"""
     """                         View data current plot start                            """
     """---------------------------------------------------------------------------------"""
 
@@ -1031,6 +1028,10 @@ class Figure_plot(QWidget):
         """
 
         self.array_data_displayed = list
+        if self.view_data_value is not None:
+            self.view_data_value.destroy()
+            self.view_data_value = None
+
         self.view_data_value = View_data_value(self.array_data_displayed, self)
 
         _translate = QtCore.QCoreApplication.translate
@@ -1179,5 +1180,17 @@ class Figure_plot(QWidget):
         """
         if self.view_data_value is not None:
             # on delet la fenêtre
-            self.view_data_value.deleteLater()
+            self.view_data_value.close()
             self.view_data_value = None
+
+    def call_back_func(self, *args, **kwargs):
+        if type(self.abstract_affiche).__name__ == "Gitt_affiche":
+            self.close()
+        elif type(self.abstract_affiche).__name__ == "Impedance_affiche":
+            self.close()
+
+
+
+
+
+
