@@ -1,3 +1,4 @@
+import math
 import sys
 
 import numpy as np
@@ -20,12 +21,22 @@ def get_index(array, value):
     return index
 
 
-def get_index_pics(pics):
+def slice(array_x, array_y, v1, v2):
+    index = 0
+    while array_x[index] < v1:
+        index += 1
+    index_min = index
+    while array_x[index] < v2:
+        index += 1
+    return array_x[index_min:index], array_y[index_min:index]
+
+
+def get_min_max_pics(pics):
     _max = 0
     _min = sys.maxsize
     for pic in pics:
-        _min = min(_min, pic.index_min)
-        _max = max(_max, pic.index_max)
+        _min = min(_min, pic.left_base)
+        _max = max(_max, pic.right_base)
     return _min, _max
 
 
@@ -41,11 +52,92 @@ def baseline_(y, lam, p, niter=5):
     return z
 
 
-def fit_pics(_x_array, _y_array, pics):
-    param = None
-    fits = {}
+def pseudo_voigt(x, amplitude, center, sigma, fraction):
+    sigma_g = sigma / math.sqrt(2 * math.log(2))
+    return ((1 - fraction) * gaussian(x, amplitude, center, sigma_g) +
+            fraction * lorentzian(x, amplitude, center, sigma))
 
-    index_min, index_max = get_index_pics(pics)
+
+def gaussian(x, amplitude=1.0, center=0.0, sigma=1.0):
+    return ((amplitude/(max(1.0e-15, math.sqrt(2*math.pi)*sigma)))
+            * math.e ** (-(1.0*x-center)**2 / max(1.0e-15, (2*sigma**2))))
+
+
+def lorentzian(x, amplitude=1.0, center=0.0, sigma=1.0):
+    return ((amplitude/(1 + ((1.0*x-center)/max(1.0e-15, sigma))**2))
+            / max(1.0e-15, (math.pi*sigma)))
+
+
+
+
+
+def fit_pics(_x_array, _y_array, pics, nb):
+
+    _min, _max = get_min_max_pics(pics)
+    x_array, y_array = slice(_x_array, _y_array, _min * 0.99, _max * 1.01)
+
+    baseline = baseline_(y_array, 10000, 0.0001)
+
+    y_array -= baseline
+
+
+
+    for pic in pics:
+
+        pplot.plot(x_array, y_array)
+
+        temp_x, temp_y = slice(x_array, y_array, pic.left_base, pic.right_base)
+
+        pplot.plot(temp_x, temp_y)
+        """temp_x = x_array
+        temp_y = y_array"""
+
+        """pplot.plot(temp_x, temp_y)
+        pplot.show()"""
+
+
+        model = PseudoVoigtModel()
+
+        param = model.make_params()
+
+        for key, item in pic.__dict__.items():
+            if key != "left_base" and key != "right_base" and key != "fit":
+                param[key].set(value=item)
+
+        # param["amplitude"].set(value=pic.amplitude)
+        # param["sigma"].set(value=pic.fwhm)
+
+        out = model.fit(temp_y, param, x=temp_x)
+
+        print(out.values)
+
+        pic.update(**out.values)
+
+
+
+        # pplot.plot(x_array, y_array)
+        # pplot.plot(temp_x, out.best_fit)
+
+        """def pseudo_voigt(x, amplitude, center, sigma, fraction):"""
+
+        test_voigt = pseudo_voigt(np.array(x_array), out.values["amplitude"], out.values["center"], out.values["sigma"],
+                                  out.values["fraction"])
+
+        pplot.plot(x_array, test_voigt)
+        pplot.show()
+
+    return
+
+
+
+
+
+
+
+
+    index_min, index_max = get_min_max_pics(pics)
+
+    print(index_min, index_max)
 
     x_array = _x_array[index_min:index_max]
     y_array = _y_array[index_min:index_max]
@@ -95,8 +187,6 @@ def fit_pics(_x_array, _y_array, pics):
         else:
             mod += value
 
-    print(x_array)
-    print(y_array)
     out = mod.fit(y_array, param, x=x_array)
 
     for i, pic in enumerate(pics):
@@ -104,8 +194,6 @@ def fit_pics(_x_array, _y_array, pics):
         pic.x_max = out.values[key + "_center"]
         pic.integral = out.values[key + "_amplitude"]
         pic.fwhm = out.values[key + "_fwhm"]
-
-        print(pic.fwhm)
 
         pic.index_min = get_index(_x_array, pic.x_max - pic.fwhm * 2 * 1.5)
         pic.index_max = get_index(_x_array, pic.x_max + pic.fwhm * 2 * 1.5)
@@ -116,88 +204,6 @@ def fit_pics(_x_array, _y_array, pics):
     ax1.plot(x_array, y_array)
     ax1.plot(x_array, out.best_fit)
     pplot.show()
-
-
-def VoigtModel_fit(x_array, y_array, name, pic):
-    baseline = baseline_(y_array, 10000, 0.0001)
-    y_array -= baseline
-
-    # y_array = scipy.signal.savgol_filter(y_array, 21, 7)
-
-    name += "_VoigtModel"
-    voigt = VoigtModel(prefix=name + '_')
-
-    pars = voigt.make_params()
-
-    pars[name + "_center"].set(pic.x_max)
-    pars[name + "_amplitude"].set(pic.integral)
-    pars[name + "_sigma"].set(pic.fwhm)
-
-    out = voigt.fit(y_array, pars, x=x_array)
-
-    """pplot.plot(x_array, y_array)
-    pplot.plot(x_array, out.best_fit)
-    pplot.show()"""
-
-    return out
-
-
-def PseudoVoigtModel_fit(x_array, y_array, name, pic):
-    baseline = baseline_(y_array, 10000, 0.0001)
-    y_array -= baseline
-
-    # y_array = scipy.signal.savgol_filter(y_array, 21, 7)
-
-    name += "_PseudoVoigtModel"
-    pseudoVoigt = PseudoVoigtModel(prefix=name + '_')
-
-    pars = pseudoVoigt.make_params()
-
-    pars[name + "_center"].set(pic.x_max)
-    pars[name + "_amplitude"].set(pic.integral)
-    pars[name + "_sigma"].set(pic.fwhm)
-
-    out = pseudoVoigt.fit(y_array, pars, x=x_array)
-
-    """pplot.plot(x_array, y_array)
-    pplot.plot(x_array, out.best_fit)
-    pplot.show()"""
-
-    return out
-
-
-def GaussianModel_fit(x_array, y_array, name, pic):
-    baseline = baseline_(y_array, 10000, 0.0001)
-    y_array -= baseline
-
-    # y_array = scipy.signal.savgol_filter(y_array, 21, 7)
-
-    name += "_GaussianModel"
-    gaussian = GaussianModel(prefix=name + '_')
-
-    pars = gaussian.make_params()
-
-    pars[name + "_center"].set(pic.x_max)
-    pars[name + "_amplitude"].set(pic.integral)
-    pars[name + "_sigma"].set(pic.fwhm)
-
-    out = gaussian.fit(y_array, pars, x=x_array)
-
-    """pplot.plot(x_array, y_array)
-    pplot.plot(x_array, out.best_fit)
-    pplot.show()"""
-
-    return out
-
-
-def get_delta_centre_moyen(past_param):
-    if len(past_param) < 2:
-        return None
-    else:
-        s = 0
-        for i in range(1, len(past_param)):
-            s += abs(past_param[i - 1][0] - past_param[i][0])
-        return s / (len(past_param) - 1)
 
 
 class Fitting(QObject):
@@ -225,33 +231,22 @@ class Fitting(QObject):
         self.area = []
         self.fwhm = []
 
-        index_min, index_max = get_index_pics(self.pics)
+        index_min, index_max = get_min_max_pics(self.pics)
         self.init_index_min = index_min
         self.init_index_max = index_max
 
-        self.init_center = [pic.x_max for pic in self.pics]
+        self.init_center = [pic.center for pic in self.center]
 
     def create_pic(self, pics):
         for pic in pics:
-            self.pics.append(Pic(pic[2], pic[3], pic[4], pic[0], pic[1]))
+            n_p = Pic(**pic)
+            self.pics.append(n_p)
 
     def run(self):
-        # on regarde le meilleur fit pour chaque fit
 
         # on fit tous les pics
         for i in range(len(self.x_datas)):
-            print("cycle " + str(i))
-            fit_pics(self.x_datas[i], self.y_datas[i], self.pics)
-            center = []
-            area = []
-            fwhm = []
-            for pic in self.pics:
-                center.append(pic.x_max)
-                area.append(pic.integral)
-                fwhm.append(pic.fwhm)
-            self.center.append(center)
-            self.area.append(area)
-            self.fwhm.append(fwhm)
+            fit_pics(self.x_datas[i], self.y_datas[i], self.pics, i)
 
         # self.finished.emit(1)
 
@@ -297,27 +292,30 @@ class Fitting(QObject):
 
 
 class Pic:
-    def __init__(self, x_max, integral, fwhm, index_min, index_max):
-        self.x_max = x_max
-        self.integral = integral
-        self.fwhm = fwhm
+    def __init__(self, **kwargs):
 
-        self.index_min = index_min
-        self.index_max = index_max
+        self.amplitude = None
+        self.center = None
+        self.sigma = None
+        self.fraction = None
+        self.fwhm = None
+        self.height = None
+
+        self.left_base = None
+        self.right_base = None
+
+        for key, value in kwargs.items():
+            self.__setattr__(key, value)
 
         self.fit = "_PseudoVoigtModel"
 
-    def update(self, x_max, integral, fwhm):
-        self.x_max = x_max
-        self.integral = integral
-        self.fwhm = fwhm
 
-    def slice(self, array):
-        return array[self.index_min:self.index_max]
+    def update(self, **kwargs):
+        for key, value in kwargs.items():
+            self.__setattr__(key, value)
 
     def __repr__(self):
-        return "x_max : " + str(self.x_max) + "\n" + "integral : " + str(self.integral) + "\n" + "fwhm : " + str(
-            self.fwhm)
+        pass
 
 
 if __name__ == '__main__':
@@ -339,17 +337,49 @@ if __name__ == '__main__':
         else:
             y_arrays.append(temp)
 
+    for i in range(len(x_arrays)):
+        pplot.plot(x_arrays[i], y_arrays[i])
+
+    pplot.show()
+
+    print(len(x_arrays))
+
     pplot.plot(x_arrays[0], y_arrays[0])
     pplot.show()
 
-    """self, x_max, integral, fwhm, index_min, index_max"""
+    """def __init__(self, x_max, integral, fwhm, height, sigma, fraction, left_base, right_base):"""
+    p1 = {'amplitude': 0.0006180758165759622,
+          'fwhm': 0.040421191883555974,
+          'center': 5.15,
+          'height': 0.0038,
+          'sigma': 0.020210595941777987,
+          'left_base': 5.1,
+          'right_base': 5.225}
 
+    p2 = {'amplitude': 0.00018162457466913028,
+          'fwhm': 0.040421191883555974,
+          'center': 5.279215023469039,
+          'height': 0.0038,
+          'sigma': 0.024541345434393236,
+          'left_base': 5.2,
+          'right_base': 5.3229}
 
+    p3 = {'amplitude': 0.0006180758165759622,
+          'fwhm': 0.040421191883555974,
+          'center': 5.40,
+          'height': 0.0038,
+          'sigma': 0.020210595941777987,
+          'left_base': 5.3,
+          'right_base': 5.487}
 
-    p1 = [5.1, 1, 0.08, None, None]
-    p2 = [5.2, 1, 0.08, 3684.581274899939, 0.03926934953668848]
-    p3 = [5.4, 0.5, 0.08, 2843.3179328999577, 0.01351489612034243]
-    p4 = [5.6, 1, 0.08, 3684.581274899939, 0.03926934953668848]
+    p4 = {'amplitude': 0.0006180758165759622,
+          'fwhm': 0.040421191883555974,
+          'center': 5.64,
+          'height': 0.0038,
+          'sigma': 0.020210595941777987,
+          'left_base': 5.55,
+          'right_base': 5.66}
+
 
     pics = [p1, p2, p3, p4]
     fitting = Fitting(x_arrays, y_arrays, pics)
