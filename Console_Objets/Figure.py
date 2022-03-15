@@ -612,6 +612,7 @@ class Figure:
         "res_fitting_temperature": [],  # figure résultat d'un fit
         "res_fitting_temps": [],  # figure résultat d'un fit
         "contour": [],  # figure résultat d'un fit
+        "ihch_ec_lab": ["Select saxs", "Select waxs"],
         "saxs frame": [],
         "waxs frame": ["fit"],
         "saxs scan": [],
@@ -628,6 +629,8 @@ class Figure:
 
         "impedance_3d": ["cycle"],
         "impedance_3d_cycle": [],
+
+        "impedance_sub": ["derive"],
 
     }
 
@@ -646,13 +649,19 @@ class Figure:
         "res_fitting_temperature": False,  # a modifier
         "res_fitting_temps": False,  # a modifier
         "contour": False,
+        "ihch_ec_lab": True,
         "saxs frame": True,
         "waxs frame": True,
         "saxs scan": True,
         "waxs scan": True,
-        "gitt": False,
+        "gitt": True,
         "impedance": True,
+        "impedance_cycle": True,
         "impedance_res": True,
         "bode": True,
+        "bode_cycle": True,
         "impedance 3d": False,
+        "impedance_3d_cycle": False,
+        "impedance_sub": True,
+
     }

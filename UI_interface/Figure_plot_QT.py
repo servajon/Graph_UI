@@ -117,7 +117,8 @@ class Figure_plot(QWidget):
         # si c'est gitt_affich on lui donne une fonction de callbak pour fermer le
         # plot, dans ce cas, à voir si il y en a besoin par la suite, probablement
         if type(self.abstract_affiche).__name__ == "Gitt_affiche" or \
-            type(self.abstract_affiche).__name__ == "Impedance_affiche":
+            type(self.abstract_affiche).__name__ == "Impedance_affiche" or \
+            type(self.abstract_affiche).__name__ == "Time_Selection":
             self.abstract_affiche.call_back_func = self.call_back_func
 
         self.canvas.draw()
@@ -755,7 +756,7 @@ class Figure_plot(QWidget):
 
         if axe == "x":
             if index >= len(self.abstract_affiche.ax1.lines):
-                self.abstract_affiche.ax2.lines[index].set_xdata(array)
+                self.abstract_affiche.ax2.lines[index - len(self.abstract_affiche.ax1.lines)].set_xdata(array)
             else:
                 self.abstract_affiche.ax1.lines[index].set_xdata(array)
         elif axe == "y1":
@@ -1187,6 +1188,8 @@ class Figure_plot(QWidget):
         if type(self.abstract_affiche).__name__ == "Gitt_affiche":
             self.close()
         elif type(self.abstract_affiche).__name__ == "Impedance_affiche":
+            self.close()
+        elif type(self.abstract_affiche).__name__ == "Time_Selection":
             self.close()
 
 

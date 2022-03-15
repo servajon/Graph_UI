@@ -227,6 +227,10 @@ class Abstract_data(ABC):
     def export_impedance_res(self, path):
         pass
 
+    @abstractmethod
+    def impedance_sub(self, *args, **kwargs):
+        pass
+
     def unique_name(self, name):
         """Parcours le nom des figures enregistrées et regarde si le nom donné en paramettre est unique, si il ne
         l'est pas on renvoie le même nom avec (1), (2) etc, si le nom est unique on renvoie jsute le nom """
@@ -262,7 +266,7 @@ class Abstract_data(ABC):
 
         leg1.set_visible(figure.y1_axe.legend)
 
-        if figure.type == "impedance":
+        if figure.type == "impedance" or figure.type == "impedance_sub":
             val_freq = value.twinx()
             val_freq.axis("off")
         else:
@@ -404,9 +408,9 @@ class Abstract_data(ABC):
             ax2.set_ylabel(figure.y2_axe.name_unit, labelpad=20)
 
         format_axes_figure(figure, ax1, ax2)
+        fig.tight_layout()
 
         if path_save is not None:
-            pplot.tight_layout()
             pplot.close(fig)
             fig.savefig(path_save, bbox_inches='tight', dpi=150)
 
@@ -995,8 +999,12 @@ class Abstract_data(ABC):
 
     """----------------------------------------------------------------------------------"""
 
-    def get_format_time(self):
-        return self.resource.time_format[5:len(self.resource.time_format)]
+    def get_current_figure_name(self, name):
+        for figure in self.figures:
+            if figure.name == name:
+                return figure
+
+        raise ValueError
 
     """----------------------------------------------------------------------------------"""
 

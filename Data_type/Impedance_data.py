@@ -1,3 +1,7 @@
+import numpy as np
+import scipy
+from derivative import dxdt
+
 from Console_Objets.Data_Unit import Units, Data_unit
 from Console_Objets.Data_array import Data_array
 from Console_Objets.Figure import Figure
@@ -35,7 +39,6 @@ class Impedance_data(Abstract_data):
 
         cycle_type = kwargs["type"]
         cycles = kwargs["cycles"]
-
 
         if cycles is not None and len(cycles) == 3 and cycles[1] == "to":
             name = str(cycles[0]) + " to " + str(cycles[2])
@@ -82,8 +85,8 @@ class Impedance_data(Abstract_data):
 
     """----------------------------------------------------------------------------------"""
 
-    def derive(self, pas=None):
-        raise NotImplementedError
+    def derive(self, nb_point=None, window_length=None, polyorder=None):
+        return self.derivation(nb_point, window_length, polyorder)
 
     """----------------------------------------------------------------------------------"""
 
@@ -194,7 +197,6 @@ class Impedance_data(Abstract_data):
 
             new_figure_brut.add_data_x_Data(data_array_x)
             new_figure_brut.add_data_y1_Data(data_array_y)
-
 
             for j in range(len(res[0])):
                 if j > 10 and res[0][j] * 1.5 < res[1][j]:
@@ -416,7 +418,6 @@ class Impedance_data(Abstract_data):
             new_figure_4.add_data_x_Data(data_array_x)
             new_figure_4.add_data_y1_Data(data_array_y)
 
-
         new_figure.format_line_y1 = 'x'
         new_figure_2.format_line_y1 = 'x'
         new_figure_3.format_line_y1 = 'x'
@@ -542,8 +543,8 @@ class Impedance_data(Abstract_data):
             gloabal_index = [val for val in range(start, end)]
 
             res = Traitements_cycle_outils.mode_del(self.data.get("freq/Hz")[start:end],
-                                                   self.data.get("|Z|/Ohm")[start:end], gloabal_index,
-                                                   start, end, self.data.get("mode"), 3)
+                                                    self.data.get("|Z|/Ohm")[start:end], gloabal_index,
+                                                    start, end, self.data.get("mode"), 3)
 
             data_unit_x = Data_unit(res[0], unit_x)
             data_unit_y1 = Data_unit(res[1], unit_y1)
@@ -557,15 +558,14 @@ class Impedance_data(Abstract_data):
             new_figure.add_data_y1_Data(data_array_y1)
 
         for i in range(len(self.data.get("loop_data"))):
-
             start = self.data.get("loop_data")[i][0]
             end = self.data.get("loop_data")[i][1]
 
             gloabal_index = [val for val in range(start, end)]
 
             res = Traitements_cycle_outils.mode_del(self.data.get("freq/Hz")[start:end],
-                                                   self.data.get("Phase(Z)/deg")[start:end], gloabal_index,
-                                                   start, end, self.data.get("mode"), 3)
+                                                    self.data.get("Phase(Z)/deg")[start:end], gloabal_index,
+                                                    start, end, self.data.get("mode"), 3)
 
             data_unit_x = Data_unit(res[0], unit_x)
             data_unit_y2 = Data_unit(res[1], unit_y2)
@@ -603,16 +603,15 @@ class Impedance_data(Abstract_data):
             end = self.data.get("loop_data")[i][1]
 
             res = Traitements_cycle_outils.mode_del_3d(self.data.get("Re(Z)/Ohm")[start:end],
-                                                      self.data.get("-Im(Z)/Ohm")[start:end],
-                                                      self.data.get(axe_y_name)[start:end], start, end,
-                                                      self.data.get("mode"), 3)
+                                                       self.data.get("-Im(Z)/Ohm")[start:end],
+                                                       self.data.get(axe_y_name)[start:end], start, end,
+                                                       self.data.get("mode"), 3)
 
             for j in range(len(res[0])):
                 if j > 10 and res[0][j] * 1.5 < res[1][j]:
                     data_unit_x = Data_unit(res[0][0:j], None)
                     data_unit_y1 = Data_unit(res[1][0:j], None)
                     data_unit_z1 = Data_unit(res[2][0:j], None)
-
 
                     new_figure.add_data_x_Data(Data_array(data_unit_x, "Re(Z)/Ohm",
                                                           self.name, "cycle " + str(i + 1)))
@@ -642,40 +641,58 @@ class Impedance_data(Abstract_data):
     """----------------------------------------------------------------------------------"""
 
     def impedance_sub(self, *args, **kwargs):
-        loop = kwargs["loop"]
 
-        dics = kwargs["dics"]
+        emit = Emit()
+
+        units = Units()
+        unit_x = units.get_unit("Re(Z)/Ohm")
+        unit_y = units.get_unit("-Im(Z)/Ohm")
+
+        loop = args[0]
+
+        dics = args[1]
         loop_data = dics["loop_data"]
         reel = dics["Re(Z)/Ohm"]
         img = dics["-Im(Z)/Ohm"]
         freq = dics["freq/Hz"]
 
         if len(freq) == 2:
-            if freq[0][0] != freq[1][0] or freq[0][-1] != freq[1][-1] or freq[0][1] != freq[1][1]:
-                print("Soustraction impossible")
+            if freq[0][0] != freq[1][0] or freq[0][-1] != freq[1][-1] or len(freq[0]) != len(freq[1]):
+                emit.emit("msg_console", type="msg_console", str="Subtraction not possible", foreground_color="red")
                 return
 
             if loop[0] > len(loop_data[0]):
-                self.resource.print_color("Numéro de cycle " + str(loop[0]) + " invalide", "fail")
-                self.resource.print_color("Cycle compris entre 1 et " + str(len(loop_data[0])), "fail")
-
+                emit.emit("msg_console", type="msg_console", str="Cycle number " + str(loop[0]) + " invalid",
+                          foreground_color="red")
+                emit.emit("msg_console", type="msg_console", str="Cycle between 1 and " + str(len(loop_data[0])),
+                          foreground_color="red")
                 return
+
             if loop[1] > len(loop_data[1]):
-                self.resource.print_color("Numéro de cycle " + str(loop[1]) + " invalide", "fail")
-                self.resource.print_color("Cycle compris entre 1 et " + str(len(loop_data[1])), "fail")
+                emit.emit("msg_console", type="msg_console", str="Cycle number " + str(loop[1]) + " invalid",
+                          foreground_color="red")
+                emit.emit("msg_console", type="msg_console", str="Cycle between 1 and " + str(len(loop_data[1])),
+                          foreground_color="red")
                 return
         else:
             if loop[0] > len(loop_data[0]):
-                self.resource.print_color("Numéro de cycle " + str(loop[0]) + " invalide", "fail")
-                self.resource.print_color("Cycle compris entre 1 et " + str(len(loop_data[0])), "fail")
+                emit.emit("msg_console", type="msg_console", str="Cycle number " + str(loop[0]) + " invalid",
+                          foreground_color="red")
+                emit.emit("msg_console", type="msg_console", str="Cycle between 1 and " + str(len(loop_data[0])),
+                          foreground_color="red")
                 return
-            if loop[0] > len(loop_data[0]):
-                self.resource.print_color("Numéro de cycle " + str(loop[0]) + " invalide", "fail")
-                self.resource.print_color("Cycle compris entre 1 et " + str(len(loop_data[0])), "fail")
+            if loop[1] > len(loop_data[0]):
+                emit.emit("msg_console", type="msg_console", str="Cycle number " + str(loop[1]) + " invalid",
+                          foreground_color="red")
+                emit.emit("msg_console", type="msg_console", str="Cycle between 1 and " + str(len(loop_data[0])),
+                          foreground_color="red")
                 return
 
-        new_figure = Figure("impedance_sub_" + str(loop[0]) + "_" + str(loop[1]))
-        new_figure.type = "impedance"
+        new_figure = Figure("impedance brut sub " + str(loop[0]) + " " + str(loop[1]))
+        new_figure2 = Figure("impedance sub " + str(loop[0]) + " " + str(loop[1]))
+
+        new_figure.type = "impedance_sub"
+        new_figure2.type = "impedance_sub"
 
         loop[0] -= 1
         loop[1] -= 1
@@ -683,31 +700,29 @@ class Impedance_data(Abstract_data):
         index_min_1 = loop_data[0][loop[0]][0]
         index_max_1 = loop_data[0][loop[0]][1]
 
+
         if len(loop_data) == 2:
             index_min_2 = loop_data[1][loop[1]][0]
-            index_max_2 = loop_data[1][loop[-1]][1]
+            index_max_2 = loop_data[1][loop[1]][1]
         else:
             index_min_2 = loop_data[0][loop[1]][0]
-            index_max_2 = loop_data[0][loop[-1]][1]
+            index_max_2 = loop_data[0][loop[1]][1]
+
 
         reel_temp = []
         img_temp = []
 
-        res = Traitement_cycle_outils.mode_del(reel[0][index_min_1: index_max_1], img[0][index_min_1: index_max_1],
-                                               index_min_1, index_max_1, self.data.get("mode"), 3)
-        reel_temp.append(res[0])
-        img_temp.append(res[1])
+        reel_temp.append(reel[0][index_min_1: index_max_1])
+        img_temp.append(img[0][index_min_1: index_max_1])
 
         if len(freq) == 2:
-            res = Traitement_cycle_outils.mode_del(reel[1][index_min_2:index_max_2], img[1][index_min_2: index_max_2],
-                                                   index_min_2, index_max_2, self.data.get("mode"), 3)
-            reel_temp.append(res[0])
-            img_temp.append(res[1])
+
+            reel_temp.append(reel[1][index_min_2:index_max_2])
+            img_temp.append(img[1][index_min_2: index_max_2])
         else:
-            res = Traitement_cycle_outils.mode_del(reel[0][index_min_2:index_max_2], img[0][index_min_2: index_max_2],
-                                                   index_min_2, index_max_2, self.data.get("mode"), 3)
-            reel_temp.append(res[0])
-            img_temp.append(res[1])
+
+            reel_temp.append(reel[0][index_min_2:index_max_2])
+            img_temp.append(img[0][index_min_2: index_max_2])
 
         reel = reel_temp
         img = img_temp
@@ -726,16 +741,121 @@ class Impedance_data(Abstract_data):
             new_array_x.append(x)
             new_array_y.append(y)
 
-        new_figure.add_data_x_Data(Data_array(new_array_x, "Re(Z)/Ohm", None,
-                                              "sub_" + str(loop[0] + 1) + "_" + str(loop[1] + 1)))
-        new_figure.add_data_y1_Data(Data_array(new_array_y, "-Im(Z)/Ohm", None,
-                                               "sub_" + str(loop[0] + 1) + "_" + str(loop[1] + 1)))
+        data_unit_x = Data_unit(new_array_x, unit_x)
+        data_unit_y = Data_unit(new_array_y, unit_y)
 
-        self.current_figure = new_figure
-        self.figures.append(new_figure)
+        new_figure.add_data_x_Data(Data_array(data_unit_x, "Re(Z)/Ohm", None,
+                                              "sub " + str(loop[0] + 1) + " " + str(loop[1] + 1)))
+        new_figure.add_data_y1_Data(Data_array(data_unit_y, "-Im(Z)/Ohm", None,
+                                               "sub " + str(loop[0] + 1) + " " + str(loop[1] + 1)))
+
+        for j in range(len(new_array_x)):
+            if j > 10 and new_array_x[j] * 1.5 < new_array_y[j]:
+                data_unit_x = Data_unit(new_array_x[0:j], unit_x)
+                data_unit_y = Data_unit(new_array_y[0:j], unit_y)
+
+                data_array_x = Data_array(data_unit_x, "Re(Z)/Ohm", self.name,
+                                          "sub " + str(loop[0] + 1) + " " + str(loop[1] + 1))
+                data_array_y = Data_array(data_unit_y, "-Im(Z)/Ohm", self.name,
+                                          "sub " + str(loop[0] + 1) + " " + str(loop[1] + 1))
+
+                new_figure2.add_data_x_Data(data_array_x)
+                new_figure2.add_data_y1_Data(data_array_y)
+                break
+
+
+        new_figure.name = self.unique_name(new_figure.name)
+        new_figure.aspect = "equal"
+
+        new_figure2.name = self.unique_name(new_figure2.name)
+        new_figure2.aspect = "equal"
+
+        return [new_figure, new_figure2]
 
     """----------------------------------------------------------------------------------"""
 
+    def derivation(self, nb_point, window_length, polyorder):
+        new_figure = Figure(self.current_figure.name + " derivate", 1)
+
+        new_data_x = []
+        new_data_x2 = []
+        new_data_y1 = []
+        new_data_y2 = []
+
+        data_x = self.current_figure.x_axe.data
+        data_y1 = self.current_figure.y1_axe.data
+
+        unit_x = self.current_figure.x_axe.data[0].unit
+        unit_y1 = self.current_figure.y1_axe.data[0].unit
+
+        if self.current_figure.y2_axe is not None:
+            data_y2 = self.current_figure.y2_axe.data
+            unit_y2 = self.current_figure.y2_axe.data[0].unit
+        else:
+            data_y2 = None
+            unit_y2 = None
+
+        if nb_point is not None:
+            _nb_point = nb_point
+
+        for i in range(len(data_y1)):
+            if nb_point is None:
+                _nb_point = len(data_y1[i].data)
+
+            new_x, new_y = _derive_class(data_x[i].data, data_y1[i].data)
+            new_data_x.append(new_x)
+            new_data_y1.append(new_y)
+
+        if data_y2 is not None:
+            for i in range(len(data_y2)):
+                if nb_point is None:
+                    _nb_point = len(data_y2[i].data)
+
+                new_x, new_y = _derive_class(data_x[len(data_y1) + i].data, data_y2[i].data)
+                new_data_x2.append(new_x)
+                new_data_y2.append(new_y)
+
+        if len(new_data_y2) == 0:
+            new_figure.type = "derive_y1"
+        else:
+            new_figure.type = "derive_y1_y2"
+
+        new_data_x += new_data_x2
+
+        for i in range(len(new_data_y1)):
+            data_x_unit = Data_unit(new_data_x[i], unit_x)
+            new_figure.add_data_x_Data(Data_array(data_x_unit, self.current_figure.x_axe.data[0].name + " derive",
+                                                  self.current_figure.x_axe.data[0].source,
+                                                  self.current_figure.x_axe.data[0].legend,
+                                                  self.current_figure.x_axe.data[0].color))
+
+            data_y1_unit = Data_unit(new_data_y1[i], unit_y1)
+            new_figure.add_data_y1_Data(Data_array(data_y1_unit, self.current_figure.y1_axe.data[i].name + " derive",
+                                                   self.current_figure.y1_axe.data[i].source,
+                                                   self.current_figure.y1_axe.data[i].legend,
+                                                   self.current_figure.y1_axe.data[i].color))
+
+        for i in range(len(new_data_y2)):
+            data_x_unit = Data_unit(new_data_x[len(new_data_y1) + i], unit_x)
+            new_figure.add_data_x_Data(
+                Data_array(data_x_unit, self.current_figure.x_axe.data[0].name + " derive",
+                           self.current_figure.x_axe.data[0].source, self.current_figure.x_axe.data[0].legend,
+                           self.current_figure.x_axe.data[0].color))
+
+            data_y2_unit = Data_unit(new_data_y2[i], unit_y2)
+            new_figure.add_data_y2_Data(Data_array(data_y2_unit, self.current_figure.y2_axe.data[i].name + " derive",
+                                                   self.current_figure.y2_axe.data[i].source,
+                                                   self.current_figure.y2_axe.data[i].legend,
+                                                   self.current_figure.y2_axe.data[i].color))
+
+        new_figure.format_line_y1 = 'x'
+        new_figure.format_line_y2 = 'x'
+
+        new_figure.created_from = self.current_figure
+
+        new_figure.name = self.unique_name(new_figure.name)
+
+        return new_figure
 
     """                                                            """
     """                      Methode de class                      """
@@ -824,3 +944,15 @@ class Impedance_data(Abstract_data):
     @nb_electrodes.setter
     def nb_electrodes(self, nb):
         self._nb_electrodes = nb
+
+
+def _derive_class(x_object, y_object):
+
+    res_x = []
+    res_y = []
+
+    for i in range(1, len(x_object)):
+        res_y.append((y_object[i] - y_object[i - 1]) / (x_object[i] - x_object[i - 1]))
+        res_x.append((x_object[i] + x_object[i - 1]) / 2)
+
+    return res_x, res_y

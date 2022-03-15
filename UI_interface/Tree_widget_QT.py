@@ -177,15 +177,16 @@ class Tree_widget(QtWidgets.QTreeWidget):
 
     """---------------------------------------------------------------------------------"""
 
-    def get_item(self, conteneur_name, name):
+    def get_item(self, conteneur_name, name, _type=None):
         """
         return le QTreeWidgetItem portant le nom name
+        :param _type:
         :param name: nom de widget que l'on cherche
         :return: QTreeWidgetItem
         """
         for i, conteneur in enumerate(self.items):
             if conteneur.name == conteneur_name:
-                res = conteneur.get_item(name)
+                res = conteneur.get_item(name, _type)
                 if res is not None:
                     res.append(i)
                     break
@@ -201,7 +202,7 @@ class Tree_widget(QtWidgets.QTreeWidget):
 
     """---------------------------------------------------------------------------------"""
 
-    def rename_item(self, old_name, new_name, col):
+    def rename_item(self, old_name, new_name, _type, col):
         """
         On renome l'élément pourtant le nom old_name par new_name
         col correspond au numéro de la colone que l'on souhaite renomer
@@ -209,13 +210,14 @@ class Tree_widget(QtWidgets.QTreeWidget):
 
         :param old_name: ancien nom
         :param new_name: nouveau nom
+        :param _type: figure / data
         :param col: numéro de la colonne, 0 tout le temps, je suppose
         :return: None
         """
 
         res = None
         for i, conteneur in enumerate(self.items):
-            res = conteneur.get_item(old_name)
+            res = conteneur.get_item(old_name, _type)
             if res is not None:
                 res.append(i)
                 break
@@ -236,6 +238,8 @@ class Tree_widget(QtWidgets.QTreeWidget):
         for index in res[1:]:
             item = item.get(index)
         item.name = new_name
+        self.info()
+
 
     """---------------------------------------------------------------------------------"""
 
@@ -284,8 +288,8 @@ class Tree_widget(QtWidgets.QTreeWidget):
 
     def get_top_item(self, conteneur_name, name):
         for i, conteneur in enumerate(self.items):
-            if conteneur.name == conteneur_name:
-                res = conteneur.get_item(name)
+            if conteneur.name == conteneur_name or conteneur_name is None:
+                res = conteneur.get_item(name, None)
                 if res is not None:
                     return self.topLevelItem(i)
         raise ValueError
@@ -357,7 +361,7 @@ class Tree_widget(QtWidgets.QTreeWidget):
             pass
 
         @abstractmethod
-        def get_item(self, name):
+        def get_item(self, name, _type=None):
             pass
 
         @abstractmethod
@@ -394,8 +398,8 @@ class Tree_widget(QtWidgets.QTreeWidget):
         def append(self, item):
             self.figures_child.append(item)
 
-        def get_item(self, name):
-            if self.name == name:
+        def get_item(self, name, _type=None):
+            if self.name == name and (_type == "data" or _type is None):
                 return [0]
             else:
                 for i, item in enumerate(self.figures_child):
@@ -441,8 +445,8 @@ class Tree_widget(QtWidgets.QTreeWidget):
         def append(self, item):
             self.figures_child.append(item)
 
-        def get_item(self, name):
-            if self.name == name:
+        def get_item(self, name, _type=None):
+            if self.name == name and (_type == "figure" or _type is None):
                 return [0]
             else:
                 for i, item in enumerate(self.figures_child):

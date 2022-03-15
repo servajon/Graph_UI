@@ -135,6 +135,7 @@ UNITS = {
     "°C": "degree_c",
     "K": "kelvin",
     "rad": "radians",
+    "V/mA": "volt_par_milliampere",
     # nom des unitées sans conversion
 
     "%": "pourcentage",

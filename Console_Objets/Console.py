@@ -17,7 +17,12 @@ class Console:
     """----------------------------------------------------------------------------------"""
 
     def add_data(self, data):
-        """On ajoute le nouveau obj fichier à self.datas, on rends son nom unique et le place en fichier courant"""
+        """
+        On ajoute le nouveau obj fichier à self.datas, on rends son nom unique et le place en fichier courant
+
+        :param data: objet de la class Abstract_data
+        :return:
+        """
         data.name = self.unique_name(data.name)
         self.current_data = data
         self.datas.append(data)
@@ -25,15 +30,21 @@ class Console:
     """----------------------------------------------------------------------------------"""
 
     def unique_name(self, name):
-        """Parcours le nom des datas enregistrées et regarde si le nom donné en paramettre est unique, si il ne
-        l'est pas on renvoie le même nom avec (1), (2) etc, si le nom est unique on renvoie jsute le nom """
+        """
+        Nom qui doit devenir unique
+
+        :param name: nom du fichier qui devra être unique
+        :return: un nouveau nom qui est unique
+        """
+
+        # Parcours le nom des datas enregistrées et regarde si le nom donné en paramettre est unique, si il ne
+        # l'est pas on renvoie le même nom avec (1), (2) etc, si le nom est unique on renvoie jsute le nom
         if self.current_data is None:
             return name
 
         for i in self.datas:
             if i.name == name:
-                """Si dans name il n'y a pas (*) à la fin, on apelle la fonction unique_name en ajoutant
-                (1)"""
+                # Si dans name il n'y a pas (*) à la fin, on apelle la fonction unique_name en ajoutant (1)
                 if len(name) > 2 and name[len(name) - 3] != '(' and name[len(name) - 1] != ')':
                     name += "(1)"
                 elif len(name) < 3:
@@ -48,6 +59,12 @@ class Console:
     """----------------------------------------------------------------------------------"""
 
     def set_current_data_name(self, name):
+        """
+        On passe le fichier name comme current_data
+
+        :param name: nom du fichier
+        :return: None
+        """
         for data in self.datas:
             if data.name == name:
                 self.current_data = data
@@ -64,6 +81,13 @@ class Console:
     """----------------------------------------------------------------------------------"""
 
     def create_data_unit(self, data_name, row_name):
+        """
+        On créer un objet data_unit à partir du nom des donnée et du nom du fichier
+
+        :param data_name: nom du fichier de donnée
+        :param row_name: nom de la colonne de ce fichier
+        :return: Data_unit
+        """
         for data in self.datas:
             if data.name == data_name:
                 units = Units()
@@ -75,7 +99,7 @@ class Console:
 
     """----------------------------------------------------------------------------------"""
 
-    def create_dictioanaries_loop(self):
+    def create_dictionaries_loop(self):
         """
         On créer le dictionnaire d'information utile pour la création de cycles
         pour le type de fichier en current_data
@@ -109,5 +133,37 @@ class Console:
                             data_get[k][i.source] = self.datas[j].data.get(k)
                     if type(self.datas[j]).__name__ == "Modulo_bat_vieillissement":
                         data_get["vieillissement_info_data"][i.source] = self.datas[j].vieillissement_info_data
-        print(data_get.keys())
+        return data_get
+
+    """----------------------------------------------------------------------------------"""
+
+    def create_dictioanaries_loop_source(self, array, source_array):
+        """
+        On récupére les informations contenue dans array dans tous les fichier de source_array
+
+        :param array: array contenant les noms des info à récupérer sur un fichier
+        :param source_array: Nom des fichiers opu il faut récupérer des infos
+        :return: dict contennant les infos récupérer dans les fichiers
+        """
+
+        if "loop_data" not in array:
+            raise KeyError
+        data_get = {}
+        for arg in array:
+            data_get[arg] = []
+
+        # On regarde l'origine des différentes data de la figure qui va être traité
+        # On récupére les information des loops sur les fichiers correspondant
+        for source in source_array:
+            if source not in data_get["loop_data"]:
+                j = 0
+                while j < len(self.datas) and source != self.datas[j].name:
+                    j += 1
+
+                if j == len(self.datas):
+                    print("Fichier introuvable, erreur")
+                    raise ValueError
+                else:
+                    for k in data_get.keys():
+                        data_get[k].append(self.datas[j].data.get(k))
         return data_get

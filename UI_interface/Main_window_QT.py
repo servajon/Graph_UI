@@ -165,6 +165,9 @@ class Ui_MainWindow(object):
         self.actionDelete_data = QtWidgets.QAction(MainWindow)
         self.actionDelete_data.setObjectName("actionDelete_data")
 
+        self.actionFusion_plot = QtWidgets.QAction(MainWindow)
+        self.actionFusion_plot.setObjectName("actionFusion_plot")
+
         self.export_actionPlot = QtWidgets.QAction(MainWindow)
         self.export_actionPlot.setObjectName("export_actionPlot")
 
@@ -195,6 +198,7 @@ class Ui_MainWindow(object):
         self.menuPlot.addAction(self.actionDelete_Current_Plot)
 
         self.menuData.addAction(self.actionEdit_data)
+        self.menuData.addAction(self.actionFusion_plot)
         self.menuData.addAction(self.actionDelete_data)
 
         self.menuExport.addAction(self.actionR_sistance)
@@ -257,5 +261,7 @@ class Ui_MainWindow(object):
         self.actionAll.setText(_translate("MainWindow", "All"))
 
         self.actionEdit_data.setText(_translate("MainWindow", "Edit Current Data"))
+        self.actionFusion_plot.setText(_translate("MainWindow", "Graph merging"))
         self.actionDelete_data.setText(_translate("MainWindow", "Close Current Data"))
+
 

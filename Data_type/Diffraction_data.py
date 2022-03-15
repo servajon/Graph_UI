@@ -128,6 +128,11 @@ class Diffraction_data(Abstract_data):
 
     """----------------------------------------------------------------------------------"""
 
+    def impedance_sub(self, *args, **kwargs):
+        raise ValueError
+
+    """"----------------------------------------------------------------------------------"""
+
     def create_figure_cycle(self, *args, **kwargs):
         """
        La création de cycle passe par cette methode, en fonction du type de cycle

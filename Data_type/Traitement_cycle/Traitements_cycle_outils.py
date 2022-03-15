@@ -47,8 +47,9 @@ def mode_del(array_x, array_y, global_index, val_min, val_max, mode_data, mode, 
     array_return_x = []
     array_return_y = []
     global_index_return = []
-    print(len(global_index))
+
     print(len(array_x))
+    print(len(global_index))
 
     for i in range(len(array_x)):
         if mode_data[val_min + i] != mode:

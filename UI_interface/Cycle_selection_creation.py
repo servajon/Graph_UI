@@ -325,8 +325,8 @@ class Cycle_selection_creation(QtWidgets.QWidget):
     """----------------------------------------------------------------------------------"""
 
     def focusOutEvent(self, a0):
-        print(a0)
         self.activateWindow()
+
 
 class Line_edit(QtWidgets.QLineEdit):
     _KEYS_STR = ["0", "1", "2", "3", "4", "5", "5", "6", "7", "8", "9", " "]

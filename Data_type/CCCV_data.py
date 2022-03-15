@@ -124,7 +124,6 @@ class CCCV_data(Abstract_data):
         figure.y1_axe.first_val = 0
         figure.y2_axe.first_val = 40
 
-
         val_max = max(new_data_y2)
         # on fait en sorte de cacher les valeurs abérentes
         if val_max < 110:
@@ -256,7 +255,6 @@ class CCCV_data(Abstract_data):
         figure_charge.add_data_x(data_unit_x, "Cycle Number", None, None)
         figure_charge.add_data_y1(data_unit_y1_1, "Specific capacity", None, "capa Galvano")
         figure_charge.add_data_y1(data_unit_y1_2, "Specific capacity", None, "capa potentio")
-
 
         data_unit_x = Data_unit(copy.copy(fig_decharge_x), None)
         data_unit_y1_1 = Data_unit(copy.copy(val_max_non_p_v_decharge), units.get_unit("mA.h/g"))
@@ -466,7 +464,6 @@ class CCCV_data(Abstract_data):
     def derive(self, nb_point=None, window_length=None, polyorder=None):
         return self.derivation(nb_point, window_length, polyorder)
 
-
     """----------------------------------------------------------------------------------"""
     """                                   Methode de class                               """
     """----------------------------------------------------------------------------------"""
@@ -484,7 +481,6 @@ class CCCV_data(Abstract_data):
 
         unit_x = self.current_figure.x_axe.data[0].unit
         unit_y1 = self.current_figure.y1_axe.data[0].unit
-
 
         if self.current_figure.y2_axe is not None:
             data_y2 = self.current_figure.y2_axe.data
@@ -715,6 +711,12 @@ class CCCV_data(Abstract_data):
         raise ValueError
 
     """"----------------------------------------------------------------------------------"""
+
+    def impedance_sub(self, *args, **kwargs):
+        raise ValueError
+
+    """"----------------------------------------------------------------------------------"""
+
 
 def _derive_class(x_object, y_object, nb_point, window_length=None, polyorder=None):
     delta_y_moyen = 0

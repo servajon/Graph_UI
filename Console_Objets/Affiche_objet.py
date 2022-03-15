@@ -125,41 +125,33 @@ class Classique_affiche(Abstract_objet_affiche):
 
         if self.figure.type == "3d" or self.figure.type == "impedance_3d" or self.figure.type == "impedance_3d_cycle":
             if self.figure.is_data_set_3d() == 1:
-                try:
-                    if self.save is not None:
-                        self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
-                            self.data.load_graph_3d(self.figure, self.save)
-                        pplot.close(self.pplot_fig)
-                        self.finish = True
-                        self.pplot_fig = None
-                    else:
-                        self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
-                            self.data.load_graph_3d(self.figure)
-                        self.pplot_fig.tight_layout()
-                except ValueError as err:
-                    print(err)
+                if self.save is not None:
+                    self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
+                        self.data.load_graph_3d(self.figure, self.save)
+                    pplot.close(self.pplot_fig)
                     self.finish = True
-                    return False
+                    self.pplot_fig = None
+                else:
+                    self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
+                        self.data.load_graph_3d(self.figure)
+                    self.pplot_fig.tight_layout()
+
             else:
                 raise ValueError
 
         elif self.figure.type == "bar":
             if self.figure.is_data_set_bar() == 1:
-                try:
-                    if self.save is not None:
-                        self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
-                            self.data.load_graph_bar(self.figure, self.save)
-                        pplot.close(self.pplot_fig)
-                        self.finish = True
-                        self.pplot_fig = None
-                    else:
-                        self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
-                            self.data.load_graph_bar(self.figure)
-                        self.pplot_fig.tight_layout()
-                except ValueError as err:
-                    print(err)
+                if self.save is not None:
+                    self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
+                        self.data.load_graph_bar(self.figure, self.save)
+                    pplot.close(self.pplot_fig)
                     self.finish = True
-                    return False
+                    self.pplot_fig = None
+                else:
+                    self.pplot_fig, self.ax1, self.ax2, self.value, self.freq, self.leg1, self.leg2 = \
+                        self.data.load_graph_bar(self.figure)
+                    self.pplot_fig.tight_layout()
+
             else:
                 raise ValueError
 
@@ -176,8 +168,7 @@ class Classique_affiche(Abstract_objet_affiche):
                 else:
                     self.pplot_fig = self.data.load_graph_fit(self.figure)
             else:
-                self.finish = True
-                return False
+                raise ValueError
 
         elif self.figure.type == "res_fitting_temps":
             # pour cette figure pas d'édition possible, pour le moment
@@ -269,7 +260,7 @@ class Classique_affiche(Abstract_objet_affiche):
 
         if self.pos_x is not None:
             if self.index is None:
-                index_x, index_y = Resources.index_array(self.figure, [self.pos_x, self.pos_y])
+                index_x, index_y = Resources.index_array(self.figure, [self.pos_x, self.pos_y], self.ax1, self.ax2)
 
                 self.index = [index_x, index_y]
                 count = 0
@@ -309,6 +300,10 @@ class Classique_affiche(Abstract_objet_affiche):
                     if ytickslocs[i] != "0" and find:
                         len_y = i + 4 + ytickslocs.find(".")
                         break
+
+                print(self.ax1.get_ybound())
+                if self.ax2 is not None:
+                    print(self.ax2.get_ybound())
 
                 res = Resources.coord_to_point([[self.pos_x, self.pos_y]],
                                                self.figure.x_axe.data[self.index[0][1]],
@@ -422,7 +417,7 @@ class Classique_affiche(Abstract_objet_affiche):
         self.pos_x = event.xdata
         self.pos_y = event.ydata
 
-        """On retire les lignes si elles sont déjà tracés et execute self.interact"""
+        # On retire les lignes si elles sont déjà tracés et execute self.interact
         self.update_pplot_fig()
 
     """----------------------------------------------------------------------------------"""
@@ -465,7 +460,8 @@ class Classique_affiche(Abstract_objet_affiche):
 
     def focus_on(self):
         if self.figure.is_interact() == 0:
-            return
+            self.interactive = True
+            # return
         else:
             self.interactive = True
 
@@ -558,7 +554,7 @@ class Edit_affiche(Abstract_objet_affiche):
 
         if self.pos_x is not None:
             if self.index is None:
-                index_x, index_y = Resources.index_array(self.figure, [self.pos_x, self.pos_y])
+                index_x, index_y = Resources.index_array(self.figure, [self.pos_x, self.pos_y], self.ax1, self.ax2)
 
                 self.index = [index_x, index_y]
 
@@ -582,10 +578,12 @@ class Edit_affiche(Abstract_objet_affiche):
                     if ytickslocs[i] != "0" and find:
                         len_y = i + 4 + ytickslocs.find(".")
                         break
-
-                res = Resources.coord_to_point([[self.pos_x, self.pos_y]],
-                                               self.figure.x_axe.data[self.index[0][1]],
-                                               self.figure.y1_axe.data[self.index[1][1]])
+                try:
+                    res = Resources.coord_to_point([[self.pos_x, self.pos_y]],
+                                                   self.figure.x_axe.data[self.index[0][1]],
+                                                   self.figure.y1_axe.data[self.index[1][1]])
+                except TypeError:
+                    res = -1
                 self.res = res
                 if res != -1:
                     text_legend_pointed = self.figure.y1_axe.data[self.index[1][1]].legend
@@ -1220,7 +1218,7 @@ class Impedance_affiche(Abstract_objet_affiche):
 
         if self.pos_x is not None:
             if self.index is None:
-                index_x, index_y = Resources.index_array(self.figure, [self.pos_x, self.pos_y])
+                index_x, index_y = Resources.index_array(self.figure, [self.pos_x, self.pos_y], self.ax1, self.ax2)
 
                 self.index = [index_x, index_y]
 
@@ -1447,7 +1445,163 @@ class Impedance_affiche(Abstract_objet_affiche):
             self.update_pplot_fig()
 
 
+"""----------------------------------------------------------------------------------"""
 
+
+class Time_Selection(Abstract_objet_affiche):
+    def __init__(self, data, figure):
+        super().__init__(data, figure)
+        self.ax1 = None
+        self.ax2 = None
+        self.value = None
+        self.freq = None
+
+        self.emit = Emit()
+
+        self.pos_x = None
+        self.pos_y = None
+        self.ligne1 = None
+        self.ligne2 = None
+
+        self.editable = False
+
+        self.coords = [[None, None], [None, None]]
+
+    """----------------------------------------------------------------------------------"""
+
+    def create_figure(self):
+        if self.pplot_fig is not None:
+            return True
+        else:
+            if self.figure.is_data_set() == 1:
+                self.pplot_fig, self.ax1, self.ax2, self.value, a, b, c = self.data.load_graph(self.figure)
+                self.pplot_fig.tight_layout()
+            else:
+                raise ValueError
+
+    """----------------------------------------------------------------------------------"""
+
+    def interact(self):
+        black = matplotlib.colors.to_rgba("black")
+        if self.coords[0][0] is not None:
+            self.ligne1 = self.ax1.axvline(x=self.coords[0][0], color=black)
+
+        if self.coords[1][0] is not None:
+            self.ligne2 = self.ax1.axvline(x=self.coords[1][0], color=black)
+
+        self.pplot_fig.canvas.draw()
+
+    """----------------------------------------------------------------------------------"""
+
+    def update_pplot_fig(self):
+        if self.ligne1 is not None:
+            try:
+                self.ax1.lines.remove(self.ligne1)
+            except ValueError:
+                pass
+            self.ligne1 = None
+        if self.ligne2 is not None:
+            try:
+                self.ax1.lines.remove(self.ligne2)
+            except ValueError:
+                pass
+            self.ligne2 = None
+
+        self.interact()
+
+    """----------------------------------------------------------------------------------"""
+
+    def set_atteractive(self):
+        return True
+
+    """----------------------------------------------------------------------------------"""
+
+    def reset_color(self):
+        pass
+
+    """----------------------------------------------------------------------------------"""
+
+    def disconnect_all(self):
+        while len(self.mpl_connect) != 0:
+            self.pplot_fig.canvas.mpl_disconnect(self.mpl_connect[0][0])
+            del self.mpl_connect[0]
+
+    """----------------------------------------------------------------------------------"""
+
+    def connect_all(self):
+        self.mpl_connect.append([self.pplot_fig.canvas.mpl_connect('key_press_event', self.on_key), 'key_press_event'])
+        self.mpl_connect.append([self.pplot_fig.canvas.mpl_connect('button_press_event', self.on_click),
+                                 "button_press_event"])
+        if 's' in pplot.rcParams['keymap.save']:
+            pplot.rcParams['keymap.save'].remove('s')
+
+    """----------------------------------------------------------------------------------"""
+
+    def focus_off(self):
+        """On remet la touche s, oupas, a regarder comment faire"""
+        self.coords = [[None, None], [None, None], [None, None]]
+        self.disconnect_all()
+        self.pplot_fig.canvas.draw()
+
+    """----------------------------------------------------------------------------------"""
+
+    def focus_on(self):
+        pass
+
+    """----------------------------------------------------------------------------------"""
+
+    def on_click(self, event):
+        if event.dblclick and event.inaxes is not None and event.button == MouseButton.LEFT and \
+                (event.inaxes == self.ax1 or event.inaxes == self.ax2):
+            if self.coords[0][0] is None:
+                self.coords[0] = [event.xdata, event.ydata]
+            elif self.coords[1][0] is None:
+                self.coords[1] = [event.xdata, event.ydata]
+            else:
+                self.coords[0] = [event.xdata, event.ydata]
+                self.coords[1] = [None, None]
+        else:
+            return
+
+        if self.coords[0][0] is not None and self.coords[1][0] is not None:
+            try:
+                res = Resources.coord_to_point(self.coords, self.figure.x_axe.data[0], self.figure.y1_axe.data[0])
+            except TypeError:
+                res = -1
+
+            if res == -1:
+                self.emit.emit("msg_console", type="msg_console", str="Invalid mark",
+                               foreground_color="red")
+                return
+
+        self.update_pplot_fig()
+
+    """----------------------------------------------------------------------------------"""
+
+    def on_close(self, event):
+        self.disconnect_all()
+        pplot.close(self.pplot_fig)
+
+    """----------------------------------------------------------------------------------"""
+
+    def on_key(self, event):
+        if event.key == "s" and self.coords[0][0] is not None:
+            self.call_back_func()
+        else:
+            self.emit.emit("msg_console", type="msg_console", str="You have to place at least one mark",
+                               foreground_color="red")
+
+
+    """----------------------------------------------------------------------------------"""
+
+    def disconnect_name(self, name):
+        for i in range(len(self.mpl_connect)):
+            if self.mpl_connect[i][1] == name:
+                self.pplot_fig.canvas.mpl_disconnect(self.mpl_connect[i][0])
+                del self.mpl_connect[i]
+                return
+
+    """----------------------------------------------------------------------------------"""
 
 
 
@@ -2943,7 +3097,7 @@ class Saxs_selection(Abstract_objet_affiche):
 
         if self.pos_x is not None:
             if self.index is None:
-                index_x, index_y = Resources.index_array(self.figure, [self.pos_x, self.pos_y])
+                index_x, index_y = Resources.index_array(self.figure, [self.pos_x, self.pos_y], self.ax1, self.ax2)
                 self.index = [index_x, index_y]
                 count = 0
                 for ax in self.pplot_fig.axes:

@@ -440,6 +440,7 @@ class Create_figure_ihch_1501(QtWidgets.QWidget):
                             if self.s_w == "saxs":
                                 sample_saxs = self.cycles_data[num_cycle].saxs[i]
 
+
                                 if not sample_saxs.is_scan_exist(self.lineEdit_2.text()):
                                     self.emit.emit("msg_console", type="msg_console",
                                                    str="Scan number " + self.lineEdit_2.text() + " invalid for the cycle " +
@@ -470,6 +471,7 @@ class Create_figure_ihch_1501(QtWidgets.QWidget):
                         sample_waxs = self.cycles_data[self.cycles_base[0]].waxs[self.samples[0]]
                         self.cycles = sample_waxs.get_range(self.lineEdit_2.text(), self.lineEdit_3.text())
                     else:
+
                         sample_saxs = self.cycles_data[self.cycles_base[0]].saxs[self.samples[0]]
                         self.cycles = sample_saxs.get_range(self.lineEdit_2.text(), self.lineEdit_3.text())
 
@@ -490,6 +492,9 @@ class Create_figure_ihch_1501(QtWidgets.QWidget):
                                 if self.s_w == "saxs":
                                     for i in self.samples:
                                         sample_saxs = self.cycles_data[num_cycle].saxs[i]
+
+                                        print("----------------")
+                                        print(sample_saxs)
 
                                         if not sample_saxs.is_scan_exist(data):
                                             self.emit.emit("msg_console", type="msg_console",
@@ -523,12 +528,6 @@ class Create_figure_ihch_1501(QtWidgets.QWidget):
 
         else:
             self.cycles = None
-
-        """print(self.cycles_base)
-        print(self.samples)
-        print(self.f_s)
-        print(self.s_w)
-        print(self.cycles)"""
 
         self.finish_signal.emit("save")
 

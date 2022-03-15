@@ -245,7 +245,7 @@ def cycle_cccv(figure, loop_data, mode_data, i_data, ecell_data, cycle):
                                                             2)
 
                     # on suprime le mode 3, ocv
-                    res = Traitements_cycle_outils.mode_del(res[0], res[1], res[2], val_max,
+                    res = Traitements_cycle_outils.mode_del(res[0], res[1], res[2], val_min, val_max,
                                                             mode_data[figure.y2_axe.data[j].source], 3)
                 else:
 
@@ -673,8 +673,8 @@ def cycle_miror_cccv(figure, loop_data, mode_data, i_data, ecell_data, cycle):
                     continue
 
                 # On récucpére premier et le dernier point correspondant au cycle en cours
-                val_min = loop_data[figure.data_y2[j].source][cycle[i]][0]
-                val_max = loop_data[figure.data_y2[j].source][cycle[i]][1]
+                val_min = loop_data[figure.y2_axe.data[j].source][cycle[i]][0]
+                val_max = loop_data[figure.y2_axe.data[j].source][cycle[i]][1]
                 if val_max - val_min < 20:
                     emit.emit("msg_console", type="msg_console", str="Cycle " + str(cycle[i] + 1) + " discard",
                               foreground_color="yellow")
@@ -683,20 +683,20 @@ def cycle_miror_cccv(figure, loop_data, mode_data, i_data, ecell_data, cycle):
                 last_val = None
 
                 # si le cycle correspond à un cycle du dictionaire del_cycle et qu'il vaut -1, on le discard
-                if figure.data_y2[j].source in del_cycle and del_cycle[figure.data_y2[j].source][0] == cycle[i]:
-                    if del_cycle[figure.data_y2[j].source][1] == -1:
+                if figure.y2_axe.data[j].source in del_cycle and del_cycle[figure.y2_axe.data[j].source][0] == cycle[i]:
+                    if del_cycle[figure.y2_axe.data[j].source][1] == -1:
                         emit.emit("msg_console", type="msg_console", str="Discard cycle " + str(cycle[i] + 1) + " y2",
                                   foreground_color="yellow")
                         continue
 
-                    elif del_cycle[figure.data_y2[j].source][1] != 0:
+                    elif del_cycle[figure.y2_axe.data[j].source][1] != 0:
                         """le cycle est traité que set la motiée"""
                         last_val = 1
                         emit.emit("msg_console", type="msg_console", str="Second half of cycle " + str(cycle[i] + 1) +
                                                                 " y2 discard", foreground_color="yellow")
 
                 # on cherche le centre du cycle
-                index_centre = find_center(val_min, val_max, i_data[figure.data_y2[j].source])
+                index_centre = find_center(val_min, val_max, i_data[figure.y2_axe.data[j].source])
 
                 if index_centre == -1:
                     emit.emit("msg_console", type="msg_console", str="Cycle Centre " + str(cycle[i]) +
@@ -705,7 +705,7 @@ def cycle_miror_cccv(figure, loop_data, mode_data, i_data, ecell_data, cycle):
 
                 # on corrige l'index du centre, dans le cas ou la manip n'a pas était bien
                 # réalisé...
-                index_centre = correct_cccv_center(ecell_data[figure.data_y2[j].source][val_min:val_max],
+                index_centre = correct_cccv_center(ecell_data[figure.y2_axe.data[j].source][val_min:val_max],
                                                    index_centre)
 
                 if last_val is not None:
@@ -717,9 +717,9 @@ def cycle_miror_cccv(figure, loop_data, mode_data, i_data, ecell_data, cycle):
                 point_centre = [index_centre, 0]
 
                 # On suprime les plateaux, mode 2
-                res = Traitements_cycle_outils.mode_del(figure.data_x[j].data[val_min:val_max],
-                                                        figure.data_y2[j].data[val_min:val_max], global_index,
-                                                        val_min, val_max, mode_data[figure.data_y2[j].source], 2)
+                res = Traitements_cycle_outils.mode_del(figure.x_axe.data[j].data[val_min:val_max],
+                                                        figure.y2_axe.data[j].data[val_min:val_max], global_index,
+                                                        val_min, val_max, mode_data[figure.y2_axe.data[j].source], 2)
 
                 # Si l'on a suprimer des valeurs avant le centre on les sauvegarde
                 if len(res) == 4:
@@ -727,7 +727,7 @@ def cycle_miror_cccv(figure, loop_data, mode_data, i_data, ecell_data, cycle):
 
                 # on suprime le mode 3, ocv
                 res = Traitements_cycle_outils.mode_del(res[0], res[1], res[2],val_min, val_max,
-                                                        mode_data[figure.data_y2[j].source], 3)
+                                                        mode_data[figure.y2_axe.data[j].source], 3)
                 if len(res) == 4:
                     point_centre[1] += res[3]
 
@@ -742,12 +742,12 @@ def cycle_miror_cccv(figure, loop_data, mode_data, i_data, ecell_data, cycle):
                     data_unit_x = Data_unit(res_miror, unit_x)
                     data_unit_y2 = Data_unit(res[1], unit_y)
 
-                    data_array_x = Data_array(data_unit_x, figure.data_x[j].name, figure.data_x[j].source,
+                    data_array_x = Data_array(data_unit_x, figure.x_axe.data[j].name, figure.x_axe.data[j].source,
                                                           "cycle_" + str(cycle[i] + 1))
                     data_array_x.global_index = global_index
                     new_figure.add_data_x_Data(data_array_x)
 
-                    data_array_y = Data_array(data_unit_y2, figure.data_y2[j].name, figure.data_y2[j].source,
+                    data_array_y = Data_array(data_unit_y2, figure.y2_axe.data[j].name, figure.y2_axe.data[j].source,
                                    "cycle_" + str(cycle[i] + 1))
                     # data_array_y.global_index = global_index
                     new_figure.add_data_y2_Data(data_array_y)
@@ -758,11 +758,11 @@ def cycle_miror_cccv(figure, loop_data, mode_data, i_data, ecell_data, cycle):
                     data_unit_x = Data_unit(res_miror[0:last_val], unit_x)
                     data_unit_y2 = Data_unit(res[1], unit_y)
 
-                    new_figure.add_data_x_Data(Data_array(data_unit_x, figure.data_x[j].name, figure.data_x[j].source,
+                    new_figure.add_data_x_Data(Data_array(data_unit_x, figure.x_axe.data[j].name, figure.x_axe.data[j].source,
                                                           "cycle_" + str(cycle[i] + 1)))
 
-                    new_figure.add_data_y2_Data(Data_array(data_unit_y2, figure.data_y2[j].name,
-                                                           figure.data_y2[j].source, "cycle_" + str(cycle[i] + 1)))
+                    new_figure.add_data_y2_Data(Data_array(data_unit_y2, figure.y2_axe.data[j].name,
+                                                           figure.y2_axe.data[j].source, "cycle_" + str(cycle[i] + 1)))
 
     new_figure.created_from = figure
     new_figure.name = " miror"
@@ -1003,6 +1003,7 @@ def cycle_split_cccv(figure, loop_data, mode_data, i_data, ecell_data, cycle, no
 
                 point_centre = [index_centre, 0]
 
+                global_index = [val for val in range(val_min, val_max)]
                 # On suprime les plateaux, mode 2
                 res = Traitements_cycle_outils.mode_del(figure.x_axe.data[j].data[val_min:val_max],
                                                         figure.y2_axe.data[j].data[val_min:val_max], global_index,

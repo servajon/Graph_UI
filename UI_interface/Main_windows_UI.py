@@ -13,7 +13,8 @@ from PyQt5.QtWidgets import (
 
 import matplotlib.pyplot as pplot
 
-from Console_Objets.Affiche_objet import Classique_affiche, Edit_affiche, Pic_selection, Gitt_affiche, Impedance_affiche
+from Console_Objets.Affiche_objet import Classique_affiche, Edit_affiche, Pic_selection, Gitt_affiche, \
+    Impedance_affiche, Time_Selection
 from Console_Objets.Console import Console
 from Console_Objets.Data_Unit import Data_unit, Units
 from Console_Objets.Data_array import Data_array
@@ -38,11 +39,13 @@ from UI_interface.Derive_Selection_QT import Derive_Selection
 from UI_interface.Edit_data import Edit_data
 from UI_interface.Edit_plot_contour import Edit_plot_contour
 from UI_interface.Figure_plot_QT import Figure_plot
+from UI_interface.Fusion_plot import Fusion_plot
 from UI_interface.Main_window_QT import Ui_MainWindow
 from UI_interface.Edit_view_data_QT import Edit_view_data
 from UI_interface.Cycle_Selection_QT import Cycle_Selection
 from UI_interface.Edit_plot_QT import Edit_plot
 from UI_interface.Selection_combo import Selection_combo
+from UI_interface.Substract_impedance_selection import Substract_impedance_selection
 
 """----------------------------------------------------------------------------------"""
 """                                   Main window                                    """
@@ -120,6 +123,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.actionDelete_Current_Plot.triggered.connect(self.delet_current_plot)
         self.export_actionPlot.triggered.connect(self.export_plot)
         self.actionEdit_data.triggered.connect(self.edit_data)
+        self.actionFusion_plot.triggered.connect(self.fusion_plot)
 
         self.pushButton_5.clicked.connect(self.create_current_data)
         self.pushButton_4.clicked.connect(self.create_figure)
@@ -436,6 +440,16 @@ class Window(QMainWindow, Ui_MainWindow):
                     # on update le tree widget
                     self.treeWidget.add_data("ihch 1501", obj_data.name)
 
+                    for i in range(len(obj_data.cycles)):
+                        figure_ec_lab = obj_data.create_electroch(i)
+
+                        print(figure_ec_lab.name)
+
+                        # on update le tree widget
+                        # on ajoute la figure a current_data
+                        self.treeWidget.add_figure(figure_ec_lab, self.console.current_data.name)
+                        self.console.current_data.figures.append(figure_ec_lab)
+
                     # on update current data avec ne nom du nouveau fichier
                     _translate = QtCore.QCoreApplication.translate
                     self.label.setText(
@@ -482,7 +496,6 @@ class Window(QMainWindow, Ui_MainWindow):
 
         if dialog.exec_() == QDialog.Accepted:
             filename = dialog.selectedFiles()[0]
-            filename = r"C:\Users\Maxime\Desktop\fichier_test\adrien_impedance.mpt"
 
             # création d'un nouveau thread
             t = QThread()
@@ -601,10 +614,24 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.callback_create_current_data("save", "Bode")
 
             elif self.comboBox_5.currentText() == "3d":
-                self.argument_selection_creation_w = Selection_combo(self, "Value used for the z-axis?", ["time", "potentiel"])
+                self.argument_selection_creation_w = Selection_combo(self, "Value used for the z-axis?",
+                                                                     ["time", "potentiel"])
 
                 self.argument_selection_creation_w.finish_signal.connect(
                     lambda signal: self.callback_create_current_data(signal, "3d"))
+
+                self.argument_selection_creation_w.show()
+
+            elif self.comboBox_5.currentText() == "Subtract":
+                data_names = []
+                for data in self.console.datas:
+                    if data.__name__ == "Impedance_data":
+                        data_names.append(data.name)
+
+                self.argument_selection_creation_w = Substract_impedance_selection(data_names, self)
+
+                self.argument_selection_creation_w.finish_signal.connect(
+                    lambda signal: self.callback_create_current_data(signal, "Subtract"))
 
                 self.argument_selection_creation_w.show()
 
@@ -695,7 +722,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.argument_selection_creation_w = None
 
                 # on créer une nouvelle figure
-                figure = Figure(name)
+                figure = Figure(self.console.current_data.current_figure + " " + name)
 
                 # on ajoute les données correspondantes aux sélections
                 res = x_items[0].split("\t")
@@ -943,6 +970,37 @@ class Window(QMainWindow, Ui_MainWindow):
                 # on passe la figure en figure courante
                 self.console.current_data.current_figure = figure
 
+            elif name == "Subtract":
+                if self.argument_selection_creation_w.radioButton.isChecked():
+                    args = self.console.create_dictioanaries_loop_source(
+                        ["loop_data", self.resource.freq, "Re(Z)/Ohm", "-Im(Z)/Ohm"],
+                        [self.console.current_data.name])
+                else:
+                    args = self.console.create_dictioanaries_loop_source(
+                        ["loop_data", self.resource.freq, "Re(Z)/Ohm", "-Im(Z)/Ohm"],
+                        [self.argument_selection_creation_w.comboBox.currentText(),
+                         self.argument_selection_creation_w.comboBox_2.currentText()])
+
+                cycle1 = int(self.argument_selection_creation_w.lineEdit.text())
+                cycle2 = int(self.argument_selection_creation_w.lineEdit_2.text())
+
+                # on delete la fenêtre
+                self.argument_selection_creation_w.deleteLater()
+                self.argument_selection_creation_w = None
+
+                figures = self.console.current_data.impedance_sub([cycle1, cycle2], args)
+
+                if figures is None:
+                    return
+
+                # on update le tree widget
+                # on ajoute la figure a current_data
+                for figure in figures:
+                    self.treeWidget.add_figure(figure, self.console.current_data.name)
+                    self.console.current_data.figures.append(figure)
+
+                # on passe la figure en figure courante
+                self.console.current_data.current_figure = figures[0]
 
             _translate = QtCore.QCoreApplication.translate
             self.label_5.setText(
@@ -1079,6 +1137,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         :return: None
         """
+
         if self.console.current_data is None or self.console.current_data.current_figure is None:
             self.current_figure_None()
         else:
@@ -1113,6 +1172,10 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.create_figure_callback("save", "export gitt")
             elif self.comboBox_4.currentText() == "export resistances":
                 self.create_figure_callback("save", "export resistances")
+            elif self.comboBox_4.currentText() == "Select saxs":
+                self.create_figure_callback("save", "Select saxs")
+            elif self.comboBox_4.currentText() == "Select waxs":
+                self.create_figure_callback("save", "Select waxs")
 
             # il n'y a pas toujours de fenêtre de selection de paramètre, on check si elle est None ou pas
             if self.argument_selection_creation_w is not None:
@@ -1190,7 +1253,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.argument_selection_creation_w.deleteLater()
                 self.argument_selection_creation_w = None
 
-                dict = self.console.create_dictioanaries_loop()
+                dict = self.console.create_dictionaries_loop()
 
                 try:
                     figure_res = self.console.current_data.create_figure_cycle \
@@ -1296,6 +1359,45 @@ class Window(QMainWindow, Ui_MainWindow):
                 else:
                     return
 
+            elif name == "Select saxs" or name == "Select waxs":
+                # on créer une nouvelle figure
+                figure = Figure("Time selection", 1)
+
+                figure.kwarks["cycle"] = self.console.current_data.current_figure.kwarks["cycle"]
+                if name == "Select saxs":
+                    figure.kwarks["type"] = "saxs"
+                else:
+                    figure.kwarks["type"] = "waxs"
+
+
+                # on fait une copy des data_array 0
+                data_array_x = self.console.current_data.current_figure.x_axe.data[0].copy()
+                data_array_y = self.console.current_data.current_figure.y1_axe.data[0].copy()
+
+                # on ajoute les data_array
+                figure.add_data_x_Data(data_array_x)
+                figure.add_data_y1_Data(data_array_y)
+
+                figure.format_line_y1 = "x"
+
+                # on créer Abstract_objet_affiche pour la sélection de pics
+                pic_selection = Time_Selection(self.console.current_data, figure)
+
+                # le graph ne sera pas éditable
+                pic_selection.editable = False
+
+                # on garde une ref de l'objet créée
+                self.edit_plot_figure_w = Figure_plot(pic_selection, self)
+
+                # on connect de callback
+                self.edit_plot_figure_w.closed.connect(self.callback_time_selection)
+
+                # on passe le plot d'édition en modal
+                self.edit_plot_figure_w.setWindowModality(QtCore.Qt.ApplicationModal)
+
+                # on affiche le widget
+                self.edit_plot_figure_w.show()
+
     """---------------------------------------------------------------------------------"""
 
     def tree_click(self):
@@ -1330,7 +1432,8 @@ class Window(QMainWindow, Ui_MainWindow):
             for figure in self.console.current_data.figures:
 
                 # quand on a touvé la figure
-                if figure.name == self.treeWidget.currentItem().text(0):
+                if figure.name == self.treeWidget.currentItem().text(0) and self.treeWidget.currentItem().text(
+                        1) == "figure":
 
                     current_index = self.tabWidget.currentIndex()
 
@@ -1338,7 +1441,8 @@ class Window(QMainWindow, Ui_MainWindow):
                     for i in range(self.tabWidget.count()):
 
                         # si elle est ouverte dans une tab
-                        if self.tabWidget.tabText(i) == figure.name and self.tabWidget.widget(i).abstract_affiche.data.name == self.console.current_data.name:
+                        if self.tabWidget.tabText(i) == figure.name and \
+                                self.tabWidget.widget(i).abstract_affiche.data.name == self.console.current_data.name:
 
                             # on récupére le current index de tab pour regarder si il sera effectivemeent modifié
                             # si oui l'update de current_figure et des label se fera dans le changement de tab
@@ -1571,6 +1675,14 @@ class Window(QMainWindow, Ui_MainWindow):
                     # on update le tree widget
                     self.treeWidget.add_data("ihch 1501", obj_data.name)
 
+                    for i in range(len(obj_data.cycles)):
+                        figure_ec_lab = obj_data.create_electroch(i)
+
+                        # on update le tree widget
+                        # on ajoute la figure a current_data
+                        self.treeWidget.add_figure(figure_ec_lab, self.console.current_data.name)
+                        self.console.current_data.figures.append(figure_ec_lab)
+
                     # on update current data avec ne nom du nouveau fichier
                     _translate = QtCore.QCoreApplication.translate
                     self.label.setText(
@@ -1772,7 +1884,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.tabWidget.setTabText(self.tabWidget.currentIndex(), new_name)
 
         # update du nom de l'item associé dans tree widget
-        self.treeWidget.rename_item(old_name, new_name, 0)
+        self.treeWidget.rename_item(old_name, new_name, "figure", 0)
 
         # on update le label current plot
         _translate = QtCore.QCoreApplication.translate
@@ -1973,13 +2085,14 @@ class Window(QMainWindow, Ui_MainWindow):
         if new_name == "":
             return
 
-
-        parent = self.treeWidget.get_top_item(self.console.current_data.name, new_name)
+        parent = self.treeWidget.get_top_item(self.tabWidget.widget(signal).abstract_affiche.data.name, new_name)
 
         # on reset la selection du treewidget
         self.treeWidget.clearSelection()
+
         # on récupére l'item
-        item = self.treeWidget.get_item(self.console.current_data.name, new_name)
+        item = self.treeWidget.get_item(self.tabWidget.widget(signal).abstract_affiche.data.name, new_name, "figure")
+
         # on set le focus sur lui
         item.setSelected(True)
 
@@ -2093,6 +2206,9 @@ class Window(QMainWindow, Ui_MainWindow):
         # on clear la box
         self.comboBox_4.clear()
 
+        if self.console.current_data.current_figure is None:
+            return
+
         # on l'update avec les nouvelles actions
         actions = self.console.current_data.current_figure.get_operation()
         for action in actions:
@@ -2106,6 +2222,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         :return: None
         """
+
         self.comboBox_5.clear()
         for action in self.console.current_data.get_operation_available():
             self.comboBox_5.addItem(action)
@@ -2114,7 +2231,12 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def update_figure_name(self):
         _translate = QtCore.QCoreApplication.translate
-        self.label_5.setText(
+        if self.console.current_data.current_figure is None:
+            self.label_5.setText(
+            _translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
+                                         "Current plot : None </span></p></body></html>"))
+        else:
+            self.label_5.setText(
             _translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt;\">"
                                      "Current plot : "
                        + self.console.current_data.current_figure.name + " </span></p></body></html>"))
@@ -2168,6 +2290,10 @@ class Window(QMainWindow, Ui_MainWindow):
                     self.console.current_data.current_figure = None
                     break
 
+            if len(self.console.current_data.figures) == 0:
+                self.update_figure_name()
+                self.update_action_combo()
+
     """---------------------------------------------------------------------------------"""
 
     def delete_obj_plot(self, obj):
@@ -2217,8 +2343,6 @@ class Window(QMainWindow, Ui_MainWindow):
 
         self.argument_selection_creation_w = Edit_data(self, self.console.current_data.name, array_edit)
 
-
-
         self.argument_selection_creation_w.finish_signal.connect(self.edit_data_callback)
         self.argument_selection_creation_w.show()
 
@@ -2247,6 +2371,8 @@ class Window(QMainWindow, Ui_MainWindow):
 
             # si le nom des data a changé
             if data_name != self.console.current_data.name:
+
+                data_name = self.console.unique_name(data_name)
 
                 # on garde l'ancien nom du fichier
                 old_name = self.console.current_data.name
@@ -2294,6 +2420,63 @@ class Window(QMainWindow, Ui_MainWindow):
             self.console.current_data.process_edit_data(array_res)
 
     """---------------------------------------------------------------------------------"""
+
+    def fusion_plot(self):
+        """
+        On créer la fenêtre de selection des 2 plot a fusionner
+
+        :return: None
+        """
+        if self.console.current_data is None:
+            self.current_data_None()
+            return
+
+        figures_name = []
+        for figure in self.console.current_data.figures:
+            if figure.can_export():
+               figures_name.append(figure.name)
+
+        if len(figures_name) == 0:
+            self.update_console({"str": "No figure can be merged", "foreground_color": "red"})
+            return
+        elif len(figures_name) == 1:
+            self.update_console({"str": "Only one figure can be merged", "foreground_color": "red"})
+            return
+
+
+        self.argument_selection_creation_w = Fusion_plot(figures_name, self)
+
+        self.argument_selection_creation_w.finish_signal.connect(self.callback_fusion_plot)
+        self.argument_selection_creation_w.show()
+
+    """---------------------------------------------------------------------------------"""
+
+    def callback_fusion_plot(self, signal):
+        if signal == "cancel":
+            self.argument_selection_creation_w.deleteLater()
+            self.argument_selection_creation_w = None
+
+        # on savegarde les changements
+        elif signal == "save":
+            figure1 = self.console.current_data.get_current_figure_name(
+                self.argument_selection_creation_w.comboBox.currentText())
+            figure2 = self.console.current_data.get_current_figure_name(
+                self.argument_selection_creation_w.comboBox_2.currentText())
+
+
+            self.argument_selection_creation_w.deleteLater()
+            self.argument_selection_creation_w = None
+
+            figure = Resources.fusion_figure(figure1, figure2)
+
+            # on update le tree widget
+            # on ajoute la figure a current_data
+            self.treeWidget.add_figure(figure, self.console.current_data.name)
+            self.console.current_data.figures.append(figure)
+
+            # on passe la figure en figure courante
+            self.console.current_data.current_figure = figure
+
 
 
     """---------------------------------------------------------------------------------"""
@@ -2632,6 +2815,7 @@ class Window(QMainWindow, Ui_MainWindow):
         # si une figure d'édition est déjà ouverte, ou return
         # un message a ajouter ici par la suite
         if self.edit_plot_figure_w is not None:
+            print(self.edit_plot_figure_w.abstract_affiche.figure.name)
             self.update_console({"str": "One figure is already being edited", "foreground_color": "red"})
             return
 
@@ -2831,13 +3015,12 @@ class Window(QMainWindow, Ui_MainWindow):
                 s += str(self.console.current_data.current_figure.x_axe.data[i].data[j]) + "\t"
             s = s[:-1] + "\n"
             file.write(s)
-            print(s)
+
             s = ""
             for j in range(len(self.console.current_data.current_figure.x_axe.data[i].data)):
                 s += str(self.console.current_data.current_figure.y1_axe.data[i].data[j]) + "\t"
             s = s[:-1] + "\n"
             file.write(s)
-            print(s)
         file.close()
 
         # création d'un nouveau thread
@@ -3065,7 +3248,124 @@ class Window(QMainWindow, Ui_MainWindow):
     """---------------------------------------------------------------------------------"""
     """                              pics fitting end                                   """
     """---------------------------------------------------------------------------------"""
+    
+    def callback_time_selection(self, event, coords=None, cycle=None, type=None):
+        """
+        fonction callback de create_figure et de callback_time_selection
+        Dans le cas ou le callback vient de callback_time_selection c'est après la demande
+        du z dans le cas ou il n'y avait qu'une seule borne de selectionnée
+        Pour effectuer la selection on a donc soit 2 bornes, soit une borne et un z
 
+        :param cycle:
+        :param event: Time selection / save / cancel
+        :param coords: coordonnée en x et y des bornes selectionnées
+        :return:
+        """
+        if event == "Time selection":
+            coords = self.edit_plot_figure_w.abstract_affiche.coords
+
+            if coords[0][0] is None and coords[1][0] is None:
+                return
+
+            if self.edit_plot_figure_w.abstract_affiche.figure.x_axe.data[0].unit.name == "min":
+                b1 = coords[0][0] * 60
+                if coords[1][0] is None:
+                    b2 = None
+                else:
+                    b2 = coords[1][0] * 60
+            elif self.edit_plot_figure_w.abstract_affiche.figure.x_axe.data[0].unit.name == "h":
+                b1 = coords[0][0] * 3600
+                if coords[1][0] is None:
+                    b2 = None
+                else:
+                    b2 = coords[1][0] * 3600
+            else:
+                b1 = coords[0][0]
+                if coords[1][0] is None:
+                    b2 = None
+                else:
+                    b2 = coords[1][0]
+
+            coords = [b1, b2]
+
+            cycle = self.edit_plot_figure_w.abstract_affiche.figure.kwarks["cycle"]
+            type = self.edit_plot_figure_w.abstract_affiche.figure.kwarks["type"]
+
+            pplot.close(self.edit_plot_figure_w.abstract_affiche.pplot_fig)
+            self.edit_plot_figure_w.deleteLater()
+            self.edit_plot_figure_w = None
+
+            if coords[1] is None:
+                print("1 borne selectionnée : ")
+                print(coords)
+                print(cycle)
+                print(type)
+                if type == "waxs":
+                    new_figure = self.console.current_data.trace_scan_borne("waxs", cycle, coords[0])
+                else:
+                    new_figure = self.console.current_data.trace_scan_borne("saxs", cycle, coords[0])
+
+                # on update le tree widget
+                # on ajoute la figure a current_data
+                self.treeWidget.add_figure(new_figure, self.console.current_data.name)
+                self.console.current_data.figures.append(new_figure)
+
+                # on passe la figure en figure courante
+                self.console.current_data.current_figure = new_figure
+
+                # on update le label avec le nouveau nom de la figure
+                self.update_figure_name()
+
+                # on update les actions disponibles pour cette figure
+                self.update_action_combo()
+
+            else:
+                self.argument_selection_creation_w = Ask_Value(self, "int", "Value of Z",
+                                                               "Z : ")
+                self.argument_selection_creation_w.finish_signal.connect \
+                    (lambda z: self.callback_time_selection(z, coords, cycle, type))
+
+                # on passe le plot d'édition en modal
+                self.argument_selection_creation_w.setWindowModality(QtCore.Qt.ApplicationModal)
+
+                self.argument_selection_creation_w.show()
+
+        elif event == "cancel":
+            self.argument_selection_creation_w.deleteLater()
+            self.argument_selection_creation_w = None
+        else:
+            z = self.argument_selection_creation_w.value
+            print("2 bornes selectionnées : ")
+            print(coords)
+            print("z selectionné : " + str(z))
+            print(cycle)
+            print(type)
+
+            self.argument_selection_creation_w.deleteLater()
+            self.argument_selection_creation_w = None
+
+            if type == "waxs":
+                new_figure = self.console.current_data.trace_frame_borne("waxs", cycle, coords[0], coords[1], z)
+            else:
+                new_figure = self.console.current_data.trace_frame_borne("saxs", cycle, coords[0], coords[1], z)
+
+            # on update le tree widget
+            # on ajoute la figure a current_data
+            self.treeWidget.add_figure(new_figure, self.console.current_data.name)
+            self.console.current_data.figures.append(new_figure)
+
+            # on passe la figure en figure courante
+            self.console.current_data.current_figure = new_figure
+
+            # on update le label avec le nouveau nom de la figure
+            self.update_figure_name()
+
+            # on update les actions disponibles pour cette figure
+            self.update_action_combo()
+
+
+
+        
     """---------------------------------------------------------------------------------"""
     """                        Vieux data current plot start                            """
     """---------------------------------------------------------------------------------"""

@@ -4,6 +4,7 @@ from os import listdir
 import matplotlib
 import matplotlib.colors as mcolors
 
+
 class Resource_class:
     _instance = None
 
@@ -31,8 +32,6 @@ class Resource_class:
             # taille par défaut de l'écriture dans le widget console
             cls.default_size = 10
             cls.default_font = ("Times", cls.default_size)
-
-
 
         return cls._instance
 
@@ -188,12 +187,10 @@ def coord_to_point(coords, data_x, data_y):
 
     born_inf = coords[0][0]
 
-    """Il y a Ecell/V sur la figure courrante, on vérifira cela avant"""
-    """La figure sera créer pour qu'il n'y est pas de probléme"""
-    """On récupére les 2 numéros de points correspondants aux valeurs des bornes"""
+    # On récupére les 2 numéros de points correspondants aux valeurs des bornes
     res = [None, None]
 
-    """calcule pour la born inf"""
+    # calcule pour la born inf
     i = 0
     if data_x.data[i] > born_inf:
         while i < len(data_x.data) and data_x.data[i] > born_inf:
@@ -232,7 +229,7 @@ def coord_to_point(coords, data_x, data_y):
     else:
         res[0] = res_i_2
 
-    """calcule pour la born supp"""
+    # calcule pour la born supp
     if len(coords) != 1:
         born_supp = coords[1][0]
         i = 0
@@ -285,15 +282,35 @@ def coord_to_point(coords, data_x, data_y):
 """----------------------------------------------------------------------------------"""
 
 
-def index_array(figure, coords):
+def index_array(figure, coords, ax1, ax2):
     x = coords[0]
     y = coords[1]
+
+    # si y2_axe is None => ax2 is None
+    if figure.y2_axe is not None:
+        print("---------------")
+        print(ax1.get_ybound())
+        print(ax2.get_ybound())
+        print("----")
+
+        print(ax2.get_ybound()[0])
+        print(ax2.get_ybound()[1])
+        ratio = (y - ax2.get_ybound()[0]) / (ax2.get_ybound()[1] - ax2.get_ybound()[0])
+        print(ratio)
+        y = (ax1.get_ybound()[1] - ax1.get_ybound()[0]) * ratio
+
+    print("-------index_array------")
+    print(x)
+    print(y)
 
     index_x = []
     for i in range(len(figure.y1_axe.data)):
         if figure.x_axe.data[i].name != "LIGNE0":
             res = coord_to_point([[x, y]], figure.x_axe.data[i], figure.y1_axe.data[i])
             index_x.append(res)
+
+
+    print(index_x)
 
     min = None
     index_x_return = ["x", 0]
@@ -305,6 +322,9 @@ def index_array(figure, coords):
                 min = abs(y - figure.y1_axe.data[i].data[index_x[i]])
                 index_x_return = ["x", i]
                 index_y_return = ["y1", i]
+
+    print(index_x_return)
+    print(index_y_return)
 
     return index_x_return, index_y_return
 
@@ -326,36 +346,29 @@ def get_new_path(name, path, ext):
 
 def fusion_figure(fig1, fig2):
     from Console_Objets.Figure import Figure
-    figure = Figure(fig1.name + "_" + fig2.name, 1)
+    figure = Figure(fig1.name + " / " + fig2.name, 1)
     figure.format_line_y1 = fig1.format_line_y1
     figure.format_line_y2 = fig1.format_line_y2
 
     figure.type = fig1.type
-    figure.start_x = fig1.start_x
-    figure.end_x = fig1.end_x
-    figure.start_y1 = fig1.start_y1
-    figure.end_y1 = fig1.end_y1
-    figure.start_y2 = fig1.start_y2
-    figure.end_y2 = fig1.end_y2
 
-    for i in range(len(fig1.data_y1)):
-        figure.add_data_y1(fig1.data_y1[i].data, fig1.data_y1[i].name, None, fig1.data_y1[i].legende_affiche,
-                           fig1.data_y1[i].color)
-        figure.add_data_x(fig1.data_x[i].data, fig1.data_x[i].name, None)
+    for i in range(len(fig1.y1_axe.data)):
+        figure.add_data_x_Data(fig1.x_axe.data[i].copy())
+        figure.add_data_y1_Data(fig1.y1_axe.data[i].copy())
 
-    for i in range(len(fig2.data_y1)):
-        figure.add_data_y1(fig2.data_y1[i].data, fig2.data_y1[i].name, None, fig2.data_y1[i].legende_affiche,
-                           fig2.data_y1[i].color)
-        figure.add_data_x(fig2.data_x[i].data, fig2.data_x[i].name, None)
+    for i in range(len(fig2.y1_axe.data)):
+        figure.add_data_x_Data(fig2.x_axe.data[i].copy())
+        figure.add_data_y1_Data(fig2.y1_axe.data[i].copy())
 
-    for i in range(len(fig1.data_y2)):
-        figure.add_data_y2(fig1.data_y2[i].data, fig1.data_y2[i].name, None, fig1.data_y2[i].legende_affiche,
-                           fig1.data_y2[i].color)
-        figure.add_data_x(fig1.data_x[len(fig1.data_y1) + i].data, fig1.data_x[len(fig1.data_y1) + i].name, None)
-    for i in range(len(fig2.data_y2)):
-        figure.add_data_y2(fig2.data_y2[i].data, fig2.data_y2[i].name, None, fig2.data_y2[i].legende_affiche,
-                           fig2.data_y2[i].color)
-        figure.add_data_x(fig2.data_x[len(fig2.data_y1) + i].data, fig2.data_x[len(fig2.data_y1) + i].name, None)
+    if fig1.y2_axe is not None:
+        for i in range(len(fig1.y2_axe.data)):
+            figure.add_data_x_Data(fig1.x_axe.data[len(fig1.y1_axe.data) + i].copy())
+            figure.add_data_y2_Data(fig1.y2_axe.data[i].copy())
+
+    if fig2.y2_axe is not None:
+        for i in range(len(fig2.y2_axe.data)):
+            figure.add_data_x_Data(fig2.x_axe.data[len(fig2.y1_axe.data) + i].copy())
+            figure.add_data_y2_Data(fig2.y2_axe.data[i].copy())
 
     return figure
 
@@ -416,14 +429,14 @@ def create_array_color(color_map, nb):
         if nb < 3:
             for i in range(0, nb):
                 start = 0
-                end = 1/2
-                pas = 1/2/nb
+                end = 1 / 2
+                pas = 1 / 2 / nb
                 while start < end:
                     color.append(color_map(start))
                     start += pas
         else:
             for i in range(0, nb):
-                color.append(color_map(i/nb))
+                color.append(color_map(i / nb))
     return color
 
 
@@ -549,32 +562,30 @@ COLOR_MAP = {
 }
 
 MARKERS_PLOT = {
-        '__': 'default',
-        '.': 'point',
-        ',': 'pixel',
-        'o': 'circle',
-        'v': 'triangle_down',
-        '^': 'triangle_up',
-        '<': 'triangle_left',
-        '>': 'triangle_right',
-        '1': 'tri_down',
-        '2': 'tri_up',
-        '3': 'tri_left',
-        '4': 'tri_right',
-        '8': 'octagon',
-        's': 'square',
-        'p': 'pentagon',
-        '*': 'star',
-        'h': 'hexagon1',
-        'H': 'hexagon2',
-        '+': 'plus',
-        'x': 'x',
-        'D': 'diamond',
-        'd': 'thin_diamond',
-        '|': 'vline',
-        '_': 'hline',
-        'P': 'plus_filled',
-        'X': 'x_filled'
+    '__': 'default',
+    '.': 'point',
+    ',': 'pixel',
+    'o': 'circle',
+    'v': 'triangle_down',
+    '^': 'triangle_up',
+    '<': 'triangle_left',
+    '>': 'triangle_right',
+    '1': 'tri_down',
+    '2': 'tri_up',
+    '3': 'tri_left',
+    '4': 'tri_right',
+    '8': 'octagon',
+    's': 'square',
+    'p': 'pentagon',
+    '*': 'star',
+    'h': 'hexagon1',
+    'H': 'hexagon2',
+    '+': 'plus',
+    'x': 'x',
+    'D': 'diamond',
+    'd': 'thin_diamond',
+    '|': 'vline',
+    '_': 'hline',
+    'P': 'plus_filled',
+    'X': 'x_filled'
 }
-
-

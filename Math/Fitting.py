@@ -8,6 +8,7 @@ from joblib.numpy_pickle_utils import xrange
 from lmfit.models import GaussianModel, VoigtModel, PseudoVoigtModel
 from scipy import sparse
 from scipy.sparse.linalg import spsolve
+from derivative import dxdt
 import matplotlib.pyplot as pplot
 
 from Console_Objets.Data_array import Data_array
@@ -28,7 +29,7 @@ def slice(array_x, array_y, v1, v2):
     index_min = index
     while array_x[index] < v2:
         index += 1
-    return array_x[index_min:index], array_y[index_min:index]
+    return array_x[index_min:index + 1], array_y[index_min:index + 1]
 
 
 def get_min_max_pics(pics):
@@ -68,6 +69,33 @@ def lorentzian(x, amplitude=1.0, center=0.0, sigma=1.0):
             / max(1.0e-15, (math.pi*sigma)))
 
 
+def delimit_pic(x, y, center):
+    index = 0
+    while x[index] < center:
+        index += 1
+
+    index_center = index
+
+    while index - 1 > -1 and y[index - 1] < y[index]:
+        index -= 1
+
+    if index_center - index < 3:
+        raise ValueError
+
+    val_min = x[index]
+
+    index = index_center
+
+    while index + 1 < len(y) and y[index + 1] < y[index]:
+        index += 1
+
+    if index - index_center < 3:
+        raise ValueError
+
+    val_max = x[index]
+
+    return val_min, val_max
+
 
 
 
@@ -75,6 +103,8 @@ def fit_pics(_x_array, _y_array, pics, nb):
 
     _min, _max = get_min_max_pics(pics)
     x_array, y_array = slice(_x_array, _y_array, _min * 0.99, _max * 1.01)
+
+    y_array = scipy.signal.savgol_filter(y_array, 5, 3)
 
     baseline = baseline_(y_array, 10000, 0.0001)
 
@@ -84,8 +114,16 @@ def fit_pics(_x_array, _y_array, pics, nb):
 
     for pic in pics:
 
-        pplot.plot(x_array, y_array)
+        """try:
+            left_base, right_base = delimit_pic(x_array, y_array, pic.center)
+            pic.left_base = left_base
+            pic.right_base = right_base
+        except (ValueError, IndexError):
+            pass"""
 
+
+
+        pplot.plot(x_array, y_array)
         temp_x, temp_y = slice(x_array, y_array, pic.left_base, pic.right_base)
 
         pplot.plot(temp_x, temp_y)
@@ -109,9 +147,12 @@ def fit_pics(_x_array, _y_array, pics, nb):
 
         out = model.fit(temp_y, param, x=temp_x)
 
+        print('------------------')
         print(out.values)
 
-        pic.update(**out.values)
+
+
+        # pic.update(**out.values)
 
 
 
@@ -122,6 +163,10 @@ def fit_pics(_x_array, _y_array, pics, nb):
 
         test_voigt = pseudo_voigt(np.array(x_array), out.values["amplitude"], out.values["center"], out.values["sigma"],
                                   out.values["fraction"])
+
+        # left_base, right_base = out_fit_min_max(x_array, test_voigt, out.values["center"])
+        # pic.left_base = pic.center - 1.8 * pic.fwhm
+        # pic.right_base = pic.center + 1.8 * pic.fwhm
 
         pplot.plot(x_array, test_voigt)
         pplot.show()
@@ -312,6 +357,16 @@ class Pic:
 
     def update(self, **kwargs):
         for key, value in kwargs.items():
+            if key == "center":
+                if self.center * 1.1 < value or self.center / 1.1 > value:
+                    print("update discard")
+                    return
+            elif self.__getattribute__(key) is not None and (self.__getattribute__(key) * 10 < value or
+                                                           self.__getattribute__(key) / 10 > value):
+                print("update discard")
+                return
+
+        for key, value in kwargs.items():
             self.__setattr__(key, value)
 
     def __repr__(self):
@@ -348,18 +403,16 @@ if __name__ == '__main__':
     pplot.show()
 
     """def __init__(self, x_max, integral, fwhm, height, sigma, fraction, left_base, right_base):"""
-    p1 = {'amplitude': 0.0006180758165759622,
+    p1 = {
           'fwhm': 0.040421191883555974,
           'center': 5.15,
-          'height': 0.0038,
-          'sigma': 0.020210595941777987,
+          'sigma': 0.08,
           'left_base': 5.1,
           'right_base': 5.225}
 
     p2 = {'amplitude': 0.00018162457466913028,
           'fwhm': 0.040421191883555974,
-          'center': 5.279215023469039,
-          'height': 0.0038,
+          'center': 5.27,
           'sigma': 0.024541345434393236,
           'left_base': 5.2,
           'right_base': 5.3229}
@@ -367,18 +420,16 @@ if __name__ == '__main__':
     p3 = {'amplitude': 0.0006180758165759622,
           'fwhm': 0.040421191883555974,
           'center': 5.40,
-          'height': 0.0038,
           'sigma': 0.020210595941777987,
-          'left_base': 5.3,
-          'right_base': 5.487}
+          'left_base': 5.35,
+          'right_base': 5.45}
 
-    p4 = {'amplitude': 0.0006180758165759622,
+    p4 = {'amplitude': 0.00022113099174519006,
           'fwhm': 0.040421191883555974,
-          'center': 5.64,
-          'height': 0.0038,
-          'sigma': 0.020210595941777987,
-          'left_base': 5.55,
-          'right_base': 5.66}
+          'center': 5.565635943945343,
+          'sigma': 0.024357916389547096,
+          'left_base': 5.5,
+          'right_base': 5.7}
 
 
     pics = [p1, p2, p3, p4]

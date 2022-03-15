@@ -121,6 +121,11 @@ class Gitt_data(Abstract_data):
 
     """----------------------------------------------------------------------------------"""
 
+    def impedance_sub(self, *args, **kwargs):
+        raise ValueError
+
+    """"----------------------------------------------------------------------------------"""
+
     def create_gitt_methode(self, surface, vm, constante_d_n, bornes1, bornes2):
         emit = Emit()
         loop_potentiel = self.potentiel.get("loop_data")
