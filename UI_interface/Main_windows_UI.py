@@ -722,7 +722,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.argument_selection_creation_w = None
 
                 # on créer une nouvelle figure
-                figure = Figure(self.console.current_data.current_figure + " " + name)
+                figure = Figure(self.console.current_data.name + " " + name)
 
                 # on ajoute les données correspondantes aux sélections
                 res = x_items[0].split("\t")

@@ -509,8 +509,7 @@ class Figure:
     def is_interact(self):
         """return 1 si la figure est correct pour être interactive, 0 sinon"""
         if self.type == "3d" or self.type == "bar" or self.type == "contour" \
-                or self.type == "res_saxs" or self.type == "res_waxs" or (self.y2_axe is not None and
-                                                                          len(self.y2_axe) != 0):
+                or self.type == "res_saxs" or self.type == "res_waxs":
             return 0
         else:
             return 1

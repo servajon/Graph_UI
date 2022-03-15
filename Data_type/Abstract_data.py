@@ -342,7 +342,7 @@ class Abstract_data(ABC):
         if figure.y2_axe is not None:
             couleur = []
             for name in reversed(matplotlib.colors.cnames.items()):
-                couleur.append(name[0])
+                couleur.append(matplotlib.colors.to_rgba(name[0]))
 
             ax2 = ax1.twinx()
             leg2 = leg1.twinx()

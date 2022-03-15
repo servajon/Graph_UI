@@ -288,45 +288,48 @@ def index_array(figure, coords, ax1, ax2):
 
     # si y2_axe is None => ax2 is None
     if figure.y2_axe is not None:
-        print("---------------")
-        print(ax1.get_ybound())
-        print(ax2.get_ybound())
-        print("----")
-
-        print(ax2.get_ybound()[0])
-        print(ax2.get_ybound()[1])
+        y2 = y
         ratio = (y - ax2.get_ybound()[0]) / (ax2.get_ybound()[1] - ax2.get_ybound()[0])
-        print(ratio)
-        y = (ax1.get_ybound()[1] - ax1.get_ybound()[0]) * ratio
-
-    print("-------index_array------")
-    print(x)
-    print(y)
+        y = (ax1.get_ybound()[1] - ax1.get_ybound()[0]) * ratio + ax1.get_ybound()[0]
+    else:
+        y2 = None
 
     index_x = []
     for i in range(len(figure.y1_axe.data)):
-        if figure.x_axe.data[i].name != "LIGNE0":
-            res = coord_to_point([[x, y]], figure.x_axe.data[i], figure.y1_axe.data[i])
+        res = coord_to_point([[x, y]], figure.x_axe.data[i], figure.y1_axe.data[i])
+        index_x.append(res)
+
+    if figure.y2_axe is not None:
+        for i in range(len(figure.y2_axe.data)):
+            res = coord_to_point([[x, y]], figure.x_axe.data[len(figure.y1_axe.data) + i], figure.y2_axe.data[i])
             index_x.append(res)
 
-
-    print(index_x)
-
-    min = None
+    min_y1 = None
+    min_y2 = None
     index_x_return = ["x", 0]
     index_y_return = ["y1", 0]
 
-    for i in range(len(index_x)):
-        if figure.x_axe.data[i].name != "LIGNE0" and figure.x_axe.data[i].visible:
-            if min is None or abs(y - figure.y1_axe.data[i].data[index_x[i]]) < min:
-                min = abs(y - figure.y1_axe.data[i].data[index_x[i]])
-                index_x_return = ["x", i]
-                index_y_return = ["y1", i]
+    index_y2_return = ["y2", 0]
 
-    print(index_x_return)
-    print(index_y_return)
 
-    return index_x_return, index_y_return
+    for i in range(len(figure.y1_axe.data)):
+        if figure.x_axe.data[i].visible and (min_y1 is None or abs(y - figure.y1_axe.data[i].data[index_x[i]]) < min_y1):
+            min_y1 = abs(y - figure.y1_axe.data[i].data[index_x[i]])
+            index_x_return = ["x", i]
+            index_y_return = ["y1", i]
+
+    if y2 is not None:
+        for i in range(len(figure.y2_axe.data)):
+            if figure.x_axe.data[i].visible and (min_y2 is None or abs(y - figure.y2_axe.data[i].data[index_x[len(figure.y1_axe.data) + i]]) < min_y2):
+                min_y2 = abs(y2 - figure.y2_axe.data[i].data[index_x[len(figure.y1_axe.data) + i]])
+                index_x_return = ["x", len(figure.y1_axe.data) + i]
+                index_y2_return = ["y2", i]
+
+    if min_y2 is not None and min_y2 / (ax2.get_ybound()[1] - ax2.get_ybound()[0]) < \
+            min_y1 / (ax1.get_ybound()[1] - ax1.get_ybound()[0]):
+        return index_x_return, index_y2_return
+    else:
+        return index_x_return, index_y_return
 
 
 """----------------------------------------------------------------------------------"""

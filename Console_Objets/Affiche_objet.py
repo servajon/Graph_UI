@@ -260,25 +260,69 @@ class Classique_affiche(Abstract_objet_affiche):
 
         if self.pos_x is not None:
             if self.index is None:
+
+
                 index_x, index_y = Resources.index_array(self.figure, [self.pos_x, self.pos_y], self.ax1, self.ax2)
 
                 self.index = [index_x, index_y]
-                count = 0
-                for ax in self.pplot_fig.axes:
-                    for line in ax.lines:
+
+                if self.index[1][0] == "y1":
+                    count = 0
+                    for line in self.ax1.lines:
                         if "#" in line.get_color():
-                            if count != self.index[0][1]:
+                            if count != self.index[1][1]:
                                 color = line.get_color()
                                 color = str(color)
                                 color += "50"
                                 line.set_color(color)
                         elif len(line.get_color()) == 4:
-                            if count != self.index[0][1]:
+                            if count != self.index[1][1]:
                                 hex_color = matplotlib.colors.to_hex(line.get_color())
                                 color = str(hex_color)
                                 color += "50"
                                 line.set_color(color)
                         count += 1
+
+                    for line in self.ax2.lines:
+                        if "#" in line.get_color():
+                            color = line.get_color()
+                            color = str(color)
+                            color += "50"
+                            line.set_color(color)
+                        elif len(line.get_color()) == 4:
+                            hex_color = matplotlib.colors.to_hex(line.get_color())
+                            color = str(hex_color)
+                            color += "50"
+                            line.set_color(color)
+
+                else:
+                    count = 0
+                    for line in self.ax2.lines:
+                        if "#" in line.get_color():
+                            if count != self.index[1][1]:
+                                color = line.get_color()
+                                color = str(color)
+                                color += "50"
+                                line.set_color(color)
+                        elif len(line.get_color()) == 4:
+                            if count != self.index[1][1]:
+                                hex_color = matplotlib.colors.to_hex(line.get_color())
+                                color = str(hex_color)
+                                color += "50"
+                                line.set_color(color)
+                        count += 1
+
+                    for line in self.ax1.lines:
+                        if "#" in line.get_color():
+                            color = line.get_color()
+                            color = str(color)
+                            color += "50"
+                            line.set_color(color)
+                        elif len(line.get_color()) == 4:
+                            hex_color = matplotlib.colors.to_hex(line.get_color())
+                            color = str(hex_color)
+                            color += "50"
+                            line.set_color(color)
 
             if self.index[0] != -1:
                 xtickslocs = str(self.ax1.get_xticks()[1])
@@ -301,35 +345,60 @@ class Classique_affiche(Abstract_objet_affiche):
                         len_y = i + 4 + ytickslocs.find(".")
                         break
 
-                print(self.ax1.get_ybound())
-                if self.ax2 is not None:
-                    print(self.ax2.get_ybound())
+                if self.index[1][0] == "y1":
+                    res = Resources.coord_to_point([[self.pos_x, self.pos_y]],
+                                                   self.figure.x_axe.data[self.index[0][1]],
+                                                   self.figure.y1_axe.data[self.index[1][1]])
 
-                res = Resources.coord_to_point([[self.pos_x, self.pos_y]],
-                                               self.figure.x_axe.data[self.index[0][1]],
-                                               self.figure.y1_axe.data[self.index[1][1]])
+                    if self.can_emit:
+                        self.emit.emit("update_values", res=res, index=self.index)
 
-                if self.can_emit:
-                    self.emit.emit("update_values", res=res, index=self.index)
+                    if res != -1:
+                        text_legend_pointed = self.figure.y1_axe.data[self.index[1][1]].legend
 
-                if res != -1:
-                    text_legend_pointed = self.figure.y1_axe.data[self.index[1][1]].legend
+                        self.value.legend([test, test, test], [
+                            'courbe : ' + str(text_legend_pointed),
+                            'x : ' + str(self.figure.x_axe.data[self.index[0][1]].data[res])[0:len_x],
+                            'y : ' + str(self.figure.y1_axe.data[self.index[1][1]].data[res])[0:len_y]],
+                                          markerscale=0, borderaxespad=0, fontsize=14, loc="center right")
 
-                    self.value.legend([test, test, test], [
-                        'courbe : ' + str(text_legend_pointed),
-                        'x : ' + str(self.figure.x_axe.data[self.index[0][1]].data[res])[0:len_x],
-                        'y : ' + str(self.figure.y1_axe.data[self.index[1][1]].data[res])[0:len_y]],
-                                      markerscale=0, borderaxespad=0, fontsize=14, loc="center right")
-
-                    self.ligne1 = self.ax1.axhline(y=self.figure.y1_axe.data[self.index[1][1]].data[res], color=black)
-                    self.ligne2 = self.ax1.axvline(x=self.figure.x_axe.data[self.index[0][1]].data[res], color=black)
-
-                    if self.freq is not None:
-                        self.freq.legend([test], [
-                            'freq : ' + str(self.data.data.get("freq/Hz")[res])[0:len_x] + " Hz"],
-                                         markerscale=0, borderaxespad=0, fontsize=14, loc="lower right")
-
+                        self.ligne1 = self.ax1.axhline(y=self.figure.y1_axe.data[self.index[1][1]].data[res],
+                                                       color=black)
+                        self.ligne2 = self.ax1.axvline(x=self.figure.x_axe.data[self.index[0][1]].data[res],
+                                                       color=black)
                 else:
+                    res = Resources.coord_to_point([[self.pos_x, self.pos_y]],
+                                                   self.figure.x_axe.data[self.index[0][1]],
+                                                   self.figure.y2_axe.data[self.index[1][1]])
+
+                    if self.can_emit:
+                        self.emit.emit("update_values", res=res, index=self.index)
+
+                    if res != -1:
+                        text_legend_pointed = self.figure.y2_axe.data[self.index[1][1]].legend
+
+                        self.value.legend([test, test, test], [
+                            'courbe : ' + str(text_legend_pointed),
+                            'x : ' + str(self.figure.x_axe.data[self.index[0][1]].data[res])[0:len_x],
+                            'y : ' + str(self.figure.y2_axe.data[self.index[1][1]].data[res])[0:len_y]],
+                                          markerscale=0, borderaxespad=0, fontsize=14, loc="center right")
+
+                        ratio = (self.figure.y2_axe.data[self.index[1][1]].data[res] - self.ax2.get_ybound()[0]) / \
+                                (self.ax2.get_ybound()[1] - self.ax2.get_ybound()[0])
+
+                        self.ligne1 = self.ax1.axhline(y=(self.ax1.get_ybound()[1] - self.ax1.get_ybound()[0]) * ratio + self.ax1.get_ybound()[0],
+                                                       color=black)
+                        self.ligne2 = self.ax1.axvline(x=self.figure.x_axe.data[self.index[0][1]].data[res],
+                                                       color=black)
+
+
+
+                if self.freq is not None:
+                    self.freq.legend([test], [
+                        'freq : ' + str(self.data.data.get("freq/Hz")[res])[0:len_x] + " Hz"],
+                                     markerscale=0, borderaxespad=0, fontsize=14, loc="lower right")
+
+                if res == -1:
                     text_legend_pointed = self.figure.y1_axe.data[self.index[1][1]].legend
                     self.value.legend([test, test, test], ['courbe : ' + str(text_legend_pointed),
                                                            'x : none', 'y : none'],
@@ -460,8 +529,7 @@ class Classique_affiche(Abstract_objet_affiche):
 
     def focus_on(self):
         if self.figure.is_interact() == 0:
-            self.interactive = True
-            # return
+            return
         else:
             self.interactive = True
 
