@@ -509,7 +509,8 @@ class Figure:
     def is_interact(self):
         """return 1 si la figure est correct pour être interactive, 0 sinon"""
         if self.type == "3d" or self.type == "bar" or self.type == "contour" \
-                or self.type == "res_saxs" or self.type == "res_waxs":
+                or self.type == "res_saxs" or self.type == "res_waxs" or \
+                (self.y2_axe is not None and (self.y1_axe.scale == 'log' or self.y2_axe.scale == 'log')):
             return 0
         else:
             return 1
@@ -612,9 +613,9 @@ class Figure:
         "res_fitting_temps": [],  # figure résultat d'un fit
         "contour": [],  # figure résultat d'un fit
         "ihch_ec_lab": ["Select saxs", "Select waxs"],
-        "saxs frame": [],
+        "saxs frame": ["Subtract", "Normalise"],
         "waxs frame": ["fit"],
-        "saxs scan": [],
+        "saxs scan": ["Subtract", "Normalise"],
         "waxs scan": ["fit"],
         "gitt": ["export gitt"],
 

@@ -188,108 +188,92 @@ class Ihch_1501(Abstract_data):
 
     """----------------------------------------------------------------------------------"""
 
-    def norm_ihch(self):
-        if self.current_figure.type is not None and self.current_figure.type != "saxs":
-            self.resource.print_color("Opération uniquement disponible pour saxs", "fail")
-            return
-        elif self.current_figure.dirty is not None:
-            self.resource.print_color("La figure que vous souhaitez utiliser possède des données modifiées, merci "
-                                      "d'utiliser une figure où les données sont intègres", "fail")
-            return
-        else:
-            array_obj_data = Array_Abstract_objet_affiche()
-            obj = array_obj_data.append(Saxs_selection(self, self.current_figure))
-            array_obj_data.event_thread2.wait()
-            array_obj_data.event_thread2.clear()
-            courbe_index = obj.index
-            point_index = obj.res
-            obj.finish = True
+    def norm_ihch(self, courbe_index, data_index):
 
-            if courbe_index is None or point_index is None:
-                self.resource.print_color("Aucun point sélectionné", "fail")
-                return
+        val_y = self.current_figure.y1_axe.data[courbe_index].data[data_index]
 
-            fig = Figure("res_norm", 1)
-            fig.type = "saxs"
+        fig = Figure(self.current_figure.name + " norm = " + str(val_y))
+        fig.type = "saxs"
 
-            data_x = []
-            data_y = []
+        data_x = []
+        data_y = []
 
-            val_y = self.current_figure.data_y1[courbe_index[1][1]].data[point_index]
 
-            for i in range(len(self.current_figure.data_y1)):
-                data_x.append(copy.copy(self.current_figure.data_x[i]))
+        for i in range(len(self.current_figure.y1_axe.data)):
+            data_x.append(self.current_figure.x_axe.data[i].copy())
 
-                norm = val_y / self.current_figure.data_y1[i].data[point_index]
-                if norm != 1:
-                    new_data_y = []
-                    for j in range(len(self.current_figure.data_y1[i].data)):
-                        new_data_y.append(self.current_figure.data_y1[i].data[j] * norm)
-                else:
-                    new_data_y = self.current_figure.data_y1[i].data
-                data_array = copy.copy(self.current_figure.data_y1[i])
+            norm = val_y / self.current_figure.y1_axe.data[i].data[data_index]
+            if norm != 1:
+                new_data_y = []
+                for j in range(len(self.current_figure.y1_axe.data[i].data)):
+                    new_data_y.append(self.current_figure.y1_axe.data[i].data[j] * norm)
+
+                data_array = self.current_figure.y1_axe.data[i].copy()
                 data_array.data = new_data_y
-                data_y.append(data_array)
+            else:
+                data_array = self.current_figure.y1_axe.data[i].copy()
 
-            for i in range(len(data_x)):
-                fig.add_data_x_Data(data_x[i])
-                fig.add_data_y1_Data(data_y[i])
+            data_y.append(data_array)
 
-            fig.created_from = self.current_figure
-            fig.name = self.unique_name(fig.name)
-            self.current_figure = fig
-            self.figures.append(fig)
+        for i in range(len(data_x)):
+            fig.add_data_x_Data(data_x[i])
+            fig.add_data_y1_Data(data_y[i])
+
+        fig.x_axe.scale = 'log'
+        fig.y1_axe.scale = 'log'
+
+        fig.created_from = self.current_figure
+        fig.name = self.unique_name(fig.name)
+
+        return fig
 
     """----------------------------------------------------------------------------------"""
 
-    def sub_ihch(self):
-        if self.current_figure.type is not None and self.current_figure.type != "saxs":
-            self.resource.print_color("Opération uniquement disponible pour saxs", "fail")
-            return
-        elif self.current_figure.dirty is not None:
-            self.resource.print_color("La figure que vous souhaitez utiliser possède des données modifiées, merci "
-                                      "d'utiliser une figure où les données sont intègres", "fail")
-            return
-        else:
-            array_obj_data = Array_Abstract_objet_affiche()
-            obj = array_obj_data.append(Saxs_selection(self, self.current_figure))
-            array_obj_data.event_thread2.wait()
-            array_obj_data.event_thread2.clear()
-            courbe_index = obj.index
-            obj.finish = True
+    def sub_ihch(self, courbe_index):
+        """
+        On effectue une soustraction sur toute les courbes de saxs
 
-            if courbe_index is None:
-                self.resource.print_color("Aucune courbe électionnée", "fail")
-                return
-            fig = Figure("res_sub", 1)
-            fig.type = "saxs"
+        :param courbe_index: int, index de la courbe selectionnée
+        :return:
+        """
 
-            data_x = []
-            data_y = []
+        fig = Figure(self.current_figure.name + " sub t = " +
+                     str(self.current_figure.kwarks["array_time"][courbe_index])[0:5] + " h")
+        fig.type = self.current_figure.type
+        fig.kwarks["array_time"] = self.current_figure.kwarks["array_time"]
 
-            data_sub = self.current_figure.data_y1[courbe_index[1][1]]
+        data_x = []
+        data_y = []
 
-            for i in range(len(self.current_figure.data_y1)):
-                data_x.append(copy.copy(self.current_figure.data_x[i]))
+        data_sub = self.current_figure.y1_axe.data[courbe_index]
+
+
+        for i in range(len(self.current_figure.y1_axe.data)):
+            if i != courbe_index:
+                data_x.append(self.current_figure.x_axe.data[i].copy())
                 new_data_y = []
-                if i != courbe_index:
-                    for j in range(len(self.current_figure.data_y1[i].data)):
-                        new_data_y.append(self.current_figure.data_y1[i].data[j] - data_sub.data[j])
-                    data_array = copy.copy(self.current_figure.data_y1[i])
-                    data_array.data = new_data_y
-                    data_y.append(data_array)
-                else:
-                    data_array = copy.copy(self.current_figure.data_y1[i])
-                    data_y.append(data_array)
+                for j in range(len(self.current_figure.y1_axe.data[i].data)):
+                    new_data_y.append(self.current_figure.y1_axe.data[i].data[j] - data_sub.data[j])
 
-            for i in range(len(data_x)):
-                fig.add_data_x_Data(data_x[i])
-                fig.add_data_y1_Data(data_y[i])
 
-            fig.created_from = self.current_figure
-            fig.name = self.unique_name(fig.name)
-            self.current_figure = fig
-            self.figures.append(fig)
+                data_array = self.current_figure.y1_axe.data[i].copy()
+                data_array.data = new_data_y
+                data_y.append(data_array)
+            """else:
+                data_array = self.current_figure.y1_axe.data[i].copy()
+                data_y.append(data_array)"""
+
+        for i in range(len(data_x)):
+            fig.add_data_x_Data(data_x[i])
+            fig.add_data_y1_Data(data_y[i])
+
+        fig.x_axe.scale = 'log'
+        fig.y1_axe.scale = 'log'
+
+        fig.created_from = self.current_figure
+        fig.name = self.unique_name(fig.name)
+
+        return fig
 
     """------------------------------------------------------------------------------"""
 
@@ -556,6 +540,9 @@ class Ihch_1501(Abstract_data):
                             fig_general.add_data_x_Data(Data_array(data_unit_x, "q_A^-1", self.name, legend))
                             fig_general.add_data_y1_Data(Data_array(data_unit_y, "Intensity", self.name, legend))
 
+            fig_general.x_axe.scale = 'log'
+            fig_general.y1_axe.scale = 'log'
+
         fig_general.name = self.unique_name(fig_general.name)
         fig_general.kwarks["array_time"] = array_time
 
@@ -563,16 +550,16 @@ class Ihch_1501(Abstract_data):
 
     """----------------------------------------------------------------------------------"""
 
-    def trace_frame_borne(self, type, cycle, t1, t2, z):
+    def trace_frame_borne(self, type, cycle, array_res, z):
 
+        array_time = []
         if type == "waxs":
-            array_res = self.cycles[cycle].get_range_time("waxs", t1, t2, z)
 
             start_frame = self.cycles[cycle].waxs[array_res[0][0]].scans[array_res[0][1]].frames[z]
             end_frame = self.cycles[cycle].waxs[array_res[-1][0]].scans[array_res[-1][1]].frames[z]
 
             figure = Figure(type + " frames between " + str(start_frame.data["time/s"] / 3600)[0:5] +
-                            " and " + str(end_frame.data["time/s"] / 3600)[0:5] + " h z = " + str(z), 1)
+                            " and " + str(end_frame.data["time/s"] / 3600)[0:5] + " h z = " + str(z + 1), 1)
             figure.type = "waxs frame"
 
             units = Units()
@@ -585,7 +572,9 @@ class Ihch_1501(Abstract_data):
                 data_x = frame.data["2th_deg"]
                 data_y = frame.data["I"]
 
-                legend = "time/h " + str(frame.data["time/s"] / 3600)[0:5] + " " + frame.name
+                legend = "time/h " + str(frame.data["time/s"] / 3600)[0:5] + " " + \
+                         self.cycles[cycle].waxs[array_res[i][0]].scans[array_res[i][1]].name
+                array_time.append(frame.data["time/s"] / 3600)
 
                 data_unit_x = Data_unit(data_x, x_unit)
                 data_unit_y = Data_unit(data_y, y_unit)
@@ -595,16 +584,13 @@ class Ihch_1501(Abstract_data):
 
 
         else:
-            array_res = self.cycles[cycle].get_range_time("saxs", t1, t2, z)
-
             start_frame = self.cycles[cycle].waxs[array_res[0][0]].scans[array_res[0][1]].frames[z]
             end_frame = self.cycles[cycle].waxs[array_res[-1][0]].scans[array_res[-1][1]].frames[z]
 
             figure = Figure(type + " frames between " + str(start_frame.data["time/s"] / 3600)[0:5] +
-                            " and " + str(end_frame.data["time/s"] / 3600)[0:5] + " h z = " + str(z), 1)
+                            " and " + str(end_frame.data["time/s"] / 3600)[0:5] + " h z = " + str(z + 1), 1)
             figure.type = "saxs frame"
 
-            array_res = self.cycles[cycle].get_range_time("saxs", t1, t2, z)
             units = Units()
             x_unit = units.get_unit("q")
             y_unit = units.get_unit("ua")
@@ -615,7 +601,9 @@ class Ihch_1501(Abstract_data):
                 data_x = frame.data["q_A^-1"]
                 data_y = frame.data["I"]
 
-                legend = "time/h " + str(frame.data["time/s"] / 3600)[0:5] + " " + frame.name
+                legend = "time/h " + str(frame.data["time/s"] / 3600)[0:5] + " " + \
+                         self.cycles[cycle].waxs[array_res[i][0]].scans[array_res[i][1]].name
+                array_time.append(frame.data["time/s"] / 3600)
 
                 data_unit_x = Data_unit(data_x, x_unit)
                 data_unit_y = Data_unit(data_y, y_unit)
@@ -623,13 +611,19 @@ class Ihch_1501(Abstract_data):
                 figure.add_data_x_Data(Data_array(data_unit_x, "q", self.name, legend))
                 figure.add_data_y1_Data(Data_array(data_unit_y, "Intesity", self.name, legend))
 
+            figure.x_axe.scale = 'log'
+            figure.y1_axe.scale = 'log'
+
         figure.name = self.unique_name(figure.name)
+        figure.kwarks["array_time"] = array_time
         figure.created_from = self.current_figure
         return figure
 
     """----------------------------------------------------------------------------------"""
 
     def trace_scan_borne(self, type, cycle, t1):
+
+        array_time = []
         if type == "waxs":
 
             array_res = self.cycles[cycle].get_time_borne("waxs", t1)
@@ -649,7 +643,8 @@ class Ihch_1501(Abstract_data):
                 data_x = frame.data["2th_deg"]
                 data_y = frame.data["I"]
 
-                legend = "time/h " + str(frame.data["time/s"] / 3600)[0:5] + " " + frame.name
+                legend = "time/h " + str(frame.data["time/s"] / 3600)[0:5] + " z = " + str(i + 1)
+                array_time.append(frame.data["time/s"] / 3600)
 
                 data_unit_x = Data_unit(data_x, x_unit)
                 data_unit_y = Data_unit(data_y, y_unit)
@@ -676,6 +671,7 @@ class Ihch_1501(Abstract_data):
                 data_y = frame.data["I"]
 
                 legend = "time/h " + str(frame.data["time/s"] / 3600)[0:5] + " " + frame.name
+                array_time.append(frame.data["time/s"] / 3600)
 
                 data_unit_x = Data_unit(data_x, x_unit)
                 data_unit_y = Data_unit(data_y, y_unit)
@@ -683,6 +679,10 @@ class Ihch_1501(Abstract_data):
                 figure.add_data_x_Data(Data_array(data_unit_x, "q", self.name, legend))
                 figure.add_data_y1_Data(Data_array(data_unit_y, "Intesity", self.name, legend))
 
+            figure.x_axe.scale = 'log'
+            figure.y1_axe.scale = 'log'
+
+        figure.kwarks["array_time"] = array_time
         figure.name = self.unique_name(figure.name)
         figure.created_from = self.current_figure
         return figure
@@ -884,9 +884,10 @@ class Ihch_1501(Abstract_data):
             for scan in sample_saxs.scans:
                 for frame in scan.frames:
                     try:
-                        saxs_time.append(frame.data["time/s"])
-                        saxs_potentiel.append(frame.data["Ecell/V"])
-                        saxs_courrant.append(frame.data["<I>/mA"])
+                        if frame.data["Ecell/V"] is not None:
+                            saxs_time.append(frame.data["time/s"])
+                            saxs_potentiel.append(frame.data["Ecell/V"])
+                            saxs_courrant.append(frame.data["<I>/mA"])
                     except KeyError:
                         print(sample_saxs.name)
                         print(scan.name)
@@ -899,9 +900,10 @@ class Ihch_1501(Abstract_data):
             for scan in sample_waxs.scans:
                 for frame in scan.frames:
                     try:
-                        waxs_time.append(frame.data["time/s"])
-                        waxs_potentiel.append(frame.data["Ecell/V"])
-                        waxs_courrant.append(frame.data["<I>/mA"])
+                        if frame.data["Ecell/V"] is not None:
+                            waxs_time.append(frame.data["time/s"])
+                            waxs_potentiel.append(frame.data["Ecell/V"])
+                            waxs_courrant.append(frame.data["<I>/mA"])
                     except ValueError:
                         print(sample_waxs.name)
                         print(scan.name)
@@ -1031,7 +1033,7 @@ class Ihch_1501_cycle:
         :param type: saxs / waxs
         :param t1: temps 1
         :param t2: temps 2
-        :return: array[[index sample, index scan], .......]
+        :return: array[[index sample, index scan], .......] ou nb_frame si le z est trop grand
         """
 
         if t1 > t2:
@@ -1050,7 +1052,9 @@ class Ihch_1501_cycle:
 
         for index_sample, sample in enumerate(array):
             for index_scan, scan in enumerate(sample.scans):
-                print(scan.frames[z].data["time/s"])
+                if z >= len(scan.frames):
+                    return len(scan.frames)
+
                 if b1 is None and scan.frames[z].data["time/s"] > t1:
                     b1 = [index_sample, index_scan]
 

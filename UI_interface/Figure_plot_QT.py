@@ -33,7 +33,6 @@ class Figure_plot(QWidget):
     # utilisé quand le plot est sous la forme d'une fenêtre et qu'il est en focus
     focus_in = pyqtSignal(str)
 
-
     def __init__(self, abstract_affiche, parent=None):
         super().__init__()
 
@@ -117,8 +116,9 @@ class Figure_plot(QWidget):
         # si c'est gitt_affich on lui donne une fonction de callbak pour fermer le
         # plot, dans ce cas, à voir si il y en a besoin par la suite, probablement
         if type(self.abstract_affiche).__name__ == "Gitt_affiche" or \
-            type(self.abstract_affiche).__name__ == "Impedance_affiche" or \
-            type(self.abstract_affiche).__name__ == "Time_Selection":
+                type(self.abstract_affiche).__name__ == "Impedance_affiche" or \
+                type(self.abstract_affiche).__name__ == "Time_Selection" or \
+                type(self.abstract_affiche).__name__ == "Saxs_selection":
             self.abstract_affiche.call_back_func = self.call_back_func
 
         self.canvas.draw()
@@ -172,7 +172,7 @@ class Figure_plot(QWidget):
                 (self.abstract_affiche.ax2.yaxis.contains(event)[0] or
                  self.abstract_affiche.ax2.yaxis.get_label().contains(event)[0]):
 
-                self.edit_y2_axe()
+            self.edit_y2_axe()
 
         # check du suptitle
         elif self.abstract_affiche.pplot_fig._suptitle.contains(event)[0]:
@@ -361,7 +361,6 @@ class Figure_plot(QWidget):
             self.abstract_affiche.figure.z1_axe.name = name
 
             self.abstract_affiche.value.ax.yaxis.get_label().set_text(self.abstract_affiche.figure.z1_axe.name_unit)
-
 
             self.canvas.draw()
 
@@ -1191,9 +1190,5 @@ class Figure_plot(QWidget):
             self.close()
         elif type(self.abstract_affiche).__name__ == "Time_Selection":
             self.close()
-
-
-
-
-
-
+        elif type(self.abstract_affiche).__name__ == "Saxs_selection":
+            self.close()

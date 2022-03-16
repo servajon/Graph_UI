@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (
 import matplotlib.pyplot as pplot
 
 from Console_Objets.Affiche_objet import Classique_affiche, Edit_affiche, Pic_selection, Gitt_affiche, \
-    Impedance_affiche, Time_Selection
+    Impedance_affiche, Time_Selection, Saxs_selection
 from Console_Objets.Console import Console
 from Console_Objets.Data_Unit import Data_unit, Units
 from Console_Objets.Data_array import Data_array
@@ -636,6 +636,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.argument_selection_creation_w.show()
 
 
+
     """---------------------------------------------------------------------------------"""
 
     def callback_create_current_data(self, event, name):
@@ -1176,6 +1177,10 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.create_figure_callback("save", "Select saxs")
             elif self.comboBox_4.currentText() == "Select waxs":
                 self.create_figure_callback("save", "Select waxs")
+            elif self.comboBox_4.currentText() == "Subtract":
+                self.create_figure_callback("save", "Subtract")
+            elif self.comboBox_4.currentText() == "Normalise":
+                self.create_figure_callback("save", "Normalise")
 
             # il n'y a pas toujours de fenêtre de selection de paramètre, on check si elle est None ou pas
             if self.argument_selection_creation_w is not None:
@@ -1258,6 +1263,9 @@ class Window(QMainWindow, Ui_MainWindow):
                 try:
                     figure_res = self.console.current_data.create_figure_cycle \
                         (dict=dict, type=cycle_type, cycles=cycles)
+                except TypeError:
+                    self.figure_invalide_error()
+                    return
                 except ValueError:
                     return
 
@@ -1397,6 +1405,44 @@ class Window(QMainWindow, Ui_MainWindow):
 
                 # on affiche le widget
                 self.edit_plot_figure_w.show()
+
+            elif name == "Subtract":
+                # on créer Abstract_objet_affiche pour la sélection de pics
+                sub_saxs = Saxs_selection(self.console.current_data, self.console.current_data.current_figure, "sub")
+
+                # le graph ne sera pas éditable
+                sub_saxs.editable = False
+
+                # on garde une ref de l'objet créée
+                self.argument_selection_creation_w = Figure_plot(sub_saxs, self)
+
+                # on connect de callback
+                self.argument_selection_creation_w.closed.connect(self.callback_sub_saxs)
+
+                # on passe le plot d'édition en modal
+                self.argument_selection_creation_w.setWindowModality(QtCore.Qt.ApplicationModal)
+
+                # on affiche le widget
+                self.argument_selection_creation_w.show()
+
+            elif name == "Normalise":
+                # on créer Abstract_objet_affiche pour la sélection de pics
+                norm_saxs = Saxs_selection(self.console.current_data, self.console.current_data.current_figure, "norm")
+
+                # le graph ne sera pas éditable
+                norm_saxs.editable = False
+
+                # on garde une ref de l'objet créée
+                self.argument_selection_creation_w = Figure_plot(norm_saxs, self)
+
+                # on connect de callback
+                self.argument_selection_creation_w.closed.connect(self.callback_norm_saxs)
+
+                # on passe le plot d'édition en modal
+                self.argument_selection_creation_w.setWindowModality(QtCore.Qt.ApplicationModal)
+
+                # on affiche le widget
+                self.argument_selection_creation_w.show()
 
     """---------------------------------------------------------------------------------"""
 
@@ -2641,6 +2687,8 @@ class Window(QMainWindow, Ui_MainWindow):
                     # on applique la suppression des points effectuée sur les différentes courbes
                     self.process_del_point_plot(obj_figure)
 
+                    self.figure_edited.dirty = 1
+
                 # on cache les courbes qui doivent l'être
                 self.hide_data_array(obj_figure)
 
@@ -2928,6 +2976,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         # key : x_index de l'édition
         # value : [new_datax, new_datay]
+
         for key, value, in self.edit_plot_dics.items():
 
             # si l'index est plus grand que le nombre de data dans y1_axe, c'est un index pour
@@ -2993,11 +3042,7 @@ class Window(QMainWindow, Ui_MainWindow):
         """
 
         # on récupére les pics selectionnés
-        pics = []
-        for i in range(len(self.edit_plot_figure_w.abstract_affiche.pics)):
-            pics.append([])
-            for j in range(len(self.edit_plot_figure_w.abstract_affiche.pics[i])):
-                pics[i].append(self.edit_plot_figure_w.abstract_affiche.pics[i][j])
+        pics = self.edit_plot_figure_w.abstract_affiche.pics
 
         pplot.close(self.edit_plot_figure_w.abstract_affiche.pplot_fig)
         self.edit_plot_figure_w.deleteLater()
@@ -3007,9 +3052,9 @@ class Window(QMainWindow, Ui_MainWindow):
         if len(pics) == 0:
             return
 
-        file = open(r"C:\Users\Maxime\Desktop\export_diffraction.txt", "w")
+        # file = open(r"C:\Users\Maxime\Desktop\export_diffraction.txt", "w")
 
-        for i in range(len(self.console.current_data.current_figure.x_axe.data)):
+        """for i in range(len(self.console.current_data.current_figure.x_axe.data)):
             s = ""
             for j in range(len(self.console.current_data.current_figure.x_axe.data[i].data)):
                 s += str(self.console.current_data.current_figure.x_axe.data[i].data[j]) + "\t"
@@ -3021,13 +3066,23 @@ class Window(QMainWindow, Ui_MainWindow):
                 s += str(self.console.current_data.current_figure.y1_axe.data[i].data[j]) + "\t"
             s = s[:-1] + "\n"
             file.write(s)
-        file.close()
+        file.close()"""
+
+        datas_x = []
+        datas_y = []
+
+        for i in range(len(self.console.current_data.current_figure.x_axe.data)):
+            datas_x.append(self.console.current_data.current_figure.x_axe.data[i].data)
+            datas_y.append(self.console.current_data.current_figure.y1_axe.data[i].data)
 
         # création d'un nouveau thread
         t = QThread()
 
+        figure = self.console.current_data.current_figure
+        print(figure.kwarks)
+
         # création du worker
-        worker = Fitting(self.console.current_data.current_figure, pics)
+        worker = Fitting(datas_x, datas_y, pics, figure)
         worker.moveToThread(t)
 
         # connection
@@ -3108,11 +3163,17 @@ class Window(QMainWindow, Ui_MainWindow):
                     x_unit = units.get_unit(figure.x_axe.get_unit().name)
                     y_unit = units.get_unit(figure.y1_axe.get_unit().name)
 
-                    array_time = figure.kwarks["array_time"]
+                    # array_time = figure.kwarks["array_time"]
+
+                    array_time = [val for val in range(len(new_xmax[0]))]
+
+                    print(len(array_time))
 
                     for i in range(len(new_xmax)):
                         data_unit_x = Data_unit(copy.copy(array_time), x_unit)
                         data_unit_y = Data_unit(new_xmax[i], y_unit)
+
+                        print(len(new_xmax[i]))
 
                         temp_x = Data_array(data_unit_x, "time", None, "nesaisias", temperature="warning")
                         temp_y = Data_array(data_unit_y, "ua", None, "nesaispas")
@@ -3123,6 +3184,8 @@ class Window(QMainWindow, Ui_MainWindow):
                         data_unit_x = Data_unit(copy.copy(array_time), x_unit)
                         data_unit_y = Data_unit(new_area[i], y_unit)
 
+                        print(len(new_area[i]))
+
                         temp_x = Data_array(data_unit_x, "Température", None, "nesaisias", temperature="warning")
                         temp_y = Data_array(data_unit_y, "diffraction", None, "nesaispas")
                         figure_res.add_data_x_Data(temp_x)
@@ -3131,6 +3194,8 @@ class Window(QMainWindow, Ui_MainWindow):
                     for i in range(len(newlargeur)):
                         data_unit_x = Data_unit(copy.copy(array_time), x_unit)
                         data_unit_y = Data_unit(newlargeur[i], y_unit)
+
+                        print(len(newlargeur[i]))
 
                         temp_x = Data_array(data_unit_x, "Température", None, "nesaisias", temperature="cooling")
                         temp_y = Data_array(data_unit_y, "diffraction", None, "nesaispas")
@@ -3296,10 +3361,7 @@ class Window(QMainWindow, Ui_MainWindow):
             self.edit_plot_figure_w = None
 
             if coords[1] is None:
-                print("1 borne selectionnée : ")
-                print(coords)
-                print(cycle)
-                print(type)
+
                 if type == "waxs":
                     new_figure = self.console.current_data.trace_scan_borne("waxs", cycle, coords[0])
                 else:
@@ -3334,20 +3396,27 @@ class Window(QMainWindow, Ui_MainWindow):
             self.argument_selection_creation_w.deleteLater()
             self.argument_selection_creation_w = None
         else:
-            z = self.argument_selection_creation_w.value
-            print("2 bornes selectionnées : ")
-            print(coords)
-            print("z selectionné : " + str(z))
-            print(cycle)
-            print(type)
+            z = self.argument_selection_creation_w.value - 1
 
             self.argument_selection_creation_w.deleteLater()
             self.argument_selection_creation_w = None
 
+            if z < 0:
+                self.update_console(
+                    {"str": "Z selected must be higher than 0", "foreground_color": "red"})
+                return
+
+            array_res = self.console.current_data.cycles[cycle].get_range_time(type, coords[0], coords[1], z)
+            if isinstance(array_res, int):
+                self.update_console(
+                    {"str": "Z selected must be at most " + str(array_res), "foreground_color": "red"})
+                return
+
+
             if type == "waxs":
-                new_figure = self.console.current_data.trace_frame_borne("waxs", cycle, coords[0], coords[1], z)
+                new_figure = self.console.current_data.trace_frame_borne(type, cycle, array_res, z)
             else:
-                new_figure = self.console.current_data.trace_frame_borne("saxs", cycle, coords[0], coords[1], z)
+                new_figure = self.console.current_data.trace_frame_borne(type, cycle, array_res, z)
 
             # on update le tree widget
             # on ajoute la figure a current_data
@@ -3362,8 +3431,6 @@ class Window(QMainWindow, Ui_MainWindow):
 
             # on update les actions disponibles pour cette figure
             self.update_action_combo()
-
-
 
         
     """---------------------------------------------------------------------------------"""
@@ -3431,8 +3498,63 @@ class Window(QMainWindow, Ui_MainWindow):
                 self.select_value_show_w = None
 
     """---------------------------------------------------------------------------------"""
-    """                        Vieux data current plot  end                             """
+    """                         Vieux data current plot end                             """
     """---------------------------------------------------------------------------------"""
+
+    def callback_sub_saxs(self, event):
+        courbe_index = self.argument_selection_creation_w.abstract_affiche.selection
+
+        if isinstance(courbe_index, list):
+            self.update_console({"str": "No mark placed", "foreground_color": "red"})
+            return
+
+        self.argument_selection_creation_w.deleteLater()
+        self.argument_selection_creation_w = None
+
+        figure = self.console.current_data.sub_ihch(courbe_index)
+
+        # on update le tree widget
+        # on ajoute la figure a current_data
+        self.treeWidget.add_figure(figure, self.console.current_data.name)
+        self.console.current_data.figures.append(figure)
+
+        # on passe la figure en figure courante
+        self.console.current_data.current_figure = figure
+
+        # on update le label avec le nouveau nom de la figure
+        self.update_figure_name()
+
+        # on update les actions disponibles pour cette figure
+        self.update_action_combo()
+
+    """---------------------------------------------------------------------------------"""
+
+    def callback_norm_saxs(self, event):
+        courbe_index = self.argument_selection_creation_w.abstract_affiche.selection[0]
+        data_index = self.argument_selection_creation_w.abstract_affiche.selection[1]
+
+        if courbe_index is None:
+            self.update_console({"str": "No mark placed", "foreground_color": "red"})
+            return
+
+        self.argument_selection_creation_w.deleteLater()
+        self.argument_selection_creation_w = None
+
+        figure = self.console.current_data.norm_ihch(courbe_index, data_index)
+
+        # on update le tree widget
+        # on ajoute la figure a current_data
+        self.treeWidget.add_figure(figure, self.console.current_data.name)
+        self.console.current_data.figures.append(figure)
+
+        # on passe la figure en figure courante
+        self.console.current_data.current_figure = figure
+
+        # on update le label avec le nouveau nom de la figure
+        self.update_figure_name()
+
+        # on update les actions disponibles pour cette figure
+        self.update_action_combo()
 
     def current_data_None(self):
         """
@@ -3514,6 +3636,21 @@ class Window(QMainWindow, Ui_MainWindow):
 
     """---------------------------------------------------------------------------------"""
 
+    def figure_invalide_error(self):
+        """
+        QMessageBox indiquand qu'une action sur un plot ou une data
+        a été demandé dans que des datas est été chargé
+
+        :return: None
+        """
+        msgBox = QMessageBox()
+        msgBox.setIcon(QMessageBox.Warning)
+        msgBox.setText("The data in the figure have been modified")
+        msgBox.setWindowTitle("Error")
+        msgBox.setStandardButtons(QMessageBox.Ok)
+        msgBox.exec()
+
+    """---------------------------------------------------------------------------------"""
 
 class Main_interface:
     def __init__(self):

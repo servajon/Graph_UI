@@ -357,6 +357,10 @@ class CCCV_data(Abstract_data):
         :param kwargs:
         :return:
         """
+
+        if self.current_figure.dirty is not None:
+            raise TypeError
+
         dict = kwargs["dict"]
         cycle_type = kwargs["type"]
         cycle = kwargs["cycles"]

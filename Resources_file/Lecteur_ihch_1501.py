@@ -106,10 +106,13 @@ def read_frame(file):
             data["<I>/mA"] = float(data_data[3][20:-1])
 
     index = 3
-
-    while data_data[index][0] == "#":
-        index += 1
-
+    try:
+        while data_data[index][0] == "#":
+            index += 1
+    except IndexError:
+        print(file.name)
+        print(data_data)
+        return
     temp_row_data = data_data[index - 1].split(" ")
     row_data = []
     for i in temp_row_data[1:-1]:

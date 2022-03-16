@@ -101,6 +101,10 @@ def delimit_pic(x, y, center):
 
 def fit_pics(_x_array, _y_array, pics, nb):
 
+    res_x_max = []
+    res_amplitude = []
+    res_fwhm = []
+
     _min, _max = get_min_max_pics(pics)
     x_array, y_array = slice(_x_array, _y_array, _min * 0.99, _max * 1.01)
 
@@ -126,12 +130,11 @@ def fit_pics(_x_array, _y_array, pics, nb):
         pplot.plot(x_array, y_array)
         temp_x, temp_y = slice(x_array, y_array, pic.left_base, pic.right_base)
 
-        pplot.plot(temp_x, temp_y)
         """temp_x = x_array
         temp_y = y_array"""
 
-        """pplot.plot(temp_x, temp_y)
-        pplot.show()"""
+        pplot.plot(temp_x, temp_y)
+
 
 
         model = PseudoVoigtModel()
@@ -150,6 +153,10 @@ def fit_pics(_x_array, _y_array, pics, nb):
         print('------------------')
         print(out.values)
 
+        res_x_max.append(out.values["center"])
+        res_amplitude.append(out.values["amplitude"])
+        res_fwhm.append(out.values["fwhm"])
+
 
 
         # pic.update(**out.values)
@@ -159,7 +166,6 @@ def fit_pics(_x_array, _y_array, pics, nb):
         # pplot.plot(x_array, y_array)
         # pplot.plot(temp_x, out.best_fit)
 
-        """def pseudo_voigt(x, amplitude, center, sigma, fraction):"""
 
         test_voigt = pseudo_voigt(np.array(x_array), out.values["amplitude"], out.values["center"], out.values["sigma"],
                                   out.values["fraction"])
@@ -171,13 +177,7 @@ def fit_pics(_x_array, _y_array, pics, nb):
         pplot.plot(x_array, test_voigt)
         pplot.show()
 
-    return
-
-
-
-
-
-
+    return res_x_max, res_amplitude, res_fwhm
 
 
     index_min, index_max = get_min_max_pics(pics)
@@ -243,18 +243,18 @@ def fit_pics(_x_array, _y_array, pics, nb):
         pic.index_min = get_index(_x_array, pic.x_max - pic.fwhm * 2 * 1.5)
         pic.index_max = get_index(_x_array, pic.x_max + pic.fwhm * 2 * 1.5)
 
-    fig, (ax1, leg1) = pplot.subplots(ncols=2, gridspec_kw={"width_ratios": [10, 1]})
+    """fig, (ax1, leg1) = pplot.subplots(ncols=2, gridspec_kw={"width_ratios": [10, 1]})
     fig.suptitle("index min = " + str(index_min) + " index max = " + str(index_max) + " fwhm = " + str(pic.fwhm) + " integral = " + str(pic.integral)
                  + " x_max = " + str(pic.x_max))
     ax1.plot(x_array, y_array)
     ax1.plot(x_array, out.best_fit)
-    pplot.show()
+    pplot.show()"""
 
 
 class Fitting(QObject):
     finished = pyqtSignal(int)
 
-    def __init__(self, x, y, pics):
+    def __init__(self, x, y, pics, figure=None):
         QObject.__init__(self)
 
         """self.figure = figure
@@ -270,20 +270,50 @@ class Fitting(QObject):
         self.y_datas = y
 
         self.pics = []
+
+        p1 = {'amplitude': 0.00011582399044571677,
+              'fwhm': 0.040421191883555974,
+              'center': 5.15,
+              'left_base': 5.1,
+              'right_base': 5.225}
+
+        p2 = {'amplitude': 0.00018162457466913028,
+              'fwhm': 0.040421191883555974,
+              'center': 5.27,
+              'left_base': 5.2,
+              'right_base': 5.3229}
+
+        p3 = {'amplitude': 0.0006180758165759622,
+              'fwhm': 0.040421191883555974,
+              'center': 5.40,
+              'left_base': 5.35,
+              'right_base': 5.45}
+
+        p4 = {'amplitude': 0.00022113099174519006,
+              'fwhm': 0.040421191883555974,
+              'center': 5.565635943945343,
+              'left_base': 5.5,
+              'right_base': 5.7}
+        pics = [p1, p2, p3, p4]
+
         self.create_pic(pics)
 
         self.center = []
         self.area = []
         self.fwhm = []
 
-        index_min, index_max = get_min_max_pics(self.pics)
-        self.init_index_min = index_min
-        self.init_index_max = index_max
+        self.figure = figure
+
+        val_min, val_max = get_min_max_pics(self.pics)
+
+        self.init_index_min = get_index(self.x_datas[0], val_min)
+        self.init_index_max = get_index(self.x_datas[0], val_max)
 
         self.init_center = [pic.center for pic in self.center]
 
     def create_pic(self, pics):
         for pic in pics:
+            print(pic)
             n_p = Pic(**pic)
             self.pics.append(n_p)
 
@@ -291,10 +321,43 @@ class Fitting(QObject):
 
         # on fit tous les pics
         for i in range(len(self.x_datas)):
-            fit_pics(self.x_datas[i], self.y_datas[i], self.pics, i)
+            center, amplitude, fwhm = fit_pics(self.x_datas[i], self.y_datas[i], self.pics, i)
+            self.center.append(center)
+            self.area.append(amplitude)
+            self.fwhm.append(fwhm)
 
-        # self.finished.emit(1)
+        if self.figure is not None:
+            self.finished.emit(1)
+        else:
 
+            x = [val for val in range(len(self.center))]
+            center = []
+            amplitude = []
+            fwhm = []
+            for i in range(len(self.center[0])):
+                center.append([])
+                amplitude.append([])
+                fwhm.append([])
+                for j in range(len(self.center)):
+                    center[i].append(self.center[j][i])
+                    amplitude[i].append(self.area[j][i])
+                    fwhm[i].append(self.fwhm[j][i])
+
+            for i in range(len(center)):
+                pplot.plot(x, center[i], label="pic" + str(i))
+
+
+            pplot.show()
+
+            for i in range(len(center)):
+                pplot.plot(x, amplitude[i], label="pic" + str(i))
+
+            pplot.show()
+
+            for i in range(len(center)):
+                pplot.plot(x, fwhm[i], label="pic" + str(i))
+
+            pplot.show()
 
     """def best_fit(self, pic):
         x_array = pic.slice(self.x_datas[0])
@@ -403,31 +466,27 @@ if __name__ == '__main__':
     pplot.show()
 
     """def __init__(self, x_max, integral, fwhm, height, sigma, fraction, left_base, right_base):"""
-    p1 = {
+    p1 = {'amplitude': 0.00011582399044571677,
           'fwhm': 0.040421191883555974,
           'center': 5.15,
-          'sigma': 0.08,
           'left_base': 5.1,
           'right_base': 5.225}
 
     p2 = {'amplitude': 0.00018162457466913028,
           'fwhm': 0.040421191883555974,
           'center': 5.27,
-          'sigma': 0.024541345434393236,
           'left_base': 5.2,
           'right_base': 5.3229}
 
     p3 = {'amplitude': 0.0006180758165759622,
           'fwhm': 0.040421191883555974,
           'center': 5.40,
-          'sigma': 0.020210595941777987,
           'left_base': 5.35,
           'right_base': 5.45}
 
     p4 = {'amplitude': 0.00022113099174519006,
           'fwhm': 0.040421191883555974,
           'center': 5.565635943945343,
-          'sigma': 0.024357916389547096,
           'left_base': 5.5,
           'right_base': 5.7}
 
