@@ -232,6 +232,7 @@ class Abstract_data(ABC):
         pass
 
     def unique_name(self, name):
+
         """Parcours le nom des figures enregistrées et regarde si le nom donné en paramettre est unique, si il ne
         l'est pas on renvoie le même nom avec (1), (2) etc, si le nom est unique on renvoie jsute le nom """
         if self.figures is None:

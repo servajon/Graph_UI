@@ -193,7 +193,7 @@ class Ihch_1501(Abstract_data):
         val_y = self.current_figure.y1_axe.data[courbe_index].data[data_index]
 
         fig = Figure(self.current_figure.name + " norm = " + str(val_y))
-        fig.type = "saxs"
+        fig.type = self.current_figure.type
 
         data_x = []
         data_y = []

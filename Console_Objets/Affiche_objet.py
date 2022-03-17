@@ -1893,7 +1893,7 @@ class Saxs_selection(Abstract_objet_affiche):
                 if self.type == "sub":
                     self.selection = self.index[1][1]
                 elif self.type == "norm":
-                    self.selection = [self.index[1][1], self.figure.y1_axe.data[self.index[1][1]].data[res]]
+                    self.selection = [self.index[1][1], res]
 
                 self.pplot_fig.canvas.draw()
 
